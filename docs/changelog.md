@@ -1,0 +1,106 @@
+# Changelog
+
+## 2026-11-14 (9)
+
+- Plano do jogo completo em [roteiro-jogo.md](roteiro-jogo.md): 12 etapas (menu, save, split-screen até 4, corpo a corpo, percepção, quests, conversa com retrato, campanha, mapas aleatórios, co-op online, áudio, acabamento) e decisões em aberto
+- Proposta de história em [historia.md](historia.md): campanha de 12 horas em 5 atos, rodando em qualquer mapa procedural por âncoras de papel
+- História aprovada e decisões J2 a J14 registradas: procedural sempre, modos Campanha e Livre, save automático sem slots, criminosos à paisana, co-op com agentes temporários e itens compartilhados (desktop 4, browser 2, mobile 1), áudio por código, português e inglês
+- `gdd.md` atualizado com a campanha, os modos de jogo e o co-op
+- Plano de armas em [armas-e-inventario.md](armas-e-inventario.md): 15 armas, munição limitada em 6 tipos, barra de itens no lugar de mão esquerda/direita, menu único com abas
+- Decididos: botão direito como ação secundária, recarga em R, ruído dos tiros, inventário de 16 espaços com baú, cinco atributos com teto de 5, co-op com jogadores independentes
+- Só documentação; nenhum código alterado, suíte não executada
+
+## 2026-11-14 (8)
+
+- Decisões da Fase 2 do redesenho registradas: avenidas mais largas de verdade (D6) e lista de prédios sem corte, mantendo cinema, academia e posto (D3)
+- Fase 2 aprovada, ainda não iniciada; D7 (mecânicas novas dos serviços) segue em aberto para a Fase 3
+- Só documentação: [redesign-roteiro.md](redesign-roteiro.md) e [redesign-visual.md](redesign-visual.md)
+
+## 2026-11-14 (7)
+
+- Fase 1 do redesenho: todo o mundo externo em pixel art gerada por código (paleta de 32 cores, texel de 2 px)
+- Fábrica de arte em `scripts/art/`: paleta, tela de pixel, fonte própria, tiles, personagens, carros, objetos, prédios e cache de texturas
+- Chão em 288 pedaços (`ground_chunk.gd`); prédios com telhado, fachada, janelas, porta, toldo e letreiro em uma textura cada
+- Mobiliário urbano por seed (`street_props_layout.gd`): postes, semáforos, hidrantes, lixeiras, pontos de ônibus, bancas, árvores de calçada, bueiros; parques com caminhos e lago; quintais gramados
+- Personagens com 4 direções e animação de passo; jogador, civis e criminosos com silhuetas próprias; 7 modelos de carro em 32 direções
+- Carros dirigíveis passam a ser o esportivo da agência; `car.color` virou `car.model` e `car.tone`
+- HUD em placas com fonte pixel e barra de vida; espaços reservados para bairro/rua e relógio; moldura retrô nos painéis
+- Ferramentas `tools/probe.gd` (capturas e desempenho) e `tools/sprite_sheet.gd` (folha de sprites)
+- Desempenho: tempo de quadro de 6,5 ms para cerca de 2 ms; chamadas de desenho de ~935 para ~160
+- 487 testes (102 novos), nenhum teste existente alterado
+- Detalhes: [redesign-fase-1.md](redesign-fase-1.md)
+
+## 2026-11-14 (6)
+
+- Fase 0 do redesenho: design completo em [redesign-visual.md](redesign-visual.md) (paleta de 32 cores, resolução, fábrica de arte por código, 6 bairros, 23 tipos de prédio, 15 modelos de interior, serviços, dia e noite, impacto nos testes). Proposta aguardando aprovação
+- Amostra da paleta em `docs/img/paleta.png` (dia, entardecer e noite); `docs/img/.gdignore` para o Godot não importar as imagens
+- Corrigido o tamanho do mundo citado no `gdd.md` e no `arquitetura.md` (13440x6720 px, não 12480x5760)
+- Só documentação; nenhum código alterado, suíte não executada
+
+## 2026-11-14 (5)
+
+- Planejamento do redesenho visual e do mundo com contexto (bairros, tipos de prédio, interiores com finalidade, dia e noite), em 6 fases com status por item. Só documentação; nenhum código alterado
+- Detalhes: [redesign-roteiro.md](redesign-roteiro.md)
+
+## 2026-11-14 (4)
+
+- Ruas com calçadas e faixas de pedestres; pedestres andam pelas calçadas e atravessam nas faixas
+- População: 110 pedestres na cidade (antes 40), 12 civis no campo
+- Prédios menos simétricos: lotes com formatos sorteados, parques, quintais, portas em posições variadas, detalhes no telhado
+- Mundo maior: 13440 x 6720 px (quarteirão 560 px)
+- Itens no chão (dinheiro e itens); criminais mortos largam loot
+- Dinheiro e lojas (Armaria, Farmácia, Loja do Agente, Armazém Rural) com interior, balcão, compra e venda
+- Crimes dependem da região (Cidade e Campo têm tipos, frequência e recompensas próprios) com aviso na tela
+- 385 testes
+- Detalhes: [prototipo-06-cidade-lojas-crimes.md](prototipo-06-cidade-lojas-crimes.md)
+
+## 2026-11-14 (3)
+
+- Carro mais lento (340 px/s) e chute de colisão mais forte; trânsito agora fica na faixa da direita
+- Janela se adapta à tela (stretch expand, 85% da tela, F11 tela cheia)
+- Mira com o mouse; WASD só move; botão esquerdo = mão esquerda, direito = mão direita
+- NPCs com nome e card de personalidade; F conversa, card com perguntas (nome só no aviso e no card)
+- Inventário (I) com pistola, escopeta, taser, kit médico e escudo; mãos esquerda/direita
+- Ficha do jogador (C): nome, características, XP, nível e 4 atributos com efeito real
+- Taser (não letal, pontua), escudo, kit médico; XP por mortes, atordoamentos e conversas
+- `p{N}_fire` virou `p{N}_use_left` / `p{N}_use_right`; novas ações talk, inventory, character
+- 288 testes
+- Detalhes: [prototipo-05-mira-inventario-ficha.md](prototipo-05-mira-inventario-ficha.md)
+
+## 2026-11-14 (2)
+
+- Carro: colisão com chute (não trava mais) e auxílio de direção para andar reto
+- Combate: tiro (Espaço), projéteis, vida do jogador (10) com respawn
+- NPCs: inocentes (fogem) e criminosos (atiram); matar inocente -100, criminoso +50; atropelamento conta
+- 10 carros de trânsito com IA (faixa da direita, freiam para pessoas, não podem ser roubados)
+- 171 testes
+- GDD: nova direção "meio espião, meio polícia" (scanner, crimes dinâmicos, NPCs com nome e personalidade)
+- Detalhes: [prototipo-04-combate-npcs-transito.md](prototipo-04-combate-npcs-transito.md)
+
+## 2026-11-14
+
+- Entrar/sair de prédios e carros só com a tecla E; instrução no canto da tela
+- Carro dirigível (E para entrar e sair), 8 carros no mundo
+- Pontuação: matar inocente tira pontos (ainda sem combate); HUD por jogador
+- Mundo 3,7x maior com duas regiões: Cidade (12x12 quarteirões) e Campo (fazendas, plantações, árvores)
+- `city.gd` substituído por `world.gd`; novos `CountryLayout` e `WorldLayout`
+- 100 testes; README e AGENTS reforçados sobre testes
+- GDD atualizado (tom de paródia de espionagem, armas letais, regra de pontos)
+- Detalhes: [prototipo-03-mundo-e-carro.md](prototipo-03-mundo-e-carro.md)
+
+## 2026-11-13 (2)
+
+- Runner de testes próprio e 45 testes (ver [testes.md](testes.md))
+- Prédios maiores (quarteirão 480 px), spawn inicial corrigido
+- Portas e interiores em cena própria, com escala diferente da fachada
+  ([prototipo-02-interiores.md](prototipo-02-interiores.md))
+- Autoload `GameState`; `CityLayout` e `InteriorLayout` separados dos nós
+- GDD inicial ([gdd.md](gdd.md)): tema de agente secreto contra o crime
+- Análise de mundos grandes/infinitos ([mundo-grande.md](mundo-grande.md))
+
+## 2026-11-13
+
+- Criado o projeto Godot 4.7.2 (GL Compatibility, 1280x720)
+- Protótipo 01: cidade de teste, jogador top-down com câmera, input por jogador
+  (teclado e gamepad) — ver [prototipo-01.md](prototipo-01.md)
+- Criados `README.md`, `AGENTS.md`, `.gitignore` e a pasta `docs/`

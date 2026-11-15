@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicle/car.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/interaction/interact_zone.gd" id="2"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(52, 26)
+
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(96, 64)
+
+[node name="Car" type="CharacterBody2D"]
+motion_mode = 1
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+[node name="InteractZone" type="Area2D" parent="."]
+script = ExtResource("2")
+verb = "dirigir"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractZone"]
+shape = SubResource("2")

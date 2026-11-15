@@ -1,0 +1,221 @@
+extends RefCounted
+## Layout lógico do mundo inteiro: regiões Cidade e Campo lado a lado.
+
+const CityLayout := preload("res://scripts/world/city_layout.gd")
+const CountryLayout := preload("res://scripts/world/country_layout.gd")
+const TrafficRoute := preload("res://scripts/vehicle/traffic_route.gd")
+const SidewalkGraph := preload("res://scripts/world/sidewalk_graph.gd")
+const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
+const PickupItemDefs := preload("res://scripts/items/item_defs.gd")
+
+const CITY_PEDESTRIANS := 110
+const COUNTRY_CIVILIANS := 12
+const CITY_CRIMINALS := 4
+const COUNTRY_CRIMINALS := 6
+const NPC_MIN_START_DISTANCE := 350.0
+const CRIMINAL_MIN_START_DISTANCE := 700.0
+## Carros de trânsito: [cruzamento de destino, direção de chegada].
+const TRAFFIC := [
+	[Vector2i(2, 2), Vector2i(1, 0)], [Vector2i(4, 1), Vector2i(0, 1)],
+	[Vector2i(6, 3), Vector2i(-1, 0)], [Vector2i(8, 2), Vector2i(0, -1)],
+	[Vector2i(10, 4), Vector2i(1, 0)], [Vector2i(3, 6), Vector2i(0, 1)],
+	[Vector2i(5, 8), Vector2i(-1, 0)], [Vector2i(7, 6), Vector2i(0, -1)],
+	[Vector2i(9, 9), Vector2i(1, 0)], [Vector2i(11, 7), Vector2i(0, 1)],
+]
+const TRAFFIC_START_BEFORE_NODE := 120.0
+
+## Itens espalhados: [item ("cash" = dinheiro), quantidade, região]
+const PICKUP_PLAN := [
+	["cash", 40, "Cidade"], ["cash", 25, "Cidade"], ["cash", 60, "Cidade"], ["cash", 30, "Cidade"],
+	["cash", 50, "Cidade"], ["cash", 35, "Cidade"], ["medkit", 1, "Cidade"], ["medkit", 1, "Cidade"],
+	["medkit", 1, "Cidade"], ["medkit", 2, "Cidade"], ["taser", 1, "Cidade"], ["pistol", 1, "Cidade"],
+	["cash", 80, "Campo"], ["cash", 45, "Campo"], ["medkit", 1, "Campo"], ["medkit", 1, "Campo"],
+	["shotgun", 1, "Campo"], ["shield", 1, "Campo"],
+]
+
+var city
+var country
+## Cada região: {id:String, name:String, rect:Rect2}
+var regions: Array[Dictionary] = []
+## Cada NPC: {position, kind, mode ("sidewalk"|"free"), from:Vector4i, to:Vector4i, crime:String}
+var npcs: Array[Dictionary] = []
+## Cada item no chão: {position:Vector2, item:String, amount:int}
+var pickups: Array[Dictionary] = []
+
+
+func _init(p_seed: int = 2024) -> void:
+	city = CityLayout.new(p_seed)
+	var cs := CityLayout.city_size()
+	country = CountryLayout.new(Vector2(cs, 0.0), p_seed + 1)
+	regions = [
+		{"id": "city", "name": "Cidade", "rect": Rect2(0, 0, cs, cs)},
+		{"id": "country", "name": "Campo", "rect": country.region_rect()},
+	]
+	_generate_npcs(p_seed + 7)
+	_generate_pickups(p_seed + 11)
+
+
+static func world_size() -> Vector2:
+	var cs := CityLayout.city_size()
+	return Vector2(cs + CountryLayout.SIZE.x, maxf(cs, CountryLayout.SIZE.y))
+
+
+static func spawn_point() -> Vector2:
+	return CityLayout.spawn_point()
+
+
+## Todos os prédios do mundo (cidade + fazendas).
+func buildings() -> Array[Dictionary]:
+	var all: Array[Dictionary] = []
+	all.append_array(city.buildings)
+	all.append_array(country.buildings)
+	return all
+
+
+func region_at(point: Vector2) -> String:
+	for r in regions:
+		if (r.rect as Rect2).has_point(point):
+			return r.name
+	return ""
+
+
+func region_rect(region_name: String) -> Rect2:
+	for r in regions:
+		if r.name == region_name:
+			return r.rect
+	return Rect2()
+
+
+func building_at(point: Vector2) -> int:
+	for b in buildings():
+		if (b.rect as Rect2).has_point(point):
+			return b.id
+	return -1
+
+
+func vehicle_spawns() -> Array[Dictionary]:
+	var all: Array[Dictionary] = []
+	all.append_array(CityLayout.vehicle_spawns())
+	all.append_array(country.vehicle_spawns())
+	return all
+
+
+## Cada carro de trânsito: {node:Vector2i, dir:Vector2i, position:Vector2, rotation:float}.
+func traffic_spawns() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for t in TRAFFIC:
+		var node: Vector2i = t[0]
+		var dir: Vector2i = t[1]
+		result.append({
+			"node": node,
+			"dir": dir,
+			"position": TrafficRoute.lane_point(node, dir) - Vector2(dir) * TRAFFIC_START_BEFORE_NODE,
+			"rotation": Vector2(dir).angle(),
+		})
+	return result
+
+
+## Ponto livre (fora de prédios, árvores e carros) entre `min_d` e `max_d` de `center`, dentro de `area`.
+## Retorna Vector2.INF se não achar.
+func free_point_near(center: Vector2, min_d: float, max_d: float, rng: RandomNumberGenerator, area: Rect2) -> Vector2:
+	for i in 60:
+		var p := center + Vector2.RIGHT.rotated(rng.randf() * TAU) * rng.randf_range(min_d, max_d)
+		if area.has_point(p) and not is_blocked(p, 30.0):
+			return p
+	return Vector2.INF
+
+
+## True se o ponto está dentro/perto de prédio, árvore ou carro estacionado.
+func is_blocked(p: Vector2, margin: float) -> bool:
+	for b in buildings():
+		if (b.rect as Rect2).grow(margin).has_point(p):
+			return true
+	for t in country.trees:
+		if t.distance_to(p) < margin + 24.0:
+			return true
+	for t in city.trees:
+		if t.distance_to(p) < margin + 24.0:
+			return true
+	for v in vehicle_spawns():
+		if (v.position as Vector2).distance_to(p) < margin + 30.0:
+			return true
+	return false
+
+
+func _generate_npcs(npc_seed: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = npc_seed
+	# Pedestres da cidade andam pelas calçadas.
+	var placed := 0
+	var attempts := 0
+	while placed < CITY_PEDESTRIANS and attempts < 4000:
+		attempts += 1
+		var s := SidewalkGraph.random_sidewalk_point(rng)
+		var p: Vector2 = s.position
+		if p.distance_to(spawn_point()) < NPC_MIN_START_DISTANCE or _near_vehicle(p, 50.0) or _inside_building(p):
+			continue
+		npcs.append({"position": p, "kind": "innocent", "mode": "sidewalk", "from": s.from, "to": s.to, "crime": ""})
+		placed += 1
+	var cs := CityLayout.city_size()
+	var city_area := Rect2(100, 100, cs - 200, cs - 200)
+	var country_area: Rect2 = country.region_rect().grow(-200)
+	_scatter(rng, COUNTRY_CIVILIANS, "innocent", country_area, NPC_MIN_START_DISTANCE, "Campo")
+	_scatter(rng, CITY_CRIMINALS, "criminal", city_area, CRIMINAL_MIN_START_DISTANCE, "Cidade")
+	_scatter(rng, COUNTRY_CRIMINALS, "criminal", country_area, CRIMINAL_MIN_START_DISTANCE, "Campo")
+
+
+func _scatter(rng: RandomNumberGenerator, count: int, kind: String, area: Rect2, min_start_distance: float, region_name: String) -> void:
+	var placed := 0
+	var attempts := 0
+	while placed < count and attempts < 3000:
+		attempts += 1
+		var p := Vector2(rng.randf_range(area.position.x, area.end.x), rng.randf_range(area.position.y, area.end.y))
+		if p.distance_to(spawn_point()) < min_start_distance or is_blocked(p, 24.0) or _near_traffic(p):
+			continue
+		var crime := ""
+		if kind == "criminal":
+			crime = CrimeProfiles.pick(region_name, rng).id
+		npcs.append({"position": p, "kind": kind, "mode": "free", "from": Vector4i.ZERO, "to": Vector4i.ZERO, "crime": crime})
+		placed += 1
+
+
+func _generate_pickups(pickup_seed: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = pickup_seed
+	for plan in PICKUP_PLAN:
+		var region: String = plan[2]
+		for i in 200:
+			var p: Vector2
+			if region == "Cidade":
+				p = SidewalkGraph.random_sidewalk_point(rng).position
+			else:
+				var area: Rect2 = country.region_rect().grow(-200)
+				p = Vector2(rng.randf_range(area.position.x, area.end.x), rng.randf_range(area.position.y, area.end.y))
+			if p.distance_to(spawn_point()) < 150.0 or is_blocked(p, 12.0) or _near_traffic(p):
+				continue
+			pickups.append({"position": p, "item": plan[0], "amount": plan[1]})
+			break
+
+
+func _inside_building(p: Vector2) -> bool:
+	for b in city.buildings:
+		if (b.rect as Rect2).grow(6.0).has_point(p):
+			return true
+	for t in city.trees:
+		if t.distance_to(p) < 34.0:
+			return true
+	return false
+
+
+func _near_vehicle(p: Vector2, d: float) -> bool:
+	for v in vehicle_spawns():
+		if (v.position as Vector2).distance_to(p) < d:
+			return true
+	return false
+
+
+func _near_traffic(p: Vector2) -> bool:
+	for t in traffic_spawns():
+		if (t.position as Vector2).distance_to(p) < 80.0:
+			return true
+	return false
