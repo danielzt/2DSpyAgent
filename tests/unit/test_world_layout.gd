@@ -227,5 +227,6 @@ func test_shops_exist_in_both_regions() -> void:
 			shops += 1
 			if b.id >= 1000:
 				farm += 1
-	assert_eq(shops, 8)
+	# 7 lojas antigas na cidade + mercados e postos (que vendem desde a Fase 3) + o armazém rural
+	assert_true(shops >= 13 and shops <= 16, "%d lojas" % shops)
 	assert_eq(farm, 1)

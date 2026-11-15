@@ -362,25 +362,30 @@ func test_stunned_criminal_does_not_drop_loot() -> void:
 # --- interior de loja ---
 
 func test_shop_interior_layout_keeps_counter_area_clear() -> void:
+	# o interior de loja agora é o modelo "loja" (prateleiras em fileiras, depósito ao fundo)
 	for id in 30:
-		var layout := InteriorLayout.new(id, true)
-		assert_eq(layout.furniture.size(), InteriorLayout.SHOP_FURNITURE_COUNT)
+		var layout := InteriorLayout.new(id, "pharmacy")
+		assert_true(layout.is_shop)
 		for r in layout.furniture:
-			assert_false(r.intersects(InteriorLayout.SHOP_ZONE))
-			assert_false(r.intersects(InteriorLayout.CLEAR_ZONE))
+			assert_false(r.intersects(layout.counter_zone()))
+			assert_false(r.intersects(layout.clear_zone()))
 
 
 func test_counter_zone_is_in_front_of_the_counter_and_reachable() -> void:
-	var zone := InteriorLayout.counter_zone()
-	assert_almost_eq(zone.position.y, InteriorLayout.COUNTER.end.y, 0.001)
-	assert_true(Rect2(Vector2.ZERO, InteriorLayout.SIZE).encloses(zone))
-	assert_true(InteriorLayout.merchant_position().y < InteriorLayout.COUNTER.position.y)
-	assert_false(zone.intersects(InteriorLayout.COUNTER))
+	var layout := InteriorLayout.new(5, "pharmacy")
+	var zone: Rect2 = layout.counter_zone()
+	assert_almost_eq(zone.position.y, layout.counter.end.y, 0.001)
+	assert_true(layout.room_rect().encloses(zone))
+	assert_true(layout.merchant_position().y < layout.counter.position.y)
+	assert_false(zone.intersects(layout.counter))
+	assert_eq(layout.unreachable(), [] as Array[String])
 
 
-func test_regular_interior_is_unchanged() -> void:
-	assert_eq(InteriorLayout.new(3).furniture.size(), InteriorLayout.FURNITURE_COUNT)
-	assert_eq(InteriorLayout.new(3).furniture, InteriorLayout.new(3, false).furniture)
+func test_interior_without_shop_has_no_counter() -> void:
+	var layout := InteriorLayout.new(3, "house")
+	assert_false(layout.is_shop)
+	assert_eq(layout.zone("shop"), {})
+	assert_eq(layout.furniture, InteriorLayout.new(3, "house").furniture)
 
 
 func test_shop_interior_scene_has_counter_and_buy_prompt() -> void:
@@ -392,7 +397,7 @@ func test_shop_interior_scene_has_counter_and_buy_prompt() -> void:
 	var zones := tree.get_nodes_in_group("shop_zones")
 	assert_eq(zones.size(), 1)
 	var p: Node = tree.get_nodes_in_group("players")[0]
-	p.global_position = InteriorLayout.counter_zone().get_center()
+	p.global_position = interior.layout.counter_zone().get_center()
 	await wait_physics_frames(4)
 	assert_true(p.current_prompt().contains("comprar na Farmácia"))
 	assert_false(p.shop_panel.is_open(), "só abre ao apertar E")

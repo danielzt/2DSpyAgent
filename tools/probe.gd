@@ -3,14 +3,18 @@ extends SceneTree
 ## salva capturas em docs/img/ e mede o desempenho (vsync desligado).
 ##
 ## Uso (com janela, sem --headless):
-##   godot --path . -s tools/probe.gd -- <prefixo> [hora]
+##   godot --path . -s tools/probe.gd -- <prefixo> [hora] [sem-interiores]
 ## Gera docs/img/<prefixo>-<ponto>.png e imprime tempo de quadro, chamadas de desenho e nós.
-## `hora` (0-24) só tem efeito quando o relógio do mundo existir.
+## `hora` (0-24) fixa o relógio do mundo (-1 deixa o relógio correr). Também captura um
+## interior de cada modelo em docs/img/<prefixo>-interior-<tipo>.png.
 
 const MAIN_SCENE := "res://scenes/main.tscn"
 const SHOT_SIZE := Vector2i(1280, 720)
 const SETTLE_FRAMES := 40
 const MEASURE_SECONDS := 4.0
+## Um tipo de prédio por modelo de interior.
+const INTERIOR_TYPES := ["armory", "hotel", "restaurant", "bar", "club", "bank", "police", "hospital",
+	"workshop", "cinema", "gym", "office", "house", "warehouse", "hq"]
 
 
 func _initialize() -> void:
@@ -86,12 +90,35 @@ func _run() -> void:
 			int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))])
 	print("media;%.3f;%.0f" % [total_ms / points.size(), 1000.0 * points.size() / total_ms])
 
-	# Interior de uma loja (a troca de cena é adiada: espera alguns quadros).
-	root.get_node("GameState").go_inside(shop.id, shop.exit_spawn, shop.shop)
-	for i in SETTLE_FRAMES:
-		await process_frame
-	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://docs/img/%s-interior.png" % prefix)
+	# Interiores: um prédio de cada modelo (a troca de cena é adiada: espera alguns quadros).
+	# O jogador vai para a primeira zona de serviço, para a captura mostrar o balcão.
+	if args.size() > 2 and args[2] == "sem-interiores":
+		quit()
+		return
+	var state: Node = root.get_node("GameState")
+	for type in INTERIOR_TYPES:
+		var target: Dictionary = {}
+		for b in layout.buildings():
+			if b.get("type", "") == type:
+				target = b
+				break
+		if target.is_empty():
+			continue
+		state.go_inside(target.id, target.exit_spawn, target.shop, target.type, target.name, (target.rect as Rect2).size.x)
+		for i in SETTLE_FRAMES:
+			await process_frame
+		var inside: Node = current_scene
+		var visitor: Node2D = get_nodes_in_group("players")[0]
+		var spot: Vector2 = inside.layout.size / 2.0
+		if not inside.layout.zones.is_empty():
+			spot = (inside.layout.zones[0].rect as Rect2).get_center()
+		for i in SETTLE_FRAMES:
+			visitor.global_position = spot
+			(visitor.get_node("Camera2D") as Camera2D).reset_smoothing()
+			await process_frame
+		await create_timer(0.5).timeout
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://docs/img/%s-interior-%s.png" % [prefix, type])
 	quit()
 
 

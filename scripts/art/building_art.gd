@@ -88,17 +88,8 @@ static func render(b: Dictionary, style: Dictionary) -> RefCounted:
 	var door_h := 8 if is_shop else 10
 	var door_left := door_x + (DOOR_SLOT - DOOR_W) / 2
 
-	for f in floors:
-		var wy := rh + 3 + f * BuildingStyle.FLOOR_TEXELS
-		var ground := f == floors - 1
-		if ground and is_shop:
-			continue
-		var x := 3
-		while x + WINDOW <= w - 3:
-			var blocked := ground and x + WINDOW > door_left - 2 and x < door_left + DOOR_W + 2
-			if not blocked:
-				_window(canvas, x, wy, wall, rng)
-			x += WINDOW_STEP
+	for cell in window_cells(b, style):
+		_window(canvas, cell.x, cell.y, wall, rng)
 
 	if is_shop:
 		_shop_front(canvas, w, h, door_left, style)
@@ -114,9 +105,101 @@ static func render(b: Dictionary, style: Dictionary) -> RefCounted:
 	# Contorno do prédio.
 	canvas.frame(0, 0, w, h, _c("ink"))
 
-	var sign_text := sign_text_for(style, w)
-	if sign_text != "":
-		_sign(canvas, style, sign_text, w, rh, door_left + DOOR_W / 2)
+	var placement := sign_placement(b, style)
+	if not placement.is_empty():
+		_sign(canvas, style, placement.text, placement.rect.position.x, placement.rect.position.y)
+	return canvas
+
+
+## Canto superior esquerdo (em texels, na tela do prédio) de cada janela da fachada.
+static func window_cells(b: Dictionary, style: Dictionary) -> Array[Vector2i]:
+	var rect: Rect2 = b.rect
+	var w := int(rect.size.x / 2.0)
+	var h := int(rect.size.y / 2.0)
+	var floors: int = style.floors
+	var rh := h - BuildingStyle.facade_texels(floors)
+	var is_shop: bool = style.get("front", style.shop != "")
+	var door_x := int(((b.door as Rect2).position.x - rect.position.x) / 2.0)
+	var door_left := door_x + (DOOR_SLOT - DOOR_W) / 2
+	var cells: Array[Vector2i] = []
+	for f in floors:
+		var wy := rh + 3 + f * BuildingStyle.FLOOR_TEXELS
+		var ground := f == floors - 1
+		if ground and is_shop:
+			continue
+		var x := 3
+		while x + WINDOW <= w - 3:
+			var blocked := ground and x + WINDOW > door_left - 2 and x < door_left + DOOR_W + 2
+			if not blocked:
+				cells.append(Vector2i(x, wy))
+			x += WINDOW_STEP
+	return cells
+
+
+## Fração das janelas que ficam acesas à noite neste prédio (40% a 70%, pela seed).
+static func lit_fraction(b: Dictionary) -> float:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = b.id * 2749 + 31
+	return rng.randf_range(0.4, 0.7)
+
+
+## Janelas acesas do prédio: quais células de `window_cells` acendem (padrão pela seed).
+static func lit_window_cells(b: Dictionary, style: Dictionary) -> Array[Vector2i]:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = b.id * 2749 + 32
+	var fraction := lit_fraction(b)
+	var lit: Array[Vector2i] = []
+	for cell in window_cells(b, style):
+		if rng.randf() < fraction:
+			lit.append(cell)
+	return lit
+
+
+## Linha (em texels, na tela do prédio) onde a fachada começa.
+static func facade_top(b: Dictionary, style: Dictionary) -> int:
+	return int((b.rect as Rect2).size.y / 2.0) - BuildingStyle.facade_texels(style.floors)
+
+
+## Tela só com as janelas acesas, para a camada de luz. Cobre apenas a faixa da fachada
+## (largura do prédio x altura da fachada), para gastar pouca memória.
+static func window_lights(b: Dictionary, style: Dictionary) -> RefCounted:
+	var top := facade_top(b, style)
+	var canvas: RefCounted = PixelCanvas.new(int((b.rect as Rect2).size.x / 2.0), BuildingStyle.facade_texels(style.floors))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = b.id * 2749 + 33
+	for cell in lit_window_cells(b, style):
+		canvas.rect(cell.x, cell.y - top + 1, WINDOW, WINDOW - 1, _c("amber") if rng.randf() < 0.6 else _c("cream"))
+		canvas.px(cell.x, cell.y - top + 1, _c("white"))
+	return canvas
+
+
+## Onde fica o letreiro na tela do prédio: {text:String, rect:Rect2i} ou {} se não há letreiro.
+static func sign_placement(b: Dictionary, style: Dictionary) -> Dictionary:
+	var rect: Rect2 = b.rect
+	var w := int(rect.size.x / 2.0)
+	var h := int(rect.size.y / 2.0)
+	var text := sign_text_for(style, w)
+	if text == "":
+		return {}
+	var rh := h - BuildingStyle.facade_texels(style.floors)
+	var door_x := int(((b.door as Rect2).position.x - rect.position.x) / 2.0)
+	var center_x := door_x + (DOOR_SLOT - DOOR_W) / 2 + DOOR_W / 2
+	var size := PixelFont.measure(text)
+	var bw := size.x + 6
+	var bh := size.y + 4
+	var x := clampi(center_x - bw / 2, 2, maxi(w - bw - 2, 2))
+	var y := maxi(rh - bh - 1, 1)
+	return {"text": text, "rect": Rect2i(x, y, bw, bh)}
+
+
+## Tela só com o letreiro (do tamanho dele), para acender à noite na camada de luz.
+static func sign_canvas(b: Dictionary, style: Dictionary) -> RefCounted:
+	var placement := sign_placement(b, style)
+	if placement.is_empty():
+		return null
+	var rect: Rect2i = placement.rect
+	var canvas: RefCounted = PixelCanvas.new(rect.size.x, rect.size.y)
+	_sign(canvas, style, placement.text, 0, 0)
 	return canvas
 
 
@@ -188,13 +271,12 @@ static func _shop_front(canvas: RefCounted, w: int, h: int, door_left: int, styl
 			canvas.px(x, h - 9, tone[0] if (x / 2) % 2 == 0 else _c("light"))
 
 
-## Letreiro sobre o telhado, logo acima da fachada, centrado na porta quando cabe.
-static func _sign(canvas: RefCounted, style: Dictionary, text: String, w: int, rh: int, center_x: int) -> void:
+## Letreiro sobre o telhado, logo acima da fachada, centrado na porta quando cabe
+## (a posição vem de `sign_placement`).
+static func _sign(canvas: RefCounted, style: Dictionary, text: String, x: int, y: int) -> void:
 	var size := PixelFont.measure(text)
 	var bw := size.x + 6
 	var bh := size.y + 4
-	var x := clampi(center_x - bw / 2, 2, maxi(w - bw - 2, 2))
-	var y := maxi(rh - bh - 1, 1)
 	canvas.rect(x, y, bw, bh, _c(style.sign_bg))
 	canvas.frame(x, y, bw, bh, _c("ink"))
 	canvas.frame(x + 1, y + 1, bw - 2, bh - 2, _c(style.sign_fg))

@@ -51,3 +51,31 @@ func test_health_label() -> void:
 	assert_eq(hud.health_text(), "Vida: 7/10")
 	assert_eq(hud._health.anchor_left, 1.0)
 	assert_eq(hud._health.anchor_top, 1.0)
+
+
+# --- setas de alvo ---
+
+func test_target_arrows_point_to_far_targets_only() -> void:
+	hud.set_targets(Vector2.ZERO, [])
+	assert_eq(hud.target_arrow_count(), 0)
+	hud.set_targets(Vector2.ZERO, [Vector2(100, 0)])
+	assert_eq(hud.target_arrow_count(), 0, "alvo já à vista não ganha seta")
+	hud.set_targets(Vector2.ZERO, [Vector2(900, 0), Vector2(0, -2000)])
+	assert_eq(hud.target_arrow_count(), 2)
+	assert_eq(hud._arrow_dirs[0], Vector2.RIGHT)
+	assert_eq(hud._arrow_dirs[1], Vector2.UP)
+
+
+func test_target_arrows_are_limited() -> void:
+	var many: Array = []
+	for i in 10:
+		many.append(Vector2(1000 + i * 100, 500))
+	hud.set_targets(Vector2.ZERO, many)
+	assert_eq(hud.target_arrow_count(), hud.MAX_ARROWS)
+	hud.set_targets(Vector2.ZERO, [])
+	assert_eq(hud.target_arrow_count(), 0)
+
+
+func test_clock_label() -> void:
+	hud.set_clock("21:30")
+	assert_eq(hud.clock_text(), "21:30")

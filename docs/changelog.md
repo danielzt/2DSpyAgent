@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-11-15 (5)
+
+- Fase 6 do redesenho: mapa com neblina no que não foi explorado; pontos marcados por clique no mapa (até 5) com seta e distância no HUD; bairro residencial com lotes de casinhas em duas fileiras e beco; **casa do agente** (a casa mais perto do QG, já marcada, com dormir de graça e baú); hospital, delegacia e casas completos; decoração e gente mínima em todos os interiores; uniformes por papel; 13 móveis novos
+- Ruas estreitas (100 px) nos bairros de casas e **rota pelas ruas** até o ponto marcado, com trilha pontilhada no HUD
+- Pendente da fase: ruas com curvas (6.3), só estudo
+- 848 testes. Detalhes: [redesign-fase-6.md](redesign-fase-6.md)
+
+## 2026-11-15 (4)
+
+- Fase 5 do redesenho: efeitos (clarão e cápsula do tiro, faíscas, poeira, marcas de pneu, tremor de câmera desligável), transição em íris ao entrar e sair de prédios (autoload `Transition`), mapa de tela cheia (M) e minimapa no HUD com ícone por tipo de prédio visitado ou visto, tela de título com a cidade à noite e tela de pausa (Esc) com mapa e controles
+- Teste de regras de arte: nenhum `ColorRect` nem cor fora da paleta nos scripts e cenas
+- Runner de testes agora mostra só os problemas por padrão (`-- verbose` lista tudo)
+- 781 testes (97 novos). Detalhes: [redesign-fase-5.md](redesign-fase-5.md)
+- Roteiro: nova **Fase 6** (casas e bairro residencial, ruas estreitas e curvas, casa do agente, mapa com pontos e direção no HUD, interiores completos como hospital e delegacia)
+
+## 2026-11-15 (3)
+
+- Dia do mundo reduzido de 24 para 12 min reais (`DayCycle.DAY_SECONDS = 720`; 1 hora de jogo = 30 s). Testes do relógio ajustados
+
+## 2026-11-15 (2)
+
+- Fase 3 do redesenho: interior paramétrico por tipo de prédio (15 modelos, 3 tamanhos, cômodos, paredes internas, móveis reconhecíveis, NPCs com papel), validado por preenchimento em grade
+- 13 serviços com efeito real (dormir, refeição, hospital, entregar presos, banco, rumores, informante, briefing, pintar o carro, cinema, academia); mercado e posto passam a vender comida (`snack`)
+- Mecânicas da D7 (assumidas como "sim"): perder metade do dinheiro ao ser derrotado e acordar no hospital, presos a entregar, item de comida e seta de alvo no HUD; a vida passa a ser guardada entre cenas
+- Fase 4: relógio do mundo (autoload `WorldClock`, 12 min por dia), hora no HUD, tinta ambiente com piso de luminosidade, camada de luz aditiva (postes, janelas, letreiros, vitrines, faróis, halo do jogador), interiores sempre claros com janelas que mostram o céu
+- Prédios fecham fora do horário ("Fechado — abre às 09:00"); de noite há menos pedestres (que vão para casa) e menos carros; crimes mais frequentes e com pesos noturnos; assalto a banco só com o banco aberto
+- 684 testes (107 novos); testes atualizados por mudança intencional estão em [redesign-fase-3.md](redesign-fase-3.md)
+- Desempenho: de dia +9% sobre a linha de base; de noite +27%, acima da meta de 20% (detalhes em [redesign-fase-4.md](redesign-fase-4.md))
+- Detalhes: [redesign-fase-3.md](redesign-fase-3.md) e [redesign-fase-4.md](redesign-fase-4.md)
+
 ## 2026-11-15
 
 - Testes: suíte passou de ~182 s para ~23 s usando `--fixed-fps 60` (sem sincronizar com o relógio); runner avisa testes acima de 500 ms

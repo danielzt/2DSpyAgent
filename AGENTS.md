@@ -17,7 +17,7 @@ Executável do Godot (máquina do autor):
 project.godot        configuração do projeto
 scenes/              cenas (.tscn)
 scripts/             scripts (.gd), espelhando a organização de scenes/
-  autoload/          singletons globais (InputSetup, GameState, Score)
+  autoload/          singletons globais (InputSetup, GameState, Score, WorldClock, Transition)
   world/             layouts (lógica) e world.gd (nós); interaction/, vehicle/, ui/, interior/
   art/               fábrica de arte: paleta, sprites e tiles gerados por código, cache de texturas
 tests/               runner próprio + unit/test_*.gd

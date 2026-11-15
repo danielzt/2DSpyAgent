@@ -6,6 +6,17 @@ const Palette := preload("res://scripts/art/palette.gd")
 const PixelCanvas := preload("res://scripts/art/pixel_canvas.gd")
 
 const TEXT_SPRITES := {
+	"target_arrow": [
+		"....k....",
+		"....kk...",
+		"kkkkkCk..",
+		"kCCCCCCk.",
+		"kCCCCCCCk",
+		"kCCCCCCk.",
+		"kkkkkCk..",
+		"....kk...",
+		"....k....",
+	],
 	"lamp": [
 		".kkk.",
 		"kyyyk",

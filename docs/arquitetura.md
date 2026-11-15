@@ -29,7 +29,7 @@ scenes/            cenas
   combat/          projétil
 scripts/
   main.gd          instancia o jogador no mundo
-  autoload/        InputSetup, GameState, Score, DisplaySetup (singletons)
+  autoload/        InputSetup, GameState, Score, DisplaySetup, WorldClock, Transition (singletons)
   player/          player.gd, player_profile.gd (ficha e atributos)
   interaction/     interact_zone.gd (zona "Pressione E")
   vehicle/         car.gd, traffic_route.gd
@@ -40,11 +40,12 @@ scripts/
   items/           item_defs.gd, inventory.gd, pickup.gd, shop_defs.gd
   world/           world.gd, ground_chunk.gd (nós); city/country/world_layout.gd, sidewalk_graph.gd,
                    street_props_layout.gd, building_style.gd, district_layout.gd (bairros),
-                   building_defs.gd (tipos de prédio), name_generator.gd (lógica); door.gd
+                   building_defs.gd (tipos de prédio), name_generator.gd, day_cycle.gd (lógica);
+                   door.gd, light_layer.gd e light_chunk.gd (luzes)
   art/             fábrica de arte: palette, pixel_canvas, pixel_font, tile_factory, character_sprites,
                    car_sprites, prop_sprites, building_art, sprite_factory
   crime/           crime_profiles.gd, incident_manager.gd
-  interior/        interior.gd (nós), interior_layout.gd (lógica)
+  interior/        interior.gd (nós), interior_layout.gd (planta por tipo), services.gd (serviços)
 tests/             run_tests.gd, base_test.gd, unit/test_*.gd
 tools/             probe.gd (capturas e desempenho), sprite_sheet.gd (folha de sprites)
 docs/              esta documentação
@@ -98,6 +99,15 @@ o runner chama antes de cada teste).
 - `CrimeProfiles` guarda os tipos de crime por região; `IncidentManager` (filho de `World`) cria crimes perto do jogador
   conforme a região e o bairro, em frente a um prédio compatível com o tipo do crime, e paga o bônus quando são resolvidos.
 - Lojas: `ShopDefs` (lógica pura de compra e venda) + `ShopPanel` (UI) + balcão no interior (`GameState.building_shop`).
+
+## Interiores, serviços e dia e noite
+
+- `InteriorLayout.new(id, tipo, largura_da_fachada)`: planta por tipo (15 modelos), móveis, vagas de NPC e zonas
+  de serviço; `unreachable()` valida os caminhos. `interior.gd` só monta os nós.
+- `Services.use(id, ator, mundo)`: lógica pura de cada serviço; a zona do interior só chama quando o jogador aperta E.
+- `DayCycle` (lógica pura) + `WorldClock` (autoload, só acumula o tempo). Tudo que depende da hora (cor ambiente,
+  luzes, horário das portas, população, crimes) pergunta ao `DayCycle`.
+- Luzes: `CanvasModulate` tinge o mundo; as luzes ficam em uma `CanvasLayer` própria (`LightLayer`) com brilho aditivo.
 
 ## Mundo
 

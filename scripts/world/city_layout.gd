@@ -25,6 +25,18 @@ const EXIT_SPAWN_OFFSET := 40.0  # distância abaixo da porta onde o jogador rea
 const MIN_BUILDING := 120.0
 const PARK_OFFSET := ASPHALT / 2.0 - CURB_PARKING   # rua comum: carro rente ao meio-fio (54)
 ## Quarteirões com um carro da agência estacionado na rua da esquerda (nenhum em avenida).
+## Casas do bairro residencial: chance de o lote ser só de casinhas, largura de cada uma,
+## vão entre elas e margens do lote (a do lado do beco é maior, para o jogador passar).
+const HOUSE_LOT_CHANCE := 0.6
+const HOUSE_WIDTH := Vector2(96.0, 128.0)
+const HOUSE_GAP := 28.0
+const HOUSE_SIDE := 12.0
+const HOUSE_OPEN_SIDE := 44.0
+## Rua estreita (asfalto) e a fração mínima de vizinhos residenciais que a faz estreita.
+const NARROW_ASPHALT := 100.0
+const NARROW_SHARE := 0.25
+static var narrow_lines := {}
+static var _narrow_seed := -1
 const PARKED_CELLS := [Vector2i(1, 0), Vector2i(3, 2), Vector2i(5, 1), Vector2i(2, 4), Vector2i(7, 5), Vector2i(4, 3)]
 
 var world_seed: int
@@ -48,6 +60,8 @@ func _init(p_seed: int = 2024) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = p_seed
 	districts = DistrictLayout.new(p_seed)
+	_narrow_seed = p_seed
+	narrow_lines = narrow_lines_for(districts)
 	street_names = NameGenerator.street_names(p_seed)
 	for cx in CELLS:
 		for cy in CELLS:
@@ -68,9 +82,41 @@ static func is_avenue(line: int) -> bool:
 	return line == AVENUE_LINE
 
 
-## Largura do asfalto da linha de rua `line` (0..CELLS), igual nos dois eixos.
+## Largura do asfalto da linha de rua `line` (0..CELLS), igual nos dois eixos: avenida larga,
+## rua comum e rua estreita (as que cortam o bairro residencial, ver `use_seed`).
 static func asphalt(line: int) -> float:
-	return AVENUE_ASPHALT if is_avenue(line) else ASPHALT
+	if is_avenue(line):
+		return AVENUE_ASPHALT
+	return NARROW_ASPHALT if narrow_lines.has(line) else ASPHALT
+
+
+## Linhas de rua estreitas da cidade de `p_seed`: as que têm ao menos NARROW_SHARE dos quarteirões
+## vizinhos (nos dois eixos) no bairro residencial. É estado estático porque a largura é
+## consultada de vários lugares sem o layout à mão; cada `CityLayout.new` o atualiza para a
+## sua seed, e `use_seed` o ajusta sem gerar a cidade (o runner de testes o usa entre testes).
+static func use_seed(p_seed: int) -> void:
+	if _narrow_seed == p_seed:
+		return
+	_narrow_seed = p_seed
+	narrow_lines = narrow_lines_for(DistrictLayout.new(p_seed))
+
+
+static func narrow_lines_for(districts) -> Dictionary:
+	var result := {}
+	for line in range(1, CELLS):
+		if is_avenue(line):
+			continue
+		var total := 0
+		var residential := 0
+		for other in CELLS:
+			for side in [line - 1, line]:
+				for cell in [Vector2i(side, other), Vector2i(other, side)]:
+					total += 1
+					if districts.district_of_cell(cell) == "residential":
+						residential += 1
+		if float(residential) / float(total) >= NARROW_SHARE:
+			result[line] = true
+	return result
 
 
 ## Largura do corredor (asfalto + duas calçadas) da linha `line`.
@@ -150,6 +196,9 @@ func _fill_lot(lot: Rect2, rng: RandomNumberGenerator, district: String) -> void
 	if rng.randf() < params.park:
 		_make_park(lot, rng)
 		return
+	if district == "residential" and rng.randf() < HOUSE_LOT_CHANCE:
+		_fill_houses(lot, rng, district)
+		return
 	var roll := rng.randf() * float(shapes[0] + shapes[1] + shapes[2])
 	if roll < shapes[0]:
 		var left := rng.randf_range(0.0, 60.0)
@@ -184,6 +233,26 @@ func _fill_lot(lot: Rect2, rng: RandomNumberGenerator, district: String) -> void
 				trees.append(Vector2(
 					rng.randf_range(yard.position.x + 35.0, yard.end.x - 35.0),
 					rng.randf_range(yard.position.y + 35.0, yard.end.y - 35.0)))
+
+
+## Lote residencial de casas pequenas em duas fileiras, com um beco no meio: as da fileira de
+## cima viram a porta para o beco; as de baixo, para a rua. O beco se abre por um dos lados do
+## lote (a margem livre ali deixa o jogador entrar).
+func _fill_houses(lot: Rect2, rng: RandomNumberGenerator, district: String) -> void:
+	var open_left := rng.randf() < 0.5
+	var rows := [[0.04, 0.28], [0.58, 0.37]]
+	for row in rows:
+		var y: float = lot.position.y + lot.size.y * row[0]
+		var depth: float = lot.size.y * row[1]
+		var x := lot.position.x + (HOUSE_OPEN_SIDE if open_left else HOUSE_SIDE)
+		var limit := lot.end.x - (HOUSE_SIDE if open_left else HOUSE_OPEN_SIDE)
+		while true:
+			var w := rng.randf_range(HOUSE_WIDTH.x, HOUSE_WIDTH.y)
+			if x + w > limit:
+				break
+			_add_building(Rect2(x, y, w, depth), rng, district)
+			buildings[buildings.size() - 1]["forced"] = "house"
+			x += w + HOUSE_GAP
 
 
 func _make_park(lot: Rect2, rng: RandomNumberGenerator) -> void:

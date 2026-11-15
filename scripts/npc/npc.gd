@@ -4,6 +4,7 @@ extends CharacterBody2D
 ## Matar um NPC como jogador altera a pontuação (inocente tira pontos, criminoso dá).
 
 const BulletScript := preload("res://scripts/combat/bullet.gd")
+const Fx := preload("res://scripts/effects/fx.gd")
 const NpcIdentity := preload("res://scripts/npc/npc_identity.gd")
 const SidewalkGraph := preload("res://scripts/world/sidewalk_graph.gd")
 const PickupScript := preload("res://scripts/items/pickup.gd")
@@ -12,6 +13,7 @@ const CharacterSprites := preload("res://scripts/art/character_sprites.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 
 signal died(kind: String)
+signal went_home
 
 const WALK_SPEED := 60.0
 const FLEE_SPEED := 130.0
@@ -34,6 +36,9 @@ const LOOT_WEAPON_CHANCE := 0.08
 const ACTOR_Z := 3
 const WALK_FRAME_TIME := 0.18
 const MOVING_SPEED := 5.0
+## Indo para casa (à noite): confere de tempos em tempos se chegou a uma porta de moradia.
+const HOME_CHECK_TIME := 0.4
+const HOME_REACH := 56.0
 
 @export var kind := "innocent"
 @export var max_health := 3
@@ -43,6 +48,8 @@ const MOVING_SPEED := 5.0
 @export var crime := ""
 ## Civis da cidade andam pelas calçadas (grafo de calçadas); os demais vagam livremente.
 @export var use_sidewalks := false
+## Fica parado no lugar (funcionários e clientes dos interiores). Ainda foge se for atacado.
+@export var stationary := false
 
 var health: float = 0.0
 var dead := false
@@ -53,6 +60,10 @@ var identity: Dictionary = {}
 ## Trabalho e moradia (Population.context_for); vazio para NPC avulso.
 var context: Dictionary = {}
 var display_name := ""
+## À noite parte dos pedestres vai para casa: some ao passar por uma porta de moradia.
+var going_home := false
+var _home_doors := PackedVector2Array()
+var _home_timer := 0.0
 var rng := RandomNumberGenerator.new()
 
 var _wander_dir := Vector2.ZERO
@@ -68,6 +79,8 @@ var _flee_threat := Vector2.ZERO
 var _stun_scored := false
 var _sprite: Sprite2D
 var _look := {}
+## Papel que define o uniforme (médico de branco, policial de azul...). Vazio = roupa comum.
+var uniform_role := ""
 var _sprite_direction := "down"
 var _anim_time := 0.0
 var _shown_key := ""
@@ -84,15 +97,37 @@ func _ready() -> void:
 	identity = NpcIdentity.generate(ai_seed if ai_seed != 0 else rng.randi(), kind, context)
 	display_name = identity.name
 	z_index = ACTOR_Z
-	_look = CharacterSprites.look_for(kind, identity.seed)
+	_look = CharacterSprites.look_for(kind, identity.seed, uniform_role)
 	_sprite = SpriteFactory.make_sprite(null, Vector2(CharacterSprites.PIVOT))
 	add_child(_sprite)
 	_update_sprite(0.0)
 	_add_talk_zone()
 
 
+## Manda o NPC para casa: ele segue o passeio e entra na primeira moradia por onde passar.
+func go_home(doors: PackedVector2Array) -> void:
+	going_home = true
+	_home_doors = doors
+
+
+## True (e o NPC some) se está em frente a uma porta de moradia.
+func _arrive_home() -> bool:
+	for door in _home_doors:
+		if door.distance_squared_to(global_position) < HOME_REACH * HOME_REACH:
+			went_home.emit()
+			queue_free()
+			return true
+	return false
+
+
 func _physics_process(delta: float) -> void:
 	_fire_cooldown -= delta
+	if going_home and not dead:
+		_home_timer -= delta
+		if _home_timer <= 0.0:
+			_home_timer = HOME_CHECK_TIME
+			if _arrive_home():
+				return
 	if _stun_timer > 0.0:
 		_stun_timer -= delta
 		stunned = _stun_timer > 0.0
@@ -144,6 +179,9 @@ func stun(duration: float, source: Node = null) -> void:
 		Score.register_stun(kind)
 		if kind == "criminal" and source.has_method("gain_xp"):
 			source.gain_xp(XP_CRIMINAL_STUN)
+		# Criminoso atordoado vira preso a entregar na delegacia.
+		if kind == "criminal" and source.get("profile") != null:
+			source.profile.prisoners += 1
 
 
 ## Só é possível conversar com civis (criminosos são hostis por enquanto).
@@ -241,6 +279,9 @@ func _drop_loot() -> void:
 
 
 func _wander(delta: float) -> void:
+	if stationary:
+		velocity = Vector2.ZERO
+		return
 	if use_sidewalks:
 		_walk_sidewalk(delta, WALK_SPEED)
 		return
@@ -263,6 +304,7 @@ func _attack(target: Node2D) -> void:
 		_fire_cooldown = FIRE_INTERVAL
 		var aim := dir.rotated(rng.randf_range(-AIM_SPREAD, AIM_SPREAD))
 		BulletScript.fire(get_parent(), global_position + aim * BULLET_OFFSET, aim, self, "players")
+		Fx.shot(get_parent(), global_position, aim, false)
 
 
 func _nearest_player_in_range() -> Node2D:

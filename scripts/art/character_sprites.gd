@@ -134,8 +134,43 @@ static func criminal_look(p_seed: int) -> Dictionary:
 	}
 
 
-static func look_for(kind: String, p_seed: int) -> Dictionary:
-	return criminal_look(p_seed) if kind == "criminal" else civilian_look(p_seed)
+static func look_for(kind: String, p_seed: int, role := "") -> Dictionary:
+	var base := criminal_look(p_seed) if kind == "criminal" else civilian_look(p_seed)
+	return dressed(base, role) if kind != "criminal" else base
+
+
+## Uniformes por papel (Fase 6): quem trabalha ou está internado se veste conforme o lugar.
+## Cada entrada: palavras do papel -> trocas na aparência.
+const UNIFORMS := [
+	[["médic", "enfermeir", "enfermagem", "plantonista", "farmacêutic", "técnic", "atendente de saúde"],
+		{"shirt": "white", "shirt2": "light", "pants": "white", "cap": ""}],
+	[["paciente"], {"shirt": "ice", "shirt2": "sky", "pants": "ice", "cap": ""}],
+	[["policial", "delegad"], {"shirt": "blue", "shirt2": "navy", "pants": "navy", "cap": "navy"}],
+	[["detetive"], {"shirt": "sand", "shirt2": "brown", "pants": "brown", "cap": ""}],
+	[["preso"], {"shirt": "orange", "shirt2": "red", "pants": "orange", "cap": ""}],
+	[["chef", "cozinh", "ajudante de cozinha"], {"shirt": "white", "shirt2": "light", "pants": "slate", "cap": "white"}],
+	[["segurança"], {"shirt": "ink", "shirt2": "shadow", "pants": "ink", "cap": "ink"}],
+	[["caixa", "gerente", "maître", "concierge"], {"shirt": "white", "shirt2": "light", "pants": "ink", "cap": ""}],
+	[["mecânic"], {"shirt": "blue", "shirt2": "navy", "pants": "blue", "cap": "blue"}],
+]
+
+
+## Troca de roupa de quem tem `role` (vazio ou desconhecido não muda nada).
+static func dressed(look: Dictionary, role: String) -> Dictionary:
+	var lowered := role.to_lower()
+	for entry in UNIFORMS:
+		for word in entry[0]:
+			if lowered.contains(word):
+				var result := look.duplicate()
+				for key in entry[1]:
+					result[key] = entry[1][key]
+				return result
+	return look
+
+
+## Há uniforme para o papel?
+static func has_uniform(role: String) -> bool:
+	return dressed({"shirt": "x"}, role).get("shirt", "x") != "x"
 
 
 ## Chave de cache: muda só quando a aparência muda.

@@ -8,8 +8,12 @@ const DialogScript := preload("res://scripts/ui/dialog_card.gd")
 const InventoryPanelScript := preload("res://scripts/ui/inventory_panel.gd")
 const CharacterSheetScript := preload("res://scripts/ui/character_sheet.gd")
 const ShopPanelScript := preload("res://scripts/ui/shop_panel.gd")
+const MapPanelScript := preload("res://scripts/ui/map_panel.gd")
+const PausePanelScript := preload("res://scripts/ui/pause_panel.gd")
+const RoutePlanner := preload("res://scripts/world/route_planner.gd")
 const InputSetupScript := preload("res://scripts/autoload/input_setup.gd")
 const BulletScript := preload("res://scripts/combat/bullet.gd")
+const Fx := preload("res://scripts/effects/fx.gd")
 const ShopDefsScript := preload("res://scripts/items/shop_defs.gd")
 const ItemDefsScript := preload("res://scripts/items/item_defs.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
@@ -29,10 +33,13 @@ const ACTOR_Z := 3
 const WALK_FRAME_TIME := 0.14      # segundos por quadro de passo
 const MOVING_SPEED := 5.0
 const AIM_DISTANCE := 16.0
+## Tremor de câmera (Fase 5): deslocamento em px e duração.
+const SHAKE_TIME := 0.15
+const SHAKE_SHOTGUN := 3.0
+const SHAKE_DAMAGE := 3.0
 
 @export var player_index: int = 1
 @export var speed: float = 220.0
-@export var color: Color = Color("e8b339")
 
 var interactable: Node = null
 var vehicle: Node = null
@@ -41,11 +48,17 @@ var talking_with: Node = null
 var region_name := ""
 ## Bairro e rua onde o jogador está (ou o nome do prédio, dentro de um interior).
 var place_name := ""
+## Alvos apontados pelas setas do HUD (posições no mundo): pista de crime, criminosos revelados.
+var targets: Array = []
+## Dinheiro perdido na última derrota (para o aviso).
+var last_defeat_loss := 0
 var hud
 var dialog
 var inventory_panel
 var character_sheet
 var shop_panel
+var map_panel
+var pause_panel
 var profile: RefCounted
 var inventory: RefCounted
 var health: float = MAX_HEALTH
@@ -64,6 +77,9 @@ var _aim_sprite: Sprite2D
 var _look := {}
 var _anim_time := 0.0
 var _shown_key := ""
+var _shake_time := 0.0
+var _shake_amount := 0.0
+var _shake_rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -78,7 +94,8 @@ func _ready() -> void:
 	respawn_position = global_position
 	profile = GameState.profile_for(player_index)
 	inventory = GameState.inventory_for(player_index)
-	health = max_health()
+	# A vida é guardada na ficha entre trocas de cena (entrar em um prédio não cura).
+	health = max_health() if profile.health <= 0.0 else minf(profile.health, max_health())
 	_last_max_health = max_health()
 	profile.changed.connect(_on_profile_changed)
 	hud = HudScript.new()
@@ -92,9 +109,17 @@ func _ready() -> void:
 	add_child(character_sheet)
 	shop_panel = ShopPanelScript.new()
 	add_child(shop_panel)
+	map_panel = MapPanelScript.new()
+	map_panel.player_index = player_index
+	add_child(map_panel)
+	pause_panel = PausePanelScript.new()
+	pause_panel.player_index = player_index
+	add_child(pause_panel)
 
 
 func _exit_tree() -> void:
+	if profile != null:
+		profile.health = health
 	if profile != null and profile.changed.is_connected(_on_profile_changed):
 		profile.changed.disconnect(_on_profile_changed)
 
@@ -104,8 +129,34 @@ func _input(event: InputEvent) -> void:
 		mouse_active = true
 
 
+## Pausa (Esc): os painéis abertos tratam o Esc antes e o consomem, então só chega aqui sem painel.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("p%d_pause" % player_index) and not event.is_echo():
+		pause()
+		get_viewport().set_input_as_handled()
+
+
+## Abre a tela de pausa (congela o jogo).
+func pause() -> void:
+	if pause_panel.is_open() or panels_open() or Transition.busy:
+		return
+	var where := global_position
+	if GameState.is_inside():
+		where = GameState.return_position  # dentro de prédios, o mapa mostra a porta
+	pause_panel.open(GameState.world_layout(), profile.known_buildings, where, player_index, profile)
+
+
 func _process(delta: float) -> void:
 	_update_sprite(delta)
+	_update_shake(delta)
+	profile.tick(delta)
+	hud.set_clock(WorldClock.text())
+	hud.set_targets(global_position, targets)
+	_follow_waypoint()
+	if GameState.is_inside():
+		hud.hide_minimap()
+	else:
+		hud.set_minimap(GameState.world_layout(), profile.known_buildings, global_position, targets, delta, profile)
 	hud.set_prompt(current_prompt())
 	hud.set_region(region_name)
 	hud.set_place(place_name)
@@ -142,6 +193,8 @@ func _physics_process(delta: float) -> void:
 		toggle_inventory()
 	if Input.is_action_just_pressed(prefix + "character"):
 		toggle_character()
+	if Input.is_action_just_pressed(prefix + "map"):
+		toggle_map()
 	if panels_open():
 		velocity = Vector2.ZERO
 		return
@@ -243,7 +296,7 @@ func _on_dialog_closed() -> void:
 # --- painéis (I / C) ---
 
 func panels_open() -> bool:
-	return inventory_panel.is_open() or character_sheet.is_open() or shop_panel.is_open()
+	return inventory_panel.is_open() or character_sheet.is_open() or shop_panel.is_open() or map_panel.is_open()
 
 
 func toggle_inventory() -> void:
@@ -252,6 +305,7 @@ func toggle_inventory() -> void:
 		return
 	character_sheet.close()
 	shop_panel.close()
+	map_panel.close()
 	inventory_panel.open(inventory)
 
 
@@ -261,7 +315,61 @@ func toggle_character() -> void:
 		return
 	inventory_panel.close()
 	shop_panel.close()
+	map_panel.close()
 	character_sheet.open(profile)
+
+
+## Chegou a este alcance (px) do ponto marcado: o ponto some e o HUD avisa.
+const WAYPOINT_ARRIVE := 110.0
+## A rota é refeita quando o ponto muda ou o jogador anda tanto (px) desde o último cálculo.
+const ROUTE_REPLAN_DISTANCE := 90.0
+## Espaço entre os pontos da trilha da rota (px do mundo).
+const ROUTE_DOT_SPACING := 36.0
+
+var _route_for := Vector2(-1.0e9, -1.0e9)
+var _route_from := Vector2(-1.0e9, -1.0e9)
+
+
+## O HUD indica o ponto ativo do mapa (só na rua); chegando perto, ele é desfeito.
+func _follow_waypoint() -> void:
+	var waypoint: Dictionary = profile.active_waypoint_data()
+	if GameState.is_inside() or waypoint.is_empty():
+		hud.set_waypoint(global_position, {})
+		hud.set_route([] as Array[Vector2])
+		_route_for = Vector2(-1.0e9, -1.0e9)
+		return
+	if global_position.distance_to(waypoint.pos) <= WAYPOINT_ARRIVE:
+		notify("Chegou a %s" % waypoint.name, 4.0)
+		profile.remove_waypoint(profile.active_waypoint)
+		hud.set_waypoint(global_position, {})
+		hud.set_route([] as Array[Vector2])
+		_route_for = Vector2(-1.0e9, -1.0e9)
+		return
+	hud.set_waypoint(global_position, waypoint)
+	_update_route(waypoint.pos)
+
+
+## Refaz a trilha da rota pelas ruas quando preciso (ponto novo ou o jogador saiu do caminho).
+func _update_route(target: Vector2) -> void:
+	if target == _route_for and global_position.distance_to(_route_from) < ROUTE_REPLAN_DISTANCE:
+		return
+	_route_for = target
+	_route_from = global_position
+	hud.set_route(RoutePlanner.dots(RoutePlanner.plan(global_position, target), ROUTE_DOT_SPACING))
+
+
+## Abre ou fecha o mapa de tela cheia (só na rua: dentro de prédios não há mapa).
+func toggle_map() -> void:
+	if map_panel.is_open():
+		map_panel.close()
+		return
+	if GameState.is_inside():
+		notify("O mapa só funciona na rua", 2.0)
+		return
+	inventory_panel.close()
+	character_sheet.close()
+	shop_panel.close()
+	map_panel.open(GameState.world_layout(), profile.known_buildings, global_position, targets, profile)
 
 
 # --- loja, itens no chão, avisos ---
@@ -373,6 +481,9 @@ func fire_hand(hand: String) -> Node:
 				"npcs", damage, def.effect, def.lifetime)
 		if first == null:
 			first = bullet
+	Fx.shot(get_parent(), global_position, _facing, true)
+	if pellets > 1:
+		shake(SHAKE_SHOTGUN)  # escopeta dá coice
 	return first
 
 
@@ -398,6 +509,7 @@ func take_damage(amount: float, source: Node = null) -> void:
 		blocked.emit()
 		return
 	health -= amount
+	shake(SHAKE_DAMAGE)
 	if health <= 0.0:
 		_die()
 
@@ -415,6 +527,9 @@ func _die() -> void:
 		exit_vehicle()
 	if talking_with != null:
 		end_conversation()
+	# Derrota: perde parte do dinheiro em mãos (o do banco fica) e volta ao ponto de retorno
+	# (o mundo o troca pela porta do hospital).
+	last_defeat_loss = profile.lose_money_on_defeat()
 	health = max_health()
 	global_position = respawn_position
 	velocity = Vector2.ZERO
@@ -464,6 +579,35 @@ func current_prompt() -> String:
 		lines.append("Pressione %s para falar com %s" % [
 			InputSetupScript.key_label("p%d_talk" % player_index), talk_target.display_name])
 	return "\n".join(lines)
+
+
+## Sacode a câmera por um instante (tiro de escopeta, batida, dano). `amount` em px (2 a 4).
+## Desligado se GameState.screen_shake for falso.
+func shake(amount: float, seconds := SHAKE_TIME) -> void:
+	if not GameState.screen_shake:
+		return
+	if amount >= _shake_amount or _shake_time <= 0.0:
+		_shake_amount = amount
+	_shake_time = maxf(_shake_time, seconds)
+
+
+## Tremor em andamento (para testes e para a UI).
+func is_shaking() -> bool:
+	return _shake_time > 0.0
+
+
+func _update_shake(delta: float) -> void:
+	var cam: Camera2D = $Camera2D
+	if _shake_time <= 0.0:
+		if cam.offset != Vector2.ZERO:
+			cam.offset = Vector2.ZERO
+		return
+	_shake_time -= delta
+	if _shake_time <= 0.0:
+		_shake_amount = 0.0
+		cam.offset = Vector2.ZERO
+		return
+	cam.offset = Vector2(_shake_rng.randf_range(-1.0, 1.0), _shake_rng.randf_range(-1.0, 1.0)) * _shake_amount
 
 
 func set_camera_limits(bounds: Rect2) -> void:

@@ -28,6 +28,16 @@ const PARTS := {
 }
 
 
+## Cores que a oficina oferece para os carros da agência (a primeira é a de fábrica).
+const AGENT_PAINTS := ["black", "navy", "wine", "white", "purple", "teal"]
+const PAINT_NAMES := {"black": "preto", "navy": "azul-marinho", "wine": "vinho", "white": "branco",
+	"purple": "roxo", "teal": "turquesa"}
+
+
+static func paint_name(paint: String) -> String:
+	return PAINT_NAMES.get(paint, paint)
+
+
 ## Modelo e cor determinísticos para o carro de índice `index`.
 static func variant_for(index: int) -> Dictionary:
 	var models := ["sedan", "hatch", "pickup", "van", "sedan", "hatch", "taxi"]
@@ -42,7 +52,8 @@ static func tone_of(model: String, tone: String) -> String:
 		"police":
 			return "white"
 		"agent":
-			return "black"
+			# preto de fábrica; só as cores da oficina trocam a pintura
+			return tone if AGENT_PAINTS.has(tone) else "black"
 	return tone
 
 

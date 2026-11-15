@@ -409,3 +409,63 @@ func test_country_crimes_still_use_a_free_point() -> void:
 	assert_eq(inc.place, "")
 	assert_eq(inc.region, "Campo")
 	assert_eq(CrimeProfiles.region_of(inc.type.id), "Campo")
+
+
+# --- crimes à noite (Fase 4) ---
+
+func test_crimes_come_faster_at_night_in_the_city() -> void:
+	await _setup(Vector2(3360, 3360))
+	manager.enabled = false
+	WorldClock.paused = true
+	WorldClock.set_hour(12.0)
+	manager.rng.seed = 9
+	var by_day: float = manager._next_interval()
+	WorldClock.set_hour(23.0)
+	manager.rng.seed = 9
+	var by_night: float = manager._next_interval()
+	assert_almost_eq(by_night, by_day * 0.64, 0.01)
+
+
+func test_country_interval_does_not_change_at_night() -> void:
+	await _setup(Vector2(9500, 2000))
+	manager.enabled = false
+	WorldClock.paused = true
+	WorldClock.set_hour(12.0)
+	manager.rng.seed = 9
+	var by_day: float = manager._next_interval()
+	WorldClock.set_hour(23.0)
+	manager.rng.seed = 9
+	assert_almost_eq(manager._next_interval(), by_day, 0.001)
+
+
+func test_night_spawns_use_the_night_weights() -> void:
+	await _setup(Vector2(3360, 3360))
+	manager.enabled = false
+	WorldClock.paused = true
+	WorldClock.set_hour(23.0)
+	var seen := {}
+	for i in 40:
+		manager.incidents.clear()
+		if manager.try_spawn():
+			seen[manager.incidents[0].type.id] = true
+	assert_false(seen.has("bank_heist"), "assalto a banco não acontece à noite")
+	assert_gt(seen.size(), 1.0)
+
+
+func test_bank_heist_needs_an_open_bank() -> void:
+	await _setup(Vector2(3360, 3360))
+	manager.enabled = false
+	WorldClock.paused = true
+	var heist := CrimeProfiles.find_type("bank_heist")
+	assert_true(heist.open_only)
+	WorldClock.set_hour(18.0)
+	assert_eq(manager.pick_place(heist, player.global_position), {}, "banco fechado às 18:00")
+	WorldClock.set_hour(10.0)
+	var found := false
+	for i in 10:
+		var place: Dictionary = manager.pick_place(heist, player.global_position)
+		if not place.is_empty():
+			found = true
+			assert_eq(place.type, "bank")
+	var banks: Array = layout.buildings_of(["bank"], player.global_position, manager.MIN_DISTANCE, manager.MAX_PLACE_DISTANCE)
+	assert_eq(found, not banks.is_empty())

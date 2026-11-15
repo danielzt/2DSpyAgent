@@ -300,12 +300,12 @@ func test_hud_right_side_labels_stay_inside_the_screen() -> void:
 	assert_almost_eq(hud._score.offset_right - hud._score.offset_left, hud._score.plate_size().x)
 
 
-func test_hud_place_and_clock_are_hidden_until_set() -> void:
+func test_hud_place_is_hidden_until_set_and_clock_shows_the_time() -> void:
 	var player = _add(PLAYER_SCENE.instantiate())
 	await wait_frames(2)
 	var hud = player.hud
 	assert_eq(hud.place_text(), "")
-	assert_eq(hud.clock_text(), "")
+	assert_eq(hud.clock_text(), WorldClock.text(), "o relógio do mundo aparece desde a Fase 4")
 	assert_eq(hud._place.plate_size(), Vector2.ZERO, "vazio não desenha placa")
 	hud.set_place("Centro Velho — Rua do Disfarce")
 	hud.set_clock("08:00")

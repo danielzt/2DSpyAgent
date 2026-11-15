@@ -23,10 +23,10 @@ const DEFS := {
 		"staff": ["atendente de lavanderia"], "hours": [0, 24], "service": "Briefing e baú de equipamento"},
 	"police": {"name": "Delegacia", "short": "Delegacia", "districts": ["civic"], "min": 1, "max": 2,
 		"min_size": 280, "sign_fg": "white", "sign_bg": "blue",
-		"staff": ["policial", "detetive", "atendente"], "hours": [0, 24], "service": "Entregar criminoso atordoado"},
+		"staff": ["policial", "detetive", "atendente", "delegado", "perito"], "hours": [0, 24], "service": "Entregar criminoso atordoado"},
 	"hospital": {"name": "Hospital", "short": "Hospital", "districts": ["civic"], "min": 1, "max": 1,
 		"min_size": 280, "sign_fg": "red", "sign_bg": "white",
-		"staff": ["plantonista", "auxiliar de enfermagem", "recepcionista"], "hours": [0, 24], "service": "Cura total paga"},
+		"staff": ["médica", "enfermeiro", "recepcionista", "farmacêutico", "técnico de raio-X", "auxiliar de enfermagem"], "hours": [0, 24], "service": "Cura total paga"},
 	"bank": {"name": "Banco", "short": "Banco", "districts": ["center", "upscale"], "min": 2, "max": 3,
 		"min_size": 200, "sign_fg": "amber", "sign_bg": "green_dark",
 		"staff": ["caixa", "gerente", "segurança"], "hours": [9, 17], "service": "Guardar e sacar dinheiro"},
@@ -58,13 +58,13 @@ const DEFS := {
 		"wall": "wall/white", "roof": "roof/slab_light", "shop": "pharmacy",
 		"staff": ["balconista"], "hours": [7, 23], "service": "Loja"},
 	"market": {"name": "Mercado", "short": "Mercado", "districts": ["residential", "center"], "min": 3, "max": 5,
-		"min_size": 200, "max_floors": 2, "front": true, "awning": "yellow", "sign_fg": "amber", "sign_bg": "green_dark",
+		"min_size": 200, "max_floors": 2, "front": true, "awning": "yellow", "sign_fg": "amber", "sign_bg": "green_dark", "shop": "market",
 		"staff": ["caixa", "estoquista"], "hours": [7, 22], "service": "Loja de comida para levar"},
 	"workshop": {"name": "Oficina", "short": "Oficina", "districts": ["industrial", "residential"], "min": 2, "max": 3,
 		"min_size": 200, "max_floors": 2, "sign_fg": "orange", "sign_bg": "ink",
 		"staff": ["auxiliar de mecânica", "lanterneiro"], "hours": [7, 19], "service": "Pintar e consertar o carro"},
 	"gas_station": {"name": "Posto", "short": "Posto", "districts": ["industrial", "residential", "center"], "min": 2, "max": 3,
-		"min_size": 200, "max_floors": 1, "front": true, "awning": "red", "sign_fg": "white", "sign_bg": "red",
+		"min_size": 200, "max_floors": 1, "front": true, "awning": "red", "sign_fg": "white", "sign_bg": "red", "shop": "gas_station",
 		"staff": ["frentista"], "hours": [0, 24], "service": "Conveniência 24 h"},
 	"cinema": {"name": "Cinema", "short": "Cine", "districts": ["center", "nightlife"], "min": 1, "max": 2,
 		"min_size": 240, "awning": "red", "sign_fg": "amber", "sign_bg": "wine",
@@ -83,6 +83,11 @@ const DEFS := {
 		"min_size": 132, "sign_fg": "cream", "sign_bg": "brown_dark", "home": true, "hours": [0, 24], "service": "Moradia"},
 	"house": {"name": "Casa", "short": "", "districts": ["residential", "upscale"], "fill": 6,
 		"min_size": 132, "max_floors": 2, "no_sign": true, "home": true, "hours": [0, 24], "service": "Moradia"},
+	# A casa do agente: uma das casas do bairro residencial, escolhida por `designate_home`
+	# (fora do ORDER: não entra no sorteio comum).
+	"agent_home": {"name": "Casa do agente", "short": "", "districts": ["residential"],
+		"min_size": 0, "max_floors": 2, "no_sign": true, "home": true, "hours": [0, 24],
+		"service": "Dormir, baú de equipamento"},
 	"warehouse": {"name": "Armazém", "short": "Armazém", "districts": ["industrial"], "fill": 5,
 		"min_size": 200, "max_floors": 2, "sign_fg": "white", "sign_bg": "slate",
 		"staff": ["estoquista", "conferente"], "hours": [0, 24], "service": "Ponto de crimes"},
@@ -145,6 +150,21 @@ static func is_open(type: String, hour: float) -> bool:
 	return hour >= open or hour < close
 
 
+## True se o tipo nunca fecha.
+static func always_open(type: String) -> bool:
+	var hours: Array = def(type).get("hours", [0, 24])
+	return hours[1] - hours[0] >= 24
+
+
+static func opening_hour(type: String) -> int:
+	return def(type).get("hours", [0, 24])[0]
+
+
+## Aviso da porta de um prédio fechado.
+static func closed_text(type: String) -> String:
+	return "Fechado — abre às %02d:00" % opening_hour(type)
+
+
 static func fits(type: String, rect: Rect2) -> bool:
 	var min_size: float = def(type).get("min_size", 0)
 	return rect.size.x >= min_size and rect.size.y >= minf(min_size, MIN_DEPTH)
@@ -156,7 +176,11 @@ static func fits(type: String, rect: Rect2) -> bool:
 static func assign(buildings: Array[Dictionary], rng: RandomNumberGenerator) -> void:
 	var free: Array[int] = []
 	for i in buildings.size():
-		free.append(i)
+		var forced: String = buildings[i].get("forced", "")
+		if forced != "":
+			_set_type(buildings[i], forced)  # casas do bairro residencial já nascem com tipo
+		else:
+			free.append(i)
 	for type in ORDER:
 		for n in min_count(type):
 			_give(buildings, free, type, rng)
@@ -170,7 +194,35 @@ static func assign(buildings: Array[Dictionary], rng: RandomNumberGenerator) -> 
 	var used := {}
 	for b in buildings:
 		b.name = NameGenerator.building_name(b.type, rng, used)
+	designate_home(buildings)
 
+
+## Escolhe a casa do agente: a casa do bairro residencial mais perto do QG (se não houver
+## casa, qualquer prédio residencial; sem bairro residencial, o prédio mais perto do QG).
+## Vira o tipo "agent_home". Retorna o id, ou -1.
+static func designate_home(buildings: Array[Dictionary]) -> int:
+	var hq := Vector2.ZERO
+	for b in buildings:
+		if b.type == "hq":
+			hq = (b.rect as Rect2).get_center()
+	var pools: Array = [["house"], ["house", "apartment"], []]
+	for pool in pools:
+		var best := -1
+		var best_d := INF
+		for i in buildings.size():
+			var b: Dictionary = buildings[i]
+			var ok: bool = pool.has(b.type) if not pool.is_empty() else (b.type != "hq" and b.type != "police" and b.type != "hospital")
+			if not ok or (b.district != "residential" and not pool.is_empty()):
+				continue
+			var d := (b.rect as Rect2).get_center().distance_to(hq)
+			if d < best_d:
+				best_d = d
+				best = i
+		if best >= 0:
+			_set_type(buildings[best], "agent_home")
+			buildings[best].name = "Casa do agente"
+			return buildings[best].id
+	return -1
 
 ## Dá a um prédio livre o tipo pedido. Preferência: cabe e está em bairro permitido; depois
 ## cabe em qualquer bairro; depois o maior livre (o mínimo sempre é cumprido).
