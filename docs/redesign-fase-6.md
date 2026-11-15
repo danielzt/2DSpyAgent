@@ -17,9 +17,9 @@ de **casas** (área residencial) e o jogador de **uma casa para dormir**; os **i
 - **Pontos:** clique esquerdo no mapa marca um ponto (até 5, nomeados "Ponto N"; o mais antigo sai);
   clicar perto de um ponto o torna o ativo; botão direito tira o ponto. Os pontos aparecem como bandeira
   (âmbar o ativo) no mapa, no minimapa e na pausa.
-- **Direção na tela:** o ponto ativo ganha uma seta ciano na borda da tela e, no alto, o nome e a distância
-  em metros (1 m = 32 px). Perto do ponto (110 px) o HUD avisa "Chegou a ..." e o ponto some. Não vale dentro
-  de prédios. A rota pela rua (linha-guia) ficou para depois.
+- **Direção na tela:** o ponto ativo ganha uma seta ciano na borda da tela, a trilha da rota pelas ruas e, no alto,
+  o nome e a distância em metros (1 m = 32 px). Perto do ponto (110 px) o HUD avisa "Chegou a ..." e o ponto some.
+  Não vale dentro de prédios.
 
 ### Bairro residencial com casas (6.1)
 
@@ -27,6 +27,22 @@ de **casas** (área residencial) e o jogador de **uma casa para dormir**; os **i
   beco no meio (`CityLayout._fill_houses`). As da fileira de cima abrem a porta para o beco; o lado
   do beco fica livre (44 px) para o jogador entrar. Cerca de 90 casas novas na cidade.
 - As casas nascem com o tipo `house` (campo `forced` do prédio), fora do sorteio de cotas.
+
+### Rota pelas ruas (6.7)
+
+`RoutePlanner` (lógica pura) trata a cidade como grade de ruas retas (mais a estrada do campo para o leste) e
+acha o menor caminho (busca em largura) do jogador até o ponto ativo: sai até a rua mais perto, segue pelas
+ruas e entra até o destino. O HUD desenha uma **trilha pontilhada ciano** (um ponto a cada 36 px, só os
+visíveis). A rota é refeita quando o ponto muda ou o jogador anda 90 px desde o último cálculo.
+
+### Ruas estreitas (6.2)
+
+As ruas que cortam o bairro residencial têm asfalto de 100 px (as comuns 140, as avenidas 180). Uma rua é
+estreita quando ao menos 25% dos quarteirões vizinhos (nos dois eixos) são residenciais
+(`CityLayout.narrow_lines_for`): na seed padrão são as linhas 1 a 4. A largura é consultada de vários lugares
+sem o layout à mão, então a lista fica em estado estático, atualizada a cada `CityLayout.new` e por
+`CityLayout.use_seed` (o runner de testes a restaura entre os testes). Lotes ao lado de ruas estreitas ficam
+maiores; a faixa do trânsito (26 px do eixo) e os carros estacionados cabem.
 
 ### Casa do agente (6.4 e 6.5)
 
@@ -65,21 +81,19 @@ de **casas** (área residencial) e o jogador de **uma casa para dormir**; os **i
 
 | Item | Situação e motivo |
 |---|---|
-| 6.2 Ruas estreitas nos bairros residenciais | **Pendente.** A largura de cada rua hoje depende só do número da linha (`asphalt(line)`); fazê-la depender do bairro obriga a carregar o layout nas chamadas estáticas (chão, calçadas, trânsito, luzes, mapa) e a refazer 26 pontos de teste. Proposta: larguras por linha calculadas pelo bairro dominante e guardadas em `CityLayout`, e uma fase só para isso. |
 | 6.3 Ruas com curvas | **Pendente, só estudo.** O trânsito, as calçadas, o chão em quarteirões de 560 px, os lotes e o mapa assumem a grade reta. Curvas em toda a cidade quebram isso tudo; a opção segura é um trecho curvo isolado (um bairro, ou uma avenida), que vale discutir antes de começar. |
-| Rota automática até o ponto | **Pendente.** Hoje há seta e distância em linha reta. |
 
 ## Testes
 
-829 testes, 0 falhas (29 novos em `test_phase6.gd` e 18 em `test_map_points.gd`, mais ajustes). Mudanças
+848 testes, 0 falhas (novos em `test_phase6.gd`, `test_map_points.gd` e `test_route.gd`, mais ajustes). Mudanças
 intencionais em testes existentes: o mínimo de tamanho dos prédios aceita as casinhas; o teste da porta
-acessível para as casas da fileira de cima só exige espaço para o jogador em frente; a tabela de tipos tem
+acessível para as casas da fileira de cima só exige espaço para o jogador em frente; os testes de geometria da cidade usam uma linha comum (nem avenida nem estreita) em vez da linha 1; a tabela de tipos tem
 25 entradas (a casa do agente fica fora do `ORDER`); fichas novas já trazem a casa (conhecida, explorada e
 marcada); o número de clientes dos interiores agora é completado até o mínimo.
 
 ## Capturas
 
-`docs/img/fase6-*.png`: lote de casinhas, a casa do agente, o mapa com neblina e 16 interiores
+`docs/img/fase6-*.png`: lote de casinhas, rua estreita, rota pontilhada, a casa do agente, o mapa com neblina e 16 interiores
 (`tools/probe_p6.gd`).
 
 ## Desempenho

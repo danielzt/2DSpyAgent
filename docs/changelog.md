@@ -3,8 +3,9 @@
 ## 2026-11-15 (5)
 
 - Fase 6 do redesenho: mapa com neblina no que não foi explorado; pontos marcados por clique no mapa (até 5) com seta e distância no HUD; bairro residencial com lotes de casinhas em duas fileiras e beco; **casa do agente** (a casa mais perto do QG, já marcada, com dormir de graça e baú); hospital, delegacia e casas completos; decoração e gente mínima em todos os interiores; uniformes por papel; 13 móveis novos
-- Pendentes da fase: ruas estreitas nos bairros de casas (6.2), ruas com curvas (6.3) e rota automática até o ponto
-- 829 testes. Detalhes: [redesign-fase-6.md](redesign-fase-6.md)
+- Ruas estreitas (100 px) nos bairros de casas e **rota pelas ruas** até o ponto marcado, com trilha pontilhada no HUD
+- Pendente da fase: ruas com curvas (6.3), só estudo
+- 848 testes. Detalhes: [redesign-fase-6.md](redesign-fase-6.md)
 
 ## 2026-11-15 (4)
 

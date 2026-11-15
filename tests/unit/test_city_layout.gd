@@ -15,6 +15,15 @@ func _world() -> Rect2:
 	return Rect2(0, 0, CityLayout.city_size(), CityLayout.city_size())
 
 
+## Uma linha de rua (e a seguinte) comum: nem avenida nem estreita.
+func _plain_cell() -> int:
+	for line in range(1, CityLayout.CELLS - 1):
+		if not CityLayout.is_avenue(line) and not CityLayout.is_avenue(line + 1) \
+				and not CityLayout.narrow_lines.has(line) and not CityLayout.narrow_lines.has(line + 1):
+			return line
+	return 1
+
+
 # --- ruas e calçadas ---
 
 func test_street_corridor_is_asphalt_plus_two_sidewalks() -> void:
@@ -34,12 +43,15 @@ func test_there_is_one_lot_per_block() -> void:
 		# o lote é o que sobra entre os corredores das ruas em volta
 		assert_almost_eq(lot.size.x, CityLayout.BLOCK - CityLayout.corridor(cx) / 2.0 - CityLayout.corridor(cx + 1) / 2.0)
 		assert_almost_eq(lot.size.y, CityLayout.BLOCK - CityLayout.corridor(cy) / 2.0 - CityLayout.corridor(cy + 1) / 2.0)
-	assert_almost_eq(layout.lots[0].size.x, CityLayout.LOT, 0.01, "lote entre ruas comuns")
+	var plain := _plain_cell()
+	assert_almost_eq(CityLayout.lot_rect(plain, plain).size.x, CityLayout.LOT, 0.01, "lote entre ruas comuns")
 
 
 func test_lots_leave_room_for_streets() -> void:
 	# lotes vizinhos ficam separados pelo corredor inteiro (asfalto + calçadas)
-	assert_almost_eq(layout.lots[CityLayout.CELLS].position.x - layout.lots[0].end.x, CityLayout.ROAD)
+	assert_almost_eq(layout.lots[CityLayout.CELLS].position.x - layout.lots[0].end.x, CityLayout.corridor(1))
+	var plain := _plain_cell()
+	assert_almost_eq(CityLayout.lot_rect(plain + 1, 0).position.x - CityLayout.lot_rect(plain, 0).end.x, CityLayout.ROAD)
 
 
 # --- avenidas ---
@@ -49,9 +61,10 @@ func test_two_avenues_cross_at_the_center_and_are_wider() -> void:
 	assert_eq(line, CityLayout.CELLS / 2, "avenidas cruzam no centro")
 	assert_true(CityLayout.is_avenue(line))
 	assert_false(CityLayout.is_avenue(line - 1))
-	assert_gt(CityLayout.asphalt(line), CityLayout.asphalt(1))
+	var plain := _plain_cell()
+	assert_gt(CityLayout.asphalt(line), CityLayout.asphalt(plain))
 	assert_almost_eq(CityLayout.corridor(line), CityLayout.AVENUE_ASPHALT + CityLayout.SIDEWALK * 2.0)
-	assert_almost_eq(CityLayout.corridor(1), CityLayout.ROAD)
+	assert_almost_eq(CityLayout.corridor(plain), CityLayout.ROAD)
 	assert_almost_eq(CityLayout.AVENUE_ROAD, 240.0)
 
 
@@ -59,9 +72,10 @@ func test_lots_beside_an_avenue_are_narrower_on_that_axis() -> void:
 	var line := CityLayout.AVENUE_LINE
 	var shrink := (CityLayout.AVENUE_ROAD - CityLayout.ROAD) / 2.0
 	for cell in [line - 1, line]:
-		assert_almost_eq(CityLayout.lot_rect(cell, 0).size.x, CityLayout.LOT - shrink)
-		assert_almost_eq(CityLayout.lot_rect(cell, 0).size.y, CityLayout.LOT)
-		assert_almost_eq(CityLayout.lot_rect(0, cell).size.y, CityLayout.LOT - shrink)
+		var row := _plain_cell()
+		assert_almost_eq(CityLayout.lot_rect(cell, row).size.x, CityLayout.LOT - shrink)
+		assert_almost_eq(CityLayout.lot_rect(cell, row).size.y, CityLayout.LOT)
+		assert_almost_eq(CityLayout.lot_rect(row, cell).size.y, CityLayout.LOT - shrink)
 	# os dois lotes vizinhos da avenida ficam separados pelo corredor inteiro dela
 	var gap := CityLayout.lot_rect(line, 0).position.x - CityLayout.lot_rect(line - 1, 0).end.x
 	assert_almost_eq(gap, CityLayout.AVENUE_ROAD)
@@ -234,8 +248,11 @@ func test_building_colors_come_from_the_palette() -> void:
 func test_parked_cars_avoid_the_avenues() -> void:
 	for cell in CityLayout.PARKED_CELLS:
 		assert_false(CityLayout.is_avenue(cell.x))
-	assert_almost_eq(CityLayout.park_offset(1), CityLayout.PARK_OFFSET)
-	assert_gt(CityLayout.park_offset(CityLayout.AVENUE_LINE), CityLayout.park_offset(1))
+	var plain := _plain_cell()
+	assert_almost_eq(CityLayout.park_offset(plain), CityLayout.PARK_OFFSET)
+	assert_gt(CityLayout.park_offset(CityLayout.AVENUE_LINE), CityLayout.park_offset(plain))
+	for line in CityLayout.narrow_lines:
+		assert_true(CityLayout.park_offset(line) < CityLayout.PARK_OFFSET, "rua estreita, carro mais perto do eixo")
 
 
 func test_shop_buildings_are_big_enough() -> void:
@@ -263,5 +280,6 @@ func test_parked_cars_sit_at_the_curb_on_asphalt() -> void:
 		var p: Vector2 = v.position
 		assert_eq(layout.building_at(p), -1)
 		var from_center := absf(fposmod(p.x + CityLayout.BLOCK / 2.0, CityLayout.BLOCK) - CityLayout.BLOCK / 2.0)
-		assert_gt(from_center, 40.0, "estacionado rente ao meio-fio, não no meio da rua")
-		assert_true(from_center + 13.0 <= CityLayout.ASPHALT / 2.0, "dentro do asfalto")
+		var half_asphalt := CityLayout.asphalt(CityLayout.nearest_line(p.x)) / 2.0
+		assert_gt(from_center, half_asphalt - 20.0, "estacionado rente ao meio-fio, não no meio da rua")
+		assert_true(from_center + 13.0 <= half_asphalt, "dentro do asfalto")

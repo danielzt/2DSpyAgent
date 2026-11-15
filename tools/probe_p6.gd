@@ -49,6 +49,11 @@ func _run() -> void:
 	var layout = world.layout
 	var home: Dictionary = layout.home()
 
+	# rota até a casa (o ponto "Casa" já vem marcado)
+	player.global_position = Vector2(1120.0, 1680.0)
+	await _frames(40)
+	await _save(prefix, "rota")
+
 	# um lote de casas
 	var houses: Array = []
 	for b in layout.city.buildings:

@@ -10,6 +10,7 @@ const CharacterSheetScript := preload("res://scripts/ui/character_sheet.gd")
 const ShopPanelScript := preload("res://scripts/ui/shop_panel.gd")
 const MapPanelScript := preload("res://scripts/ui/map_panel.gd")
 const PausePanelScript := preload("res://scripts/ui/pause_panel.gd")
+const RoutePlanner := preload("res://scripts/world/route_planner.gd")
 const InputSetupScript := preload("res://scripts/autoload/input_setup.gd")
 const BulletScript := preload("res://scripts/combat/bullet.gd")
 const Fx := preload("res://scripts/effects/fx.gd")
@@ -320,6 +321,13 @@ func toggle_character() -> void:
 
 ## Chegou a este alcance (px) do ponto marcado: o ponto some e o HUD avisa.
 const WAYPOINT_ARRIVE := 110.0
+## A rota é refeita quando o ponto muda ou o jogador anda tanto (px) desde o último cálculo.
+const ROUTE_REPLAN_DISTANCE := 90.0
+## Espaço entre os pontos da trilha da rota (px do mundo).
+const ROUTE_DOT_SPACING := 36.0
+
+var _route_for := Vector2(-1.0e9, -1.0e9)
+var _route_from := Vector2(-1.0e9, -1.0e9)
 
 
 ## O HUD indica o ponto ativo do mapa (só na rua); chegando perto, ele é desfeito.
@@ -327,13 +335,27 @@ func _follow_waypoint() -> void:
 	var waypoint: Dictionary = profile.active_waypoint_data()
 	if GameState.is_inside() or waypoint.is_empty():
 		hud.set_waypoint(global_position, {})
+		hud.set_route([] as Array[Vector2])
+		_route_for = Vector2(-1.0e9, -1.0e9)
 		return
 	if global_position.distance_to(waypoint.pos) <= WAYPOINT_ARRIVE:
 		notify("Chegou a %s" % waypoint.name, 4.0)
 		profile.remove_waypoint(profile.active_waypoint)
 		hud.set_waypoint(global_position, {})
+		hud.set_route([] as Array[Vector2])
+		_route_for = Vector2(-1.0e9, -1.0e9)
 		return
 	hud.set_waypoint(global_position, waypoint)
+	_update_route(waypoint.pos)
+
+
+## Refaz a trilha da rota pelas ruas quando preciso (ponto novo ou o jogador saiu do caminho).
+func _update_route(target: Vector2) -> void:
+	if target == _route_for and global_position.distance_to(_route_from) < ROUTE_REPLAN_DISTANCE:
+		return
+	_route_for = target
+	_route_from = global_position
+	hud.set_route(RoutePlanner.dots(RoutePlanner.plan(global_position, target), ROUTE_DOT_SPACING))
 
 
 ## Abre ou fecha o mapa de tela cheia (só na rua: dentro de prédios não há mapa).

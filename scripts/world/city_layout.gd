@@ -32,6 +32,11 @@ const HOUSE_WIDTH := Vector2(96.0, 128.0)
 const HOUSE_GAP := 28.0
 const HOUSE_SIDE := 12.0
 const HOUSE_OPEN_SIDE := 44.0
+## Rua estreita (asfalto) e a fração mínima de vizinhos residenciais que a faz estreita.
+const NARROW_ASPHALT := 100.0
+const NARROW_SHARE := 0.25
+static var narrow_lines := {}
+static var _narrow_seed := -1
 const PARKED_CELLS := [Vector2i(1, 0), Vector2i(3, 2), Vector2i(5, 1), Vector2i(2, 4), Vector2i(7, 5), Vector2i(4, 3)]
 
 var world_seed: int
@@ -55,6 +60,8 @@ func _init(p_seed: int = 2024) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = p_seed
 	districts = DistrictLayout.new(p_seed)
+	_narrow_seed = p_seed
+	narrow_lines = narrow_lines_for(districts)
 	street_names = NameGenerator.street_names(p_seed)
 	for cx in CELLS:
 		for cy in CELLS:
@@ -75,9 +82,41 @@ static func is_avenue(line: int) -> bool:
 	return line == AVENUE_LINE
 
 
-## Largura do asfalto da linha de rua `line` (0..CELLS), igual nos dois eixos.
+## Largura do asfalto da linha de rua `line` (0..CELLS), igual nos dois eixos: avenida larga,
+## rua comum e rua estreita (as que cortam o bairro residencial, ver `use_seed`).
 static func asphalt(line: int) -> float:
-	return AVENUE_ASPHALT if is_avenue(line) else ASPHALT
+	if is_avenue(line):
+		return AVENUE_ASPHALT
+	return NARROW_ASPHALT if narrow_lines.has(line) else ASPHALT
+
+
+## Linhas de rua estreitas da cidade de `p_seed`: as que têm ao menos NARROW_SHARE dos quarteirões
+## vizinhos (nos dois eixos) no bairro residencial. É estado estático porque a largura é
+## consultada de vários lugares sem o layout à mão; cada `CityLayout.new` o atualiza para a
+## sua seed, e `use_seed` o ajusta sem gerar a cidade (o runner de testes o usa entre testes).
+static func use_seed(p_seed: int) -> void:
+	if _narrow_seed == p_seed:
+		return
+	_narrow_seed = p_seed
+	narrow_lines = narrow_lines_for(DistrictLayout.new(p_seed))
+
+
+static func narrow_lines_for(districts) -> Dictionary:
+	var result := {}
+	for line in range(1, CELLS):
+		if is_avenue(line):
+			continue
+		var total := 0
+		var residential := 0
+		for other in CELLS:
+			for side in [line - 1, line]:
+				for cell in [Vector2i(side, other), Vector2i(other, side)]:
+					total += 1
+					if districts.district_of_cell(cell) == "residential":
+						residential += 1
+		if float(residential) / float(total) >= NARROW_SHARE:
+			result[line] = true
+	return result
 
 
 ## Largura do corredor (asfalto + duas calçadas) da linha `line`.

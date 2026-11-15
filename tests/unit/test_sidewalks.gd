@@ -42,11 +42,11 @@ func test_node_validity() -> void:
 
 
 func test_node_positions_are_corners_around_the_intersection() -> void:
-	var center := Vector2(3, 4) * CityLayout.BLOCK
+	var center := Vector2(8, 9) * CityLayout.BLOCK
 	var h := SidewalkGraph.half()
-	assert_eq(SidewalkGraph.position(Vector4i(3, 4, 1, 1)), center + Vector2(h, h))
-	assert_eq(SidewalkGraph.position(Vector4i(3, 4, -1, 1)), center + Vector2(-h, h))
-	assert_eq(SidewalkGraph.position(Vector4i(3, 4, 1, -1)), center + Vector2(h, -h))
+	assert_eq(SidewalkGraph.position(Vector4i(8, 9, 1, 1)), center + Vector2(h, h))
+	assert_eq(SidewalkGraph.position(Vector4i(8, 9, -1, 1)), center + Vector2(-h, h))
+	assert_eq(SidewalkGraph.position(Vector4i(8, 9, 1, -1)), center + Vector2(h, -h))
 
 
 func test_every_node_has_four_neighbors_inside() -> void:
@@ -94,7 +94,7 @@ func test_avenue_sidewalk_is_farther_from_the_axis() -> void:
 
 
 func test_cross_edges_cross_the_asphalt() -> void:
-	for n in [Vector4i(4, 4, 1, 1), Vector4i(7, 2, -1, 1)]:
+	for n in [Vector4i(8, 8, 1, 1), Vector4i(8, 9, -1, 1)]:
 		for m in SidewalkGraph.cross_neighbors(n):
 			assert_almost_eq(SidewalkGraph.position(n).distance_to(SidewalkGraph.position(m)), SidewalkGraph.half() * 2.0, 0.01)
 
@@ -164,7 +164,7 @@ func test_random_sidewalk_point_lies_between_its_nodes() -> void:
 # --- pedestre ---
 
 func test_pedestrian_walks_toward_the_next_node() -> void:
-	var from := Vector4i(4, 4, 1, 1)
+	var from := Vector4i(8, 8, 1, 1)
 	var to: Vector4i = SidewalkGraph.along_neighbors(from)[0]
 	var npc := _walker(from, to)
 	var start_dist: float = npc.global_position.distance_to(SidewalkGraph.position(to))
@@ -173,7 +173,7 @@ func test_pedestrian_walks_toward_the_next_node() -> void:
 
 
 func test_pedestrian_stays_on_the_sidewalk_while_walking() -> void:
-	var from := Vector4i(4, 4, 1, 1)
+	var from := Vector4i(8, 8, 1, 1)
 	var to: Vector4i = SidewalkGraph.along_neighbors(from)[0]
 	var npc := _walker(from, to, 6)
 	var half := SidewalkGraph.half()
@@ -192,7 +192,7 @@ func test_pedestrian_stays_on_the_sidewalk_while_walking() -> void:
 
 
 func test_pedestrian_keeps_choosing_new_nodes() -> void:
-	var from := Vector4i(4, 4, 1, 1)
+	var from := Vector4i(8, 8, 1, 1)
 	var to: Vector4i = SidewalkGraph.along_neighbors(from)[0]
 	var npc := _walker(from, to, 8)
 	var targets := {}
@@ -203,7 +203,7 @@ func test_pedestrian_keeps_choosing_new_nodes() -> void:
 
 
 func test_attacked_pedestrian_flees_along_the_sidewalk() -> void:
-	var from := Vector4i(4, 4, 1, 1)
+	var from := Vector4i(8, 8, 1, 1)
 	var to: Vector4i = SidewalkGraph.along_neighbors(from)[0]
 	var npc := _walker(from, to, 3)
 	var attacker := PLAYER_SCENE.instantiate()
@@ -218,7 +218,7 @@ func test_attacked_pedestrian_flees_along_the_sidewalk() -> void:
 
 
 func test_pedestrian_turns_back_when_blocked() -> void:
-	var from := Vector4i(4, 4, 1, 1)
+	var from := Vector4i(8, 8, 1, 1)
 	var to: Vector4i = SidewalkGraph.along_neighbors(from)[0]
 	var npc := _walker(from, to, 5)
 	var wall := StaticBody2D.new()

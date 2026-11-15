@@ -35,6 +35,8 @@ var _arrows: Control
 var _waypoint: Control
 var _waypoint_dir := Vector2.ZERO
 var _waypoint_active := false
+## Trilha pontilhada da rota até o ponto ativo (pontos do mundo).
+var _route_dots: Array[Vector2] = []
 var _minimap: Control
 var _arrow_dirs: Array[Vector2] = []
 
@@ -76,6 +78,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not _route_dots.is_empty():
+		_arrows.queue_redraw()  # a trilha acompanha a câmera
 	if _toast_time > 0.0:
 		_toast_time -= delta
 		if _toast_time <= 0.0:
@@ -167,6 +171,18 @@ func set_waypoint(from: Vector2, waypoint: Dictionary) -> void:
 	_waypoint_active = true
 
 
+## Trilha da rota (pontos do mundo, já espaçados); vazio esconde.
+func set_route(dots: Array[Vector2]) -> void:
+	if dots.is_empty() and _route_dots.is_empty():
+		return
+	_route_dots = dots
+	_arrows.queue_redraw()
+
+
+func route_dot_count() -> int:
+	return _route_dots.size()
+
+
 func waypoint_text() -> String:
 	return _waypoint.text if _waypoint.visible else ""
 
@@ -178,6 +194,14 @@ func waypoint_arrow_visible() -> bool:
 func _draw_arrows() -> void:
 	var texture := SpriteFactory.prop("target_arrow")
 	var half := _arrows.size / 2.0
+	if not _route_dots.is_empty():
+		var to_screen: Transform2D = get_viewport().get_canvas_transform()
+		var view := Rect2(Vector2(-8, -8), _arrows.size + Vector2(16, 16))
+		var cyan := Palette.get_color("neon_cyan")
+		for dot in _route_dots:
+			var screen := to_screen * dot
+			if view.has_point(screen):
+				_arrows.draw_rect(Rect2((screen - Vector2(3, 3)).round(), Vector2(6, 6)), cyan)
 	if _waypoint_active and _waypoint_dir != Vector2.ZERO:
 		var wpos := half + Vector2(_waypoint_dir.x * (half.x - ARROW_MARGIN), _waypoint_dir.y * (half.y - ARROW_MARGIN))
 		_arrows.draw_set_transform(wpos, _waypoint_dir.angle(), Vector2(ARROW_SCALE + 1.0, ARROW_SCALE + 1.0))

@@ -7,6 +7,7 @@ extends SceneTree
 ## Código de saída: 0 = tudo passou, 1 = falhas.
 
 const TEST_DIR := "res://tests/unit"
+const CityLayout := preload("res://scripts/world/city_layout.gd")
 
 
 func _initialize() -> void:
@@ -24,6 +25,8 @@ func _reset_globals() -> void:
 	var clock := root.get_node_or_null("WorldClock")
 	if clock != null:
 		clock.reset()
+	# a largura das ruas é estado estático: volta à da cidade padrão entre os testes
+	CityLayout.use_seed(2024)
 	var transition := root.get_node_or_null("Transition")
 	if transition != null:
 		transition.reset()
