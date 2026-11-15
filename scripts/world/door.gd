@@ -4,6 +4,7 @@ extends "res://scripts/interaction/interact_zone.gd"
 
 const ShopDefs := preload("res://scripts/items/shop_defs.gd")
 const NameGenerator := preload("res://scripts/world/name_generator.gd")
+const BuildingDefs := preload("res://scripts/world/building_defs.gd")
 
 @export var building_id := -1
 @export var exits := false
@@ -30,7 +31,25 @@ func _ready() -> void:
 	super._ready()
 
 
+## Fora do horário de funcionamento do tipo do prédio a porta não abre.
+func is_closed() -> bool:
+	return not exits and building_type != "" and not BuildingDefs.is_open(building_type, WorldClock.hour())
+
+
+func closed_text() -> String:
+	var text := BuildingDefs.closed_text(building_type)
+	return "%s: %s" % [building_name, text] if building_name != "" else text
+
+
+func prompt_text(player: Node) -> String:
+	return closed_text() if is_closed() else super.prompt_text(player)
+
+
 func interact(player: Node) -> void:
+	if is_closed():
+		if player.has_method("notify"):
+			player.notify(closed_text(), 4.0)
+		return
 	super.interact(player)
 	activate()
 

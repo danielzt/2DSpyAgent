@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-15 (2)
+
+- Fase 3 do redesenho: interior paramétrico por tipo de prédio (15 modelos, 3 tamanhos, cômodos, paredes internas, móveis reconhecíveis, NPCs com papel), validado por preenchimento em grade
+- 13 serviços com efeito real (dormir, refeição, hospital, entregar presos, banco, rumores, informante, briefing, pintar o carro, cinema, academia); mercado e posto passam a vender comida (`snack`)
+- Mecânicas da D7 (assumidas como "sim"): perder metade do dinheiro ao ser derrotado e acordar no hospital, presos a entregar, item de comida e seta de alvo no HUD; a vida passa a ser guardada entre cenas
+- Fase 4: relógio do mundo (autoload `WorldClock`, 24 min por dia), hora no HUD, tinta ambiente com piso de luminosidade, camada de luz aditiva (postes, janelas, letreiros, vitrines, faróis, halo do jogador), interiores sempre claros com janelas que mostram o céu
+- Prédios fecham fora do horário ("Fechado — abre às 09:00"); de noite há menos pedestres (que vão para casa) e menos carros; crimes mais frequentes e com pesos noturnos; assalto a banco só com o banco aberto
+- 684 testes (107 novos); testes atualizados por mudança intencional estão em [redesign-fase-3.md](redesign-fase-3.md)
+- Desempenho: de dia +9% sobre a linha de base; de noite +27%, acima da meta de 20% (detalhes em [redesign-fase-4.md](redesign-fase-4.md))
+- Detalhes: [redesign-fase-3.md](redesign-fase-3.md) e [redesign-fase-4.md](redesign-fase-4.md)
+
 ## 2026-11-15
 
 - Fase 2 do redesenho, cidade com contexto: duas avenidas mais largas cruzando no centro (duas faixas por sentido), seis bairros por seed com paredes, telhados, alturas e formatos de lote próprios

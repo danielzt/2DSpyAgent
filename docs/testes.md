@@ -33,14 +33,14 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 - Para comportamento de nós, instancie a cena em `tree.root` e dê `queue_free()` no `after_each`.
 - Input em teste: `Input.action_press("p1_right")` e solte no `after_each`.
 
-## Cobertura atual (577 testes)
+## Cobertura atual (684 testes)
 
 | Arquivo | Cobre |
 |---|---|
 | `test_city_layout.gd` | prédios, tamanhos, sobreposição, seed, portas, spawns |
 | `test_country_layout.gd` | fazendas, plantações, árvores, estrada, determinismo |
 | `test_world_layout.gd` | regiões, tamanho do mundo, ids únicos, spawns de carros |
-| `test_interior_layout.gd` | escala, móveis, saída livre, determinismo |
+| `test_interior_layout.gd` | interior por tipo: tamanho, planta, móveis, vagas de NPC, zonas, caminhos alcançáveis, determinismo |
 | `test_game_state.gd` | estado dentro/fora, posição de retorno |
 | `test_score.gd` | regra de pontos (inocente tira, criminoso dá) |
 | `test_input_setup.gd` | ações por jogador, teclas, gamepads, interação, idempotência |
@@ -68,6 +68,9 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 | `test_building_defs.gd` | tabela de tipos, cotas mínimas e máximas, tamanho mínimo, bairros permitidos, horários, porta alcançável |
 | `test_names.gd` | nomes de prédios e ruas: únicos, determinísticos, desenháveis pela fonte; texto de lugar do HUD |
 | `test_population.gd` | trabalho e moradia em prédios reais, falas que citam o lugar |
+| `test_services.gd` | 13 serviços (custo, efeito, falta de dinheiro), só pela ação de input na zona, NPCs dos interiores |
+| `test_day_cycle.gd` | relógio, fases, horários, cor ambiente com piso de luminosidade, horas das luzes |
+| `test_lights.gd` | camada de luz, janelas e letreiros, faróis, interiores claros, portas fechadas, população por hora |
 | `test_world_visuals.gd` | cena real sem `ColorRect`, pedaços de chão, sprites e animação, ordem de desenho, HUD |
 
 O aviso `Tipo de morte desconhecido` impresso durante `test_score` é esperado

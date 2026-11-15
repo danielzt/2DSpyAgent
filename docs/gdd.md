@@ -109,6 +109,12 @@ avisos de crime em andamento, resolução com bônus; itens no chão, dinheiro e
 NPCs com trabalho e moradia em prédios reais (citados na conversa) e crimes que dependem do bairro e do tipo de
 prédio próximo. Ver [redesign-fase-2.md](redesign-fase-2.md).
 
+**Feito (Fases 3 e 4 do redesenho):** interiores por tipo de prédio com serviços úteis (hotel, restaurante, hospital,
+delegacia, banco, bar, boate, QG, oficina, cinema, academia), NPCs com papel dentro dos prédios, dia e noite com
+relógio, luzes, prédios que abrem e fecham, menos gente na rua à noite e crimes diferentes. Ao ser derrotado o agente
+perde metade do dinheiro em mãos e acorda no hospital. Ver [redesign-fase-3.md](redesign-fase-3.md) e
+[redesign-fase-4.md](redesign-fase-4.md).
+
 **Planejado (direção "espião e polícia"):**
 
 - **NPCs com identidade (aprofundar):** rotina, segredos e relações, para o jogo ter tom pessoal e o jogador
@@ -181,7 +187,7 @@ moral do agente.
 | 7 | Sistema de missões da agência | Planejado |
 | 8 | Chunks + campo + rios + barcos | Planejado |
 | 9 | Multiplayer online | Planejado |
-| 10 | Arte pixel art e áudio | Arte: em andamento (Fases 1 e 2 de 5 feitas); áudio: planejado |
+| 10 | Arte pixel art e áudio | Arte: em andamento (Fases 1 a 4 de 5 feitas); áudio: planejado |
 
 ## 11. Questões em aberto
 

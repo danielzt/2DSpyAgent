@@ -1,6 +1,6 @@
 # Roteiro do redesenho visual e do mundo com contexto
 
-> Lista de trabalho do redesenho. **Fases 0, 1 e 2 concluídas; a Fase 3 depende da decisão D7.** Cada item tem um status;
+> Lista de trabalho do redesenho. **Fases 0 a 4 concluídas; falta a Fase 5.** Cada item tem um status;
 > atualize a coluna na mesma mudança em que o item avançar.
 > O design detalhado (paleta, resolução, valores concretos) está em
 > `docs/redesign-visual.md`.
@@ -27,8 +27,8 @@ assets externos, GDScript, GL Compatibility, lógica pura em `RefCounted` com se
 | 0 | Direção de arte e plano | Feito |
 | 1 | Base visual do mundo externo | Feito (aguardando avaliação do autor) |
 | 2 | Cidade com contexto | Feito (aguardando avaliação do autor) |
-| 3 | Interiores com finalidade | Pendente |
-| 4 | Dia e noite | Pendente |
+| 3 | Interiores com finalidade | Feito (aguardando avaliação do autor) |
+| 4 | Dia e noite | Feito (aguardando avaliação do autor; desempenho noturno acima da meta) |
 | 5 | Acabamento | Pendente |
 
 ## Como trabalhar
@@ -127,54 +127,58 @@ Detalhes do que foi feito: [redesign-fase-2.md](redesign-fase-2.md). Nos tipos d
 
 ## Fase 3 — Interiores com finalidade
 
+Detalhes do que foi feito: [redesign-fase-3.md](redesign-fase-3.md).
+
 | # | Item | Status |
 |---|---|---|
-| 3.1 | Modelos de interior por tipo no lugar da sala única, gerados por seed do id do prédio | Pendente |
-| 3.2 | Planta com cômodos e paredes internas | Pendente |
-| 3.3 | Piso e parede próprios de cada tipo | Pendente |
-| 3.4 | Móveis reconhecíveis: camas e recepção no hotel, mesas e cozinha no restaurante, balcão e banquetas no bar, prateleiras na loja, celas na delegacia, macas no hospital | Pendente |
-| 3.5 | Tamanho do interior varia com o tipo e com o tamanho da fachada, sempre em escala maior que a externa | Pendente |
-| 3.6 | NPCs dentro, com papel (recepcionista, garçom, barman, vendedor, clientes) e falas coerentes com o lugar | Pendente |
-| 3.7 | Cada tipo oferece pelo menos uma interação útil via `InteractZone` e `p{N}_interact`, com instrução no HUD. Nenhuma interação pode ser enfeite | Pendente |
-| 3.8 | Residências e escritórios simples, mas com identidade (quem mora/trabalha lá) | Pendente |
-| 3.9 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Pendente |
+| 3.1 | Modelos de interior por tipo no lugar da sala única, gerados por seed do id do prédio | Feito |
+| 3.2 | Planta com cômodos e paredes internas | Feito |
+| 3.3 | Piso e parede próprios de cada tipo | Feito |
+| 3.4 | Móveis reconhecíveis: camas e recepção no hotel, mesas e cozinha no restaurante, balcão e banquetas no bar, prateleiras na loja, celas na delegacia, macas no hospital | Feito |
+| 3.5 | Tamanho do interior varia com o tipo e com o tamanho da fachada, sempre em escala maior que a externa | Feito |
+| 3.6 | NPCs dentro, com papel (recepcionista, garçom, barman, vendedor, clientes) e falas coerentes com o lugar | Feito |
+| 3.7 | Cada tipo oferece pelo menos uma interação útil via `InteractZone` e `p{N}_interact`, com instrução no HUD. Nenhuma interação pode ser enfeite | Feito |
+| 3.8 | Residências e escritórios simples, mas com identidade (quem mora/trabalha lá) | Feito |
+| 3.9 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Feito |
 
 ### Interações sugeridas
 
 | Prédio | Interação | Status |
 |---|---|---|
-| Hotel | Pagar para dormir: recupera vida e avança o relógio | Pendente |
-| Restaurante / lanchonete | Comer cura | Pendente |
-| Bar | Rumores que revelam um crime ativo ou um criminoso | Pendente |
-| Hospital | Cura total paga | Pendente |
-| Delegacia | Entregar criminoso atordoado por recompensa maior | Pendente |
-| Banco | Guardar dinheiro | Pendente |
-| QG | Briefing e baú de equipamento | Pendente |
-| Oficina | Consertar/pintar o carro da agência | Pendente |
+| Hotel | Pagar para dormir: recupera vida e avança o relógio | Feito |
+| Restaurante / lanchonete | Comer cura | Feito |
+| Bar | Rumores que revelam um crime ativo ou um criminoso | Feito |
+| Hospital | Cura total paga | Feito |
+| Delegacia | Entregar criminoso atordoado por recompensa maior | Feito |
+| Banco | Guardar dinheiro | Feito |
+| QG | Briefing e baú de equipamento | Parcial: briefing feito; o baú é só visual (depende do inventário de 16 espaços) |
+| Oficina | Consertar/pintar o carro da agência | Parcial: pintura feita; conserto espera o dano de veículos |
 
 ## Fase 4 — Dia e noite
 
+Detalhes do que foi feito: [redesign-fase-4.md](redesign-fase-4.md).
+
 | # | Item | Status |
 |---|---|---|
-| 4.1 | Relógio do mundo em um autoload, determinístico e pronto para multiplayer | Pendente |
-| 4.2 | Duração do dia configurável (sugestão: 24 min reais) | Pendente |
-| 4.3 | Hora visível no HUD | Pendente |
-| 4.4 | Noite escura mas colorida e sempre legível: tinta azul/roxa saturada, nunca cinza nem preta | Pendente |
-| 4.5 | Piso de luminosidade: jogador, NPCs, carros e portas continuam fáceis de ver | Pendente |
-| 4.6 | Entardecer alaranjado e amanhecer rosado, com transição suave | Pendente |
-| 4.7 | Janelas dos prédios acesas à noite (padrão por seed, nem todas acesas) | Pendente |
-| 4.8 | Letreiros de neon por tipo de prédio | Pendente |
-| 4.9 | Postes com poça de luz na calçada | Pendente |
-| 4.10 | Faróis e lanternas dos carros | Pendente |
-| 4.11 | Semáforos e vitrines iluminados | Pendente |
-| 4.12 | Brilho aditivo barato como padrão; `Light2D` só se a medição mostrar que aguenta no GL Compatibility/browser | Pendente |
-| 4.13 | Interiores com iluminação própria, sem escurecer com a noite | Pendente |
-| 4.14 | Janelas internas mostram se é dia ou noite lá fora | Pendente |
-| 4.15 | Horário de funcionamento dos prédios (bar e boate à noite, banco de dia) | Pendente |
-| 4.16 | Menos pedestres de madrugada | Pendente |
-| 4.17 | Crimes diferentes e mais frequentes à noite | Pendente |
-| 4.18 | NPCs indo para casa | Pendente |
-| 4.19 | Fechamento da fase: testes, docs, capturas de dia e de noite em `docs/img/`, FPS antes/depois | Pendente |
+| 4.1 | Relógio do mundo em um autoload, determinístico e pronto para multiplayer | Feito |
+| 4.2 | Duração do dia configurável (sugestão: 24 min reais) | Feito |
+| 4.3 | Hora visível no HUD | Feito |
+| 4.4 | Noite escura mas colorida e sempre legível: tinta azul/roxa saturada, nunca cinza nem preta | Feito |
+| 4.5 | Piso de luminosidade: jogador, NPCs, carros e portas continuam fáceis de ver | Feito |
+| 4.6 | Entardecer alaranjado e amanhecer rosado, com transição suave | Feito |
+| 4.7 | Janelas dos prédios acesas à noite (padrão por seed, nem todas acesas) | Feito |
+| 4.8 | Letreiros de neon por tipo de prédio | Feito |
+| 4.9 | Postes com poça de luz na calçada | Feito |
+| 4.10 | Faróis e lanternas dos carros | Feito |
+| 4.11 | Semáforos e vitrines iluminados | Feito |
+| 4.12 | Brilho aditivo barato como padrão; `Light2D` só se a medição mostrar que aguenta no GL Compatibility/browser | Feito |
+| 4.13 | Interiores com iluminação própria, sem escurecer com a noite | Feito |
+| 4.14 | Janelas internas mostram se é dia ou noite lá fora | Feito |
+| 4.15 | Horário de funcionamento dos prédios (bar e boate à noite, banco de dia) | Feito |
+| 4.16 | Menos pedestres de madrugada | Feito |
+| 4.17 | Crimes diferentes e mais frequentes à noite | Feito |
+| 4.18 | NPCs indo para casa | Feito |
+| 4.19 | Fechamento da fase: testes, docs, capturas de dia e de noite em `docs/img/`, FPS antes/depois | Feito |
 
 ## Fase 5 — Acabamento
 
@@ -197,15 +201,15 @@ Detalhes do que foi feito: [redesign-fase-2.md](redesign-fase-2.md). Nos tipos d
 | # | Teste | Fase | Status |
 |---|---|---|---|
 | V1 | Geração determinística: mesma seed gera os mesmos bairros, tipos e nomes | 2 | Feito |
-| V2 | Geração determinística: mesma seed gera os mesmos interiores | 3 | Pendente |
+| V2 | Geração determinística: mesma seed gera os mesmos interiores | 3 | Feito |
 | V3 | Todo tipo obrigatório existe pelo menos uma vez na cidade | 2 | Feito |
 | V4 | Todo prédio tem tipo e porta acessível pela calçada | 2 | Feito |
-| V5 | Todo prédio tem interior válido (sem móvel bloqueando porta ou caminho) | 3 | Pendente |
-| V6 | Cada interação de interior funciona via ação de input e só com o jogador na zona | 3 | Pendente |
-| V7 | Relógio: avanço e fases do dia | 4 | Pendente |
-| V8 | Horários de funcionamento | 4 | Pendente |
-| V9 | Cor ambiente da noite nunca abaixo do piso de luminosidade definido | 4 | Pendente |
-| V10 | Luzes acendem e apagam nas horas certas | 4 | Pendente |
+| V5 | Todo prédio tem interior válido (sem móvel bloqueando porta ou caminho) | 3 | Feito |
+| V6 | Cada interação de interior funciona via ação de input e só com o jogador na zona | 3 | Feito |
+| V7 | Relógio: avanço e fases do dia | 4 | Feito |
+| V8 | Horários de funcionamento | 4 | Feito |
+| V9 | Cor ambiente da noite nunca abaixo do piso de luminosidade definido | 4 | Feito |
+| V10 | Luzes acendem e apagam nas horas certas | 4 | Feito |
 
 ## Decisões em aberto
 
@@ -219,4 +223,4 @@ A resolver na Fase 0 ou antes.
 | D4 | Tamanho do mundo: manter a grade 12x12 e o campo, ou incluir rios, pontes e litoral | Em vigor por omissão: manter grade 12x12 e campo |
 | D5 | Duração do dia (sugestão: 24 min reais) | Em vigor por omissão: 24 min |
 | D6 | Avenidas: mais largas de verdade (mexe em calçadas e trânsito) ou só pintura diferente | Decidido: mais largas de verdade; 2 avenidas cruzando no centro |
-| D7 | Mecânicas novas que alguns serviços exigem (perda de dinheiro ao ser derrotado, presos a entregar, item de comida, seta de alvo no HUD) | Pendente (sim ou não por item, seção 7.3 do design); só é necessária antes da Fase 3 |
+| D7 | Mecânicas novas que alguns serviços exigem (perda de dinheiro ao ser derrotado, presos a entregar, item de comida, seta de alvo no HUD) | Assumido sim para as quatro, para a Fase 3 seguir (banco, delegacia, comida, seta); confirmar |

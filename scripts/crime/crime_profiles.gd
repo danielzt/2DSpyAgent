@@ -18,7 +18,7 @@ const PROFILES := {
 			{"id": "trafficking", "name": "Tráfico de drogas", "weight": 2, "criminals": 2, "reward": 150,
 				"near": ["warehouse", "club"], "districts": {"industrial": 1.5, "nightlife": 2.0}, "night": 2.0},
 			{"id": "bank_heist", "name": "Assalto a banco", "weight": 1, "criminals": 3, "reward": 260,
-				"near": ["bank"], "districts": {"center": 2.0, "upscale": 1.5}, "night": 0.0},
+				"near": ["bank"], "districts": {"center": 2.0, "upscale": 1.5}, "night": 0.0, "open_only": true},
 			{"id": "bar_brawl", "name": "Briga de bar", "weight": 2, "criminals": 2, "reward": 120,
 				"near": ["bar", "club"], "districts": {"nightlife": 3.0}, "night": 3.0},
 			{"id": "break_in", "name": "Arrombamento", "weight": 2, "criminals": 1, "reward": 110,

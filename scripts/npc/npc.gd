@@ -12,6 +12,7 @@ const CharacterSprites := preload("res://scripts/art/character_sprites.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 
 signal died(kind: String)
+signal went_home
 
 const WALK_SPEED := 60.0
 const FLEE_SPEED := 130.0
@@ -34,6 +35,9 @@ const LOOT_WEAPON_CHANCE := 0.08
 const ACTOR_Z := 3
 const WALK_FRAME_TIME := 0.18
 const MOVING_SPEED := 5.0
+## Indo para casa (à noite): confere de tempos em tempos se chegou a uma porta de moradia.
+const HOME_CHECK_TIME := 0.4
+const HOME_REACH := 56.0
 
 @export var kind := "innocent"
 @export var max_health := 3
@@ -55,6 +59,10 @@ var identity: Dictionary = {}
 ## Trabalho e moradia (Population.context_for); vazio para NPC avulso.
 var context: Dictionary = {}
 var display_name := ""
+## À noite parte dos pedestres vai para casa: some ao passar por uma porta de moradia.
+var going_home := false
+var _home_doors := PackedVector2Array()
+var _home_timer := 0.0
 var rng := RandomNumberGenerator.new()
 
 var _wander_dir := Vector2.ZERO
@@ -93,8 +101,30 @@ func _ready() -> void:
 	_add_talk_zone()
 
 
+## Manda o NPC para casa: ele segue o passeio e entra na primeira moradia por onde passar.
+func go_home(doors: PackedVector2Array) -> void:
+	going_home = true
+	_home_doors = doors
+
+
+## True (e o NPC some) se está em frente a uma porta de moradia.
+func _arrive_home() -> bool:
+	for door in _home_doors:
+		if door.distance_squared_to(global_position) < HOME_REACH * HOME_REACH:
+			went_home.emit()
+			queue_free()
+			return true
+	return false
+
+
 func _physics_process(delta: float) -> void:
 	_fire_cooldown -= delta
+	if going_home and not dead:
+		_home_timer -= delta
+		if _home_timer <= 0.0:
+			_home_timer = HOME_CHECK_TIME
+			if _arrive_home():
+				return
 	if _stun_timer > 0.0:
 		_stun_timer -= delta
 		stunned = _stun_timer > 0.0

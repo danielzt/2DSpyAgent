@@ -3,6 +3,8 @@ extends Node
 ## paga um bônus quando todos os criminosos do crime são mortos ou atordoados.
 
 const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
+const DayCycle := preload("res://scripts/world/day_cycle.gd")
+const BuildingDefs := preload("res://scripts/world/building_defs.gd")
 const NPC_SCENE := preload("res://scenes/npc/npc.tscn")
 
 signal incident_started(incident: Dictionary)
@@ -58,7 +60,8 @@ func try_spawn() -> bool:
 	if not CrimeProfiles.has_region(region):
 		return false
 	# O tipo depende do bairro; o lugar, de um prédio compatível com o tipo.
-	var type: Dictionary = CrimeProfiles.pick(region, rng, layout.district_id_at(player.global_position))
+	# À noite os pesos mudam (briga de bar e arrombamento sobem; assalto a banco some).
+	var type: Dictionary = CrimeProfiles.pick(region, rng, layout.district_id_at(player.global_position), WorldClock.is_night())
 	if type.is_empty():
 		return false
 	var place: Dictionary = pick_place(type, player.global_position)
@@ -79,6 +82,10 @@ func pick_place(type: Dictionary, from: Vector2) -> Dictionary:
 	if near.is_empty():
 		return {}
 	var options: Array = layout.buildings_of(near, from, MIN_DISTANCE, MAX_PLACE_DISTANCE)
+	if type.get("open_only", false):
+		# Crime que só acontece com o prédio aberto (assalto a banco).
+		var hour: float = WorldClock.hour()
+		options = options.filter(func(b: Dictionary) -> bool: return BuildingDefs.is_open(b.type, hour))
 	if options.is_empty():
 		return {}
 	return options[rng.randi_range(0, options.size() - 1)]
@@ -134,4 +141,4 @@ func _next_interval() -> float:
 	var region := ""
 	if not players.is_empty() and layout != null:
 		region = layout.region_at((players[0] as Node2D).global_position)
-	return CrimeProfiles.interval_for(region) * rng.randf_range(0.8, 1.2)
+	return CrimeProfiles.interval_for(region) * DayCycle.crime_interval_factor(WorldClock.hour(), region) * rng.randf_range(0.8, 1.2)

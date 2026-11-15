@@ -1,6 +1,6 @@
 # Roteiro do jogo completo
 
-> **Plano aprovado pelo autor; etapa E1 em andamento (Fase 2 do redesenho feita).** Lista as etapas que levam do protótipo atual ao
+> **Plano aprovado pelo autor; etapa E1 feita (Fases 2 a 4 do redesenho), exceto o item 1.2.** Lista as etapas que levam do protótipo atual ao
 > jogo completo. Cada item tem status; atualize a coluna na mesma mudança em que o item avançar.
 > A história está em [historia.md](historia.md). O redesenho visual tem roteiro próprio em
 > [redesign-roteiro.md](redesign-roteiro.md).
@@ -18,7 +18,7 @@
 
 | Etapa | Assunto | Depende de | Status |
 |---|---|---|---|
-| E1 | Redesenho, Fases 2 a 4 (cidade com contexto, interiores, dia e noite) | — | Em andamento (Fase 2 feita) |
+| E1 | Redesenho, Fases 2 a 4 (cidade com contexto, interiores, dia e noite) | — | Feito (falta o item 1.2) |
 | E2 | Base: menu inicial, pausa, save, opções | — | Pendente |
 | E3 | Split-screen local (até 4) | E2 | Pendente |
 | E4 | Corpo a corpo, armas e atributos | — | Pendente |
@@ -39,7 +39,7 @@ Itens e status em [redesign-roteiro.md](redesign-roteiro.md). Acréscimos que a 
 |---|---|---|
 | 1.1 | Gerador garante os tipos de prédio obrigatórios da história em qualquer seed (lavanderia/QG, banco, boate, delegacia, oficina, bar, jornal) | Feito |
 | 1.2 | Campo garante uma fazenda de ensaio e um silo | Pendente |
-| 1.3 | Novo tipo de prédio: redação do jornal | Feito (fachada e nome; interior na Fase 3) |
+| 1.3 | Novo tipo de prédio: redação do jornal | Feito (fachada, nome e interior) |
 
 ## E2 — Base: menu, pausa, save, opções
 
