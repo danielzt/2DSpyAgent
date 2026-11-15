@@ -27,9 +27,16 @@ func _run_all() -> void:
 
 	var files: Array[String] = []
 	var dir := DirAccess.open(TEST_DIR)
+	# Filtro opcional: `-- combat traffic` roda só os arquivos cujo nome contém um dos termos.
+	var only := OS.get_cmdline_user_args()
 	for f in dir.get_files():
 		if f.begins_with("test_") and f.ends_with(".gd"):
-			files.append(f)
+			var wanted := only.is_empty()
+			for term in only:
+				if f.contains(term):
+					wanted = true
+			if wanted:
+				files.append(f)
 	files.sort()
 
 	for f in files:

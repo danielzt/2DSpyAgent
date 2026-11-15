@@ -116,6 +116,42 @@ func test_enemy_bullet_hurts_player_not_npcs() -> void:
 	assert_eq(player.health, player.MAX_HEALTH - 1)
 
 
+func test_bullet_from_freed_shooter_still_hurts_player() -> void:
+	# O criminoso morre (é liberado) com o projétil ainda no ar: o tiro vale e não pode dar erro.
+	var shooter := _npc(Vector2(300, 2000), "criminal")
+	shooter.set_physics_process(false)
+	BulletScript.fire(tree.root, Vector2(440, 500), Vector2.RIGHT, shooter, "players")
+	shooter.free()
+	await wait_physics_frames(15)
+	assert_eq(player.health, player.MAX_HEALTH - 1)
+
+
+func test_stun_bullet_from_freed_shooter_still_stuns() -> void:
+	var shooter := _npc(Vector2(300, 2000))
+	shooter.set_physics_process(false)
+	var npc := _npc(Vector2(700, 500), "criminal")
+	npc.set_physics_process(false)
+	BulletScript.fire(tree.root, Vector2(600, 500), Vector2.RIGHT, shooter, "npcs", 1.0, "stun")
+	shooter.free()
+	await wait_physics_frames(15)
+	assert_true(npc.stunned)
+
+
+func test_enemy_bullet_from_freed_shooter_hits_driver() -> void:
+	var car := CAR_SCENE.instantiate()
+	car.global_position = Vector2(700, 500)
+	tree.root.add_child(car)
+	extras.append(car)
+	await wait_physics_frames(2)
+	player.enter_vehicle(car)
+	var shooter := _npc(Vector2(300, 2000), "criminal")
+	shooter.set_physics_process(false)
+	BulletScript.fire(tree.root, Vector2(600, 500), Vector2.RIGHT, shooter, "players")
+	shooter.free()
+	await wait_physics_frames(15)
+	assert_eq(player.health, player.MAX_HEALTH - 1)
+
+
 func test_player_bullet_passes_through_other_players() -> void:
 	var other := PLAYER_SCENE.instantiate()
 	other.player_index = 2

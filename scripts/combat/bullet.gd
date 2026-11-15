@@ -47,19 +47,22 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	if body == shooter:
+	# O atirador pode ter sido liberado com o projétil no ar (criminoso morto depois de
+	# atirar): uma referência liberada não pode ser passada a um parâmetro tipado.
+	var source: Node = shooter if is_instance_valid(shooter) else null
+	if body == source:
 		return
 	if body.is_in_group(target_group):
 		if effect == "stun" and body.has_method("stun"):
-			body.stun(STUN_TIME, shooter)
+			body.stun(STUN_TIME, source)
 		else:
-			body.take_damage(damage, shooter)
+			body.take_damage(damage, source)
 		queue_free()
 		return
 	if body.is_in_group("vehicles"):
 		# Tiro em carro com motorista fere o motorista (quando o alvo são jogadores).
 		if target_group == "players" and is_instance_valid(body.driver):
-			body.driver.take_damage(damage, shooter)
+			body.driver.take_damage(damage, source)
 		queue_free()
 		return
 	if body.is_in_group("players") or body.is_in_group("npcs"):
