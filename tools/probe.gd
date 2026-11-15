@@ -54,6 +54,13 @@ func _run() -> void:
 		"fazenda": layout.country.buildings[3].exit_spawn + Vector2(0, 60),
 		"plantacao": (layout.country.fields[0] as Rect2).position + Vector2(200, -80),
 	}
+	# Fase 2: o cruzamento das avenidas e uma rua de cada bairro (no quarteirão inicial dele).
+	if layout.city.get("districts") != null:
+		var block: float = layout.city.BLOCK
+		points["avenida"] = Vector2(layout.city.AVENUE_LINE * block, layout.city.AVENUE_LINE * block)
+		for id in layout.city.districts.IDS:
+			var cell: Vector2i = layout.city.districts.seeds[id]
+			points["bairro-%s" % id] = Vector2(cell.x * block + block / 2.0, (cell.y + 1) * block)
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://docs/img"))
 	var total_ms := 0.0

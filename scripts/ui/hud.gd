@@ -31,7 +31,7 @@ func _ready() -> void:
 	_score = _make_label(Control.PRESET_TOP_RIGHT, "white", "light")
 	_money = _make_label(Control.PRESET_TOP_RIGHT, "neon_green", "green", Vector2(0.0, LINE))
 	_clock = _make_label(Control.PRESET_CENTER_TOP, "cream", "amber")
-	_toast = _make_label(Control.PRESET_CENTER_TOP, "amber", "orange", Vector2(0.0, LINE + 12.0))
+	_toast = _make_label(Control.PRESET_CENTER_TOP, "amber", "orange", Vector2(0.0, LINE * 3.0 + 4.0))
 	_toast.align = 1
 	_toast.visible = false
 	_hands = _make_label(Control.PRESET_CENTER_BOTTOM, "light", "slate")
