@@ -9,9 +9,10 @@ const ALONG_WEIGHT := 3.0
 const CROSS_WEIGHT := 1.0
 
 
-## Distância do centro da rua ao meio da calçada.
-static func half() -> float:
-	return CityLayout.ASPHALT / 2.0 + CityLayout.SIDEWALK / 2.0
+## Distância do eixo da rua ao meio da calçada. Depende da linha de rua (a avenida é mais
+## larga); sem linha, vale a rua comum.
+static func half(line := -1) -> float:
+	return CityLayout.asphalt(line) / 2.0 + CityLayout.SIDEWALK / 2.0
 
 
 static func is_valid(n: Vector4i) -> bool:
@@ -20,7 +21,7 @@ static func is_valid(n: Vector4i) -> bool:
 
 
 static func position(n: Vector4i) -> Vector2:
-	return Vector2(n.x * CityLayout.BLOCK + n.z * half(), n.y * CityLayout.BLOCK + n.w * half())
+	return Vector2(n.x * CityLayout.BLOCK + n.z * half(n.x), n.y * CityLayout.BLOCK + n.w * half(n.y))
 
 
 ## Vizinhos pela calçada (mesma rua, próximo cruzamento).

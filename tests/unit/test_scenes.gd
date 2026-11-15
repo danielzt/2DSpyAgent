@@ -213,3 +213,71 @@ func test_door_touch_without_interact_does_nothing() -> void:
 	assert_false(GameState.is_inside())
 	door.queue_free()
 	await wait_frames(1)
+
+
+# --- cidade com contexto (Fase 2) ---
+
+func test_hud_shows_district_and_street() -> void:
+	var main := await _start_main()
+	var player = tree.get_nodes_in_group("players")[0]
+	var layout := WorldLayout.new()
+	await wait_frames(2)
+	assert_eq(player.place_name, layout.place_text(player.global_position))
+	assert_eq(player.hud.place_text(), player.place_name)
+	assert_true(player.place_name.contains(layout.district_at(player.global_position)))
+	assert_true(player.place_name.contains("×"), "o jogador nasce em um cruzamento")
+	player.global_position = Vector2(WorldLayout.world_size().x - 300, 300)
+	await wait_frames(2)
+	assert_eq(player.hud.place_text(), "", "longe da estrada do campo não há rua")
+	await _cleanup(main)
+
+
+func test_door_prompt_names_the_building() -> void:
+	var main := await _start_main()
+	var layout := WorldLayout.new()
+	for d in tree.get_nodes_in_group("building_doors"):
+		var b: Dictionary = layout.building_by_id(d.building_id)
+		assert_eq(d.building_name, b.name)
+		assert_eq(d.building_type, b.type)
+		assert_true(d.verb.contains(b.name), d.verb)
+	var target: Dictionary = layout.city.buildings[12]
+	var player = tree.get_nodes_in_group("players")[0]
+	player.global_position = target.exit_spawn
+	Input.action_press("p1_up")
+	await wait_physics_frames(30)
+	Input.action_release("p1_up")
+	assert_true(player.current_prompt().contains(target.name), player.current_prompt())
+	await _cleanup(main)
+
+
+func test_entering_a_building_records_its_type_and_name() -> void:
+	var main := await _start_main()
+	var target: Dictionary = WorldLayout.new().city.buildings[12]
+	var player = tree.get_nodes_in_group("players")[0]
+	player.global_position = target.exit_spawn
+	Input.action_press("p1_up")
+	await wait_physics_frames(30)
+	Input.action_release("p1_up")
+	Input.action_press("p1_interact")
+	await wait_physics_frames(2)
+	Input.action_release("p1_interact")
+	assert_eq(GameState.building_type, target.type)
+	assert_eq(GameState.building_name, target.name)
+	await wait_frames(3)
+	await _cleanup(main)
+	GameState.set_outside()
+
+
+func test_world_civilians_know_where_they_work_and_live() -> void:
+	var main := await _start_main(true)
+	var layout := WorldLayout.new()
+	var linked := 0
+	for npc in tree.get_nodes_in_group("npcs"):
+		if npc.kind != "innocent":
+			continue
+		assert_ne(npc.identity.get("work_name", ""), "", "civil sem trabalho")
+		assert_false(layout.building_by_id(npc.identity.work_id).is_empty())
+		assert_false(layout.building_by_id(npc.identity.home_id).is_empty())
+		linked += 1
+	assert_eq(linked, WorldLayout.CITY_PEDESTRIANS + WorldLayout.COUNTRY_CIVILIANS)
+	await _cleanup(main)

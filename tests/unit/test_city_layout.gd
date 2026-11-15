@@ -1,6 +1,8 @@
 extends "res://tests/base_test.gd"
 
 const CityLayout := preload("res://scripts/world/city_layout.gd")
+const BuildingDefs := preload("res://scripts/world/building_defs.gd")
+const Palette := preload("res://scripts/art/palette.gd")
 
 var layout
 
@@ -23,14 +25,57 @@ func test_street_corridor_is_asphalt_plus_two_sidewalks() -> void:
 
 func test_there_is_one_lot_per_block() -> void:
 	assert_eq(layout.lots.size(), CityLayout.CELLS * CityLayout.CELLS)
-	for lot in layout.lots:
+	for i in layout.lots.size():
+		var lot: Rect2 = layout.lots[i]
+		var cx: int = i / CityLayout.CELLS
+		var cy: int = i % CityLayout.CELLS
 		assert_true(_world().encloses(lot))
-		assert_almost_eq(lot.size.x, CityLayout.LOT)
+		assert_eq(lot, CityLayout.lot_rect(cx, cy))
+		# o lote é o que sobra entre os corredores das ruas em volta
+		assert_almost_eq(lot.size.x, CityLayout.BLOCK - CityLayout.corridor(cx) / 2.0 - CityLayout.corridor(cx + 1) / 2.0)
+		assert_almost_eq(lot.size.y, CityLayout.BLOCK - CityLayout.corridor(cy) / 2.0 - CityLayout.corridor(cy + 1) / 2.0)
+	assert_almost_eq(layout.lots[0].size.x, CityLayout.LOT, 0.01, "lote entre ruas comuns")
 
 
 func test_lots_leave_room_for_streets() -> void:
 	# lotes vizinhos ficam separados pelo corredor inteiro (asfalto + calçadas)
 	assert_almost_eq(layout.lots[CityLayout.CELLS].position.x - layout.lots[0].end.x, CityLayout.ROAD)
+
+
+# --- avenidas ---
+
+func test_two_avenues_cross_at_the_center_and_are_wider() -> void:
+	var line := CityLayout.AVENUE_LINE
+	assert_eq(line, CityLayout.CELLS / 2, "avenidas cruzam no centro")
+	assert_true(CityLayout.is_avenue(line))
+	assert_false(CityLayout.is_avenue(line - 1))
+	assert_gt(CityLayout.asphalt(line), CityLayout.asphalt(1))
+	assert_almost_eq(CityLayout.corridor(line), CityLayout.AVENUE_ASPHALT + CityLayout.SIDEWALK * 2.0)
+	assert_almost_eq(CityLayout.corridor(1), CityLayout.ROAD)
+	assert_almost_eq(CityLayout.AVENUE_ROAD, 240.0)
+
+
+func test_lots_beside_an_avenue_are_narrower_on_that_axis() -> void:
+	var line := CityLayout.AVENUE_LINE
+	var shrink := (CityLayout.AVENUE_ROAD - CityLayout.ROAD) / 2.0
+	for cell in [line - 1, line]:
+		assert_almost_eq(CityLayout.lot_rect(cell, 0).size.x, CityLayout.LOT - shrink)
+		assert_almost_eq(CityLayout.lot_rect(cell, 0).size.y, CityLayout.LOT)
+		assert_almost_eq(CityLayout.lot_rect(0, cell).size.y, CityLayout.LOT - shrink)
+	# os dois lotes vizinhos da avenida ficam separados pelo corredor inteiro dela
+	var gap := CityLayout.lot_rect(line, 0).position.x - CityLayout.lot_rect(line - 1, 0).end.x
+	assert_almost_eq(gap, CityLayout.AVENUE_ROAD)
+	# a avenida horizontal continua na estrada do campo
+	assert_almost_eq(line * CityLayout.BLOCK, 3360.0)
+
+
+func test_no_building_stands_on_an_avenue() -> void:
+	var axis := CityLayout.AVENUE_LINE * CityLayout.BLOCK
+	var half := CityLayout.AVENUE_ROAD / 2.0
+	for b in layout.buildings:
+		var rect: Rect2 = b.rect
+		assert_false(rect.intersects(Rect2(axis - half, 0, half * 2.0, CityLayout.city_size())), "prédio %d na avenida" % b.id)
+		assert_false(rect.intersects(Rect2(0, axis - half, CityLayout.city_size(), half * 2.0)), "prédio %d na avenida" % b.id)
 
 
 # --- prédios ---
@@ -142,7 +187,8 @@ func test_same_seed_is_deterministic() -> void:
 func test_different_seed_changes_the_city() -> void:
 	var a := CityLayout.new(1)
 	var b := CityLayout.new(2)
-	assert_ne(a.buildings[0].color, b.buildings[0].color)
+	# a cor vem de uma paleta pequena e pode coincidir; o formato do prédio não
+	assert_ne(a.buildings[0].rect, b.buildings[0].rect)
 	assert_ne(a.trees, b.trees)
 
 
@@ -161,12 +207,28 @@ func test_trees_stay_off_buildings_and_streets() -> void:
 # --- lojas ---
 
 func test_shops_are_assigned() -> void:
+	# as cotas das lojas saíram do SHOP_PLAN e agora vêm da tabela de tipos
 	var counts := {}
 	for b in layout.buildings:
 		if b.shop != "":
 			counts[b.shop] = counts.get(b.shop, 0) + 1
-	for plan in CityLayout.SHOP_PLAN:
-		assert_eq(counts.get(plan[0], 0), plan[1], plan[0])
+			assert_eq(b.shop, BuildingDefs.shop_of(b.type))
+	assert_eq(counts.get("armory", 0), 2)
+	assert_eq(counts.get("pharmacy", 0), 3)
+	assert_eq(counts.get("agent_store", 0), 2)
+	assert_eq(counts.size(), 3)
+
+
+func test_building_colors_come_from_the_palette() -> void:
+	for b in layout.buildings:
+		assert_true(Palette.contains(b.color), "prédio %d" % b.id)
+
+
+func test_parked_cars_avoid_the_avenues() -> void:
+	for cell in CityLayout.PARKED_CELLS:
+		assert_false(CityLayout.is_avenue(cell.x))
+	assert_almost_eq(CityLayout.park_offset(1), CityLayout.PARK_OFFSET)
+	assert_gt(CityLayout.park_offset(CityLayout.AVENUE_LINE), CityLayout.park_offset(1))
 
 
 func test_shop_buildings_are_big_enough() -> void:

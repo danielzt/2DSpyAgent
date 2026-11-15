@@ -6,6 +6,8 @@ const CountryLayout := preload("res://scripts/world/country_layout.gd")
 const BuildingStyle := preload("res://scripts/world/building_style.gd")
 const BuildingArt := preload("res://scripts/art/building_art.gd")
 const TileFactory := preload("res://scripts/art/tile_factory.gd")
+const BuildingDefs := preload("res://scripts/world/building_defs.gd")
+const DistrictLayout := preload("res://scripts/world/district_layout.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 const PixelFont := preload("res://scripts/art/pixel_font.gd")
 
@@ -82,18 +84,45 @@ func test_tile_roofs_only_on_low_buildings() -> void:
 
 
 func test_shops_get_sign_awning_and_their_own_colors() -> void:
+	# a partir da Fase 2 todo prédio com tipo tem letreiro (menos as casas); as lojas
+	# continuam com vitrine, toldo e a parede de sempre
 	var found := {}
 	for b in city.buildings:
-		if b.shop == "":
-			assert_eq(BuildingStyle.for_building(b).sign, "")
-			continue
 		var style := BuildingStyle.for_building(b)
+		if b.type == "house":
+			assert_eq(style.sign, "")
+			continue
+		assert_eq(style.sign, b.name)
+		if b.shop == "":
+			continue
 		found[b.shop] = style
-		assert_ne(style.sign, "")
+		assert_true(style.front, "loja tem vitrine")
 		assert_ne(style.awning, "")
 		assert_eq(style.wall, BuildingStyle.SHOP_STYLES[b.shop].wall)
-	assert_eq(found.size(), CityLayout.SHOP_PLAN.size())
+	assert_eq(found.size(), 3)
 	assert_ne(found["armory"].sign_fg, found["pharmacy"].sign_fg)
+
+
+func test_style_follows_the_district_and_the_type() -> void:
+	for b in city.buildings:
+		var style := BuildingStyle.for_building(b)
+		assert_eq(style.wall, b.wall)
+		assert_eq(style.type, b.type)
+		assert_true(style.floors <= b.floors)
+		var def: Dictionary = BuildingDefs.def(b.type)
+		assert_eq(style.front, def.get("front", false), b.type)
+		assert_eq(style.awning, def.get("awning", ""), b.type)
+
+
+func test_building_without_type_keeps_the_old_shop_look() -> void:
+	var b := {"id": 3, "rect": Rect2(0, 0, 300, 300), "door": Rect2(100, 300, 56, 12), "roof": [], "shop": "armory"}
+	var style := BuildingStyle.for_building(b)
+	assert_eq(style.sign, "Armaria")
+	assert_true(style.front)
+	assert_eq(style.wall, "wall/brick")
+	b.shop = ""
+	assert_eq(BuildingStyle.for_building(b).sign, "")
+	assert_false(BuildingStyle.for_building(b).front)
 
 
 func test_farms_are_wooden_with_tile_roof() -> void:
@@ -188,18 +217,41 @@ func test_wrap_sign_breaks_long_names_at_a_space() -> void:
 	assert_true(PixelFont.measure(wrapped).x < PixelFont.measure("Loja do Agente").x)
 
 
-func test_every_shop_sign_fits_its_building() -> void:
+func test_every_sign_fits_its_building() -> void:
+	# o nome entra em até duas linhas; se não couber, vale o letreiro reserva do tipo
+	var full := 0
 	for b in city.buildings:
-		if b.shop == "":
-			continue
 		var style := BuildingStyle.for_building(b)
 		var width_texels := int((b.rect as Rect2).size.x / 2.0)
-		var text := BuildingArt.wrap_sign(style.sign, width_texels - 8)
-		assert_true(PixelFont.measure(text).x + 6 <= width_texels - 2, "letreiro de %s não cabe" % b.shop)
+		var text := BuildingArt.sign_text_for(style, width_texels)
+		if style.sign == "":
+			assert_eq(text, "")
+			continue
+		assert_true(PixelFont.measure(text).x + 6 <= width_texels - 2, "letreiro de %s não cabe" % b.name)
+		if b.shop != "":
+			assert_ne(text, "", "loja sem letreiro: %s" % b.name)
+		if text.replace("\n", " ") == style.sign:
+			full += 1
+	assert_gt(full, city.buildings.size() / 2.0, "a maioria dos prédios mostra o nome inteiro")
+
+
+func test_sign_falls_back_to_the_short_text_or_nothing() -> void:
+	var style := {"sign": "Academia Braço Longo da Lei", "sign_short": "Academia"}
+	assert_eq(BuildingArt.sign_text_for(style, 200).replace("\n", " "), style.sign)
+	assert_eq(BuildingArt.sign_text_for(style, 66), "Academia")
+	assert_eq(BuildingArt.sign_text_for(style, 20), "")
+	assert_eq(BuildingArt.sign_text_for({"sign": "", "sign_short": "Bar"}, 200), "Bar")
 
 
 func test_wall_and_roof_tones_cover_every_style() -> void:
-	for wall in BuildingStyle.WALLS + ["wall/wood"]:
+	var walls: Array = BuildingStyle.WALLS + ["wall/wood"]
+	for id in DistrictLayout.IDS:
+		walls.append_array(DistrictLayout.params(id).walls)
+		for roof in DistrictLayout.params(id).roofs:
+			assert_true(TileFactory.has_tile(roof), roof)
+			assert_eq(BuildingArt.roof_edges(roof).size(), 2, roof)
+	for wall in walls:
+		assert_true(TileFactory.has_tile(wall), wall)
 		assert_eq(BuildingArt.wall_tones(wall).size(), 3, wall)
 	for roof in BuildingStyle.ROOFS + BuildingStyle.TILE_ROOFS:
 		assert_eq(BuildingArt.roof_edges(roof).size(), 2, roof)

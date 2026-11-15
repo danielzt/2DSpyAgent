@@ -61,7 +61,7 @@ static func render(b: Dictionary, style: Dictionary) -> RefCounted:
 	var floors: int = style.floors
 	var fh := BuildingStyle.facade_texels(floors)
 	var rh := h - fh
-	var is_shop: bool = style.shop != ""
+	var is_shop: bool = style.get("front", style.shop != "")
 	var wall: Array[Color] = wall_tones(style.wall)
 	var edges: Array[Color] = roof_edges(style.roof)
 	var rng := RandomNumberGenerator.new()
@@ -114,9 +114,22 @@ static func render(b: Dictionary, style: Dictionary) -> RefCounted:
 	# Contorno do prédio.
 	canvas.frame(0, 0, w, h, _c("ink"))
 
-	if style.sign != "":
-		_sign(canvas, style, w, rh, door_left + DOOR_W / 2)
+	var sign_text := sign_text_for(style, w)
+	if sign_text != "":
+		_sign(canvas, style, sign_text, w, rh, door_left + DOOR_W / 2)
 	return canvas
+
+
+## Texto do letreiro que cabe em um prédio de `w` texels: o nome (em até duas linhas), ou o
+## letreiro reserva (`sign_short`), ou nada.
+static func sign_text_for(style: Dictionary, w: int) -> String:
+	for candidate in [style.get("sign", ""), style.get("sign_short", "")]:
+		if candidate == "":
+			continue
+		var text := wrap_sign(candidate, w - 8)
+		if PixelFont.measure(text).x + 6 <= w - 4:
+			return text
+	return ""
 
 
 static func _window(canvas: RefCounted, x: int, y: int, wall: Array[Color], rng: RandomNumberGenerator) -> void:
@@ -176,8 +189,7 @@ static func _shop_front(canvas: RefCounted, w: int, h: int, door_left: int, styl
 
 
 ## Letreiro sobre o telhado, logo acima da fachada, centrado na porta quando cabe.
-static func _sign(canvas: RefCounted, style: Dictionary, w: int, rh: int, center_x: int) -> void:
-	var text: String = wrap_sign(style.sign, w - 8)
+static func _sign(canvas: RefCounted, style: Dictionary, text: String, w: int, rh: int, center_x: int) -> void:
 	var size := PixelFont.measure(text)
 	var bw := size.x + 6
 	var bh := size.y + 4

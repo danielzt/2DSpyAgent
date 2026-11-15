@@ -42,3 +42,17 @@ func test_consume_return_position_clears_flag() -> void:
 	gs.set_outside()
 	assert_eq(gs.consume_return_position(), Vector2(100, 200))
 	assert_false(gs.has_return)
+
+
+func test_inside_state_remembers_building_type_and_name() -> void:
+	gs.set_inside(4, Vector2(10, 20), "", "bar", "Bar Saideira")
+	assert_eq(gs.building_type, "bar")
+	assert_eq(gs.building_name, "Bar Saideira")
+	assert_eq(gs.building_shop, "")
+	gs.set_outside()
+	assert_eq(gs.building_type, "")
+	assert_eq(gs.building_name, "")
+	# chamada antiga (sem tipo nem nome) continua valendo
+	gs.set_inside(5, Vector2.ZERO, "armory")
+	assert_eq(gs.building_shop, "armory")
+	assert_eq(gs.building_type, "")

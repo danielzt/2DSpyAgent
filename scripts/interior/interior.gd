@@ -37,6 +37,7 @@ func _ready() -> void:
 	var player := PLAYER_SCENE.instantiate()
 	player.player_index = 1
 	player.region_name = "Interior"
+	player.place_name = GameState.building_name
 	player.position = InteriorLayout.spawn_point()
 	add_child(player)
 	player.set_camera_limits(Rect2(Vector2.ZERO, s))

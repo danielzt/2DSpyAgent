@@ -4,6 +4,8 @@ extends "res://tests/base_test.gd"
 const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
 const IncidentManagerScript := preload("res://scripts/crime/incident_manager.gd")
 const WorldLayout := preload("res://scripts/world/world_layout.gd")
+const BuildingDefs := preload("res://scripts/world/building_defs.gd")
+const DistrictLayout := preload("res://scripts/world/district_layout.gd")
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const InputSetupScript := preload("res://scripts/autoload/input_setup.gd")
 
@@ -167,7 +169,8 @@ func test_try_spawn_places_crime_in_the_players_region() -> void:
 	assert_eq(inc.region, "Cidade")
 	assert_eq(layout.region_at(inc.center), "Cidade")
 	var d: float = inc.center.distance_to(player.global_position)
-	assert_true(d >= manager.MIN_DISTANCE - 1.0 and d <= manager.MAX_DISTANCE + 1.0)
+	# o crime fica em frente a um prédio compatível, que pode estar um pouco mais longe
+	assert_true(d >= manager.MIN_DISTANCE - 1.0 and d <= manager.MAX_PLACE_DISTANCE + 1.0)
 	assert_false(layout.is_blocked(inc.center, 30.0))
 
 
@@ -272,3 +275,137 @@ func test_register_incident_score() -> void:
 	var before: int = Score.points
 	assert_eq(Score.register_incident(120), 120)
 	assert_eq(Score.points, before + 120)
+
+
+# --- crimes por bairro e por prédio (Fase 2) ---
+
+func test_city_crimes_name_valid_buildings_and_districts() -> void:
+	for t in CrimeProfiles.types_for("Cidade"):
+		assert_gt(CrimeProfiles.near_of(t).size(), 0.0, t.id)
+		for type in CrimeProfiles.near_of(t):
+			assert_true(BuildingDefs.exists(type), "%s: %s" % [t.id, type])
+		for district in t.districts:
+			assert_true(DistrictLayout.IDS.has(district), "%s: %s" % [t.id, district])
+		assert_true(t.night >= 0.0)
+	for id in ["bank_heist", "bar_brawl", "break_in"]:
+		assert_eq(CrimeProfiles.region_of(id), "Cidade")
+	assert_eq(CrimeProfiles.near_of(CrimeProfiles.find_type("cattle_theft")), [], "no campo o crime não pede prédio")
+
+
+func test_original_crimes_keep_their_numbers() -> void:
+	# perfis por região intactos: os seis tipos antigos não mudaram
+	var expected := {"assault": [3, 1, 100], "gang_fight": [2, 3, 200], "trafficking": [2, 2, 150],
+		"smuggling": [2, 2, 150], "cattle_theft": [3, 1, 100], "illegal_farm": [1, 3, 220]}
+	for id in expected:
+		var t := CrimeProfiles.find_type(id)
+		assert_eq([t.weight, t.criminals, t.reward], expected[id], id)
+	assert_eq(CrimeProfiles.types_for("Campo").size(), 3)
+	assert_eq(CrimeProfiles.types_for("Cidade").size(), 6)
+	assert_almost_eq(CrimeProfiles.interval_for("Cidade"), 25.0)
+	assert_almost_eq(CrimeProfiles.interval_for("Campo"), 45.0)
+
+
+func test_weight_changes_with_district_and_night() -> void:
+	var brawl := CrimeProfiles.find_type("bar_brawl")
+	assert_almost_eq(CrimeProfiles.weight_of(brawl), 2.0)
+	assert_almost_eq(CrimeProfiles.weight_of(brawl, "nightlife"), 6.0)
+	assert_almost_eq(CrimeProfiles.weight_of(brawl, "nightlife", true), 18.0)
+	assert_almost_eq(CrimeProfiles.weight_of(brawl, "civic"), 2.0, 0.01, "bairro sem multiplicador")
+	assert_almost_eq(CrimeProfiles.weight_of(CrimeProfiles.find_type("bank_heist"), "center", true), 0.0)
+	assert_almost_eq(CrimeProfiles.weight_of(CrimeProfiles.find_type("illegal_farm"), "", true), 1.0)
+
+
+func test_pick_follows_the_district() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4
+	var counts := {"nightlife": {}, "residential": {}}
+	for district in counts:
+		for i in 2000:
+			var id: String = CrimeProfiles.pick("Cidade", rng, district).id
+			counts[district][id] = counts[district].get(id, 0) + 1
+	assert_gt(counts["nightlife"]["bar_brawl"], counts["residential"]["bar_brawl"] * 2.0)
+	assert_gt(counts["residential"]["break_in"], counts["nightlife"]["break_in"] * 1.5)
+	assert_gt(counts["nightlife"]["bar_brawl"], counts["nightlife"]["assault"])
+
+
+func test_bank_heist_never_happens_at_night() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6
+	var by_day := 0
+	for i in 1500:
+		assert_ne(CrimeProfiles.pick("Cidade", rng, "center", true).id, "bank_heist")
+		if CrimeProfiles.pick("Cidade", rng, "center").id == "bank_heist":
+			by_day += 1
+	assert_gt(by_day, 50.0)
+
+
+func test_alert_text_names_the_place() -> void:
+	var t := CrimeProfiles.find_type("bar_brawl")
+	var text := CrimeProfiles.alert_text(t, Vector2(0, 0), Vector2(600, 0), "Bar Saideira")
+	assert_true(text.contains("Briga de bar (Bar Saideira)"), text)
+	assert_true(text.contains("50 m"))
+	assert_false(CrimeProfiles.alert_text(t, Vector2(0, 0), Vector2(600, 0)).contains("("))
+
+
+func test_buildings_of_filters_by_type_and_distance() -> void:
+	var from := Vector2(3360, 3360)
+	var bars: Array = layout.buildings_of(["bar"], from)
+	assert_true(bars.size() >= BuildingDefs.min_count("bar"))
+	for b in bars:
+		assert_eq(b.type, "bar")
+	for b in layout.buildings_of(["bar", "club"], from, 500.0, 1500.0):
+		var d: float = (b.exit_spawn as Vector2).distance_to(from)
+		assert_true(d >= 500.0 and d <= 1500.0)
+	assert_eq(layout.buildings_of(["castelo"], from), [])
+	var nearest: Dictionary = layout.nearest_building_of(["bar"], from)
+	for b in bars:
+		assert_true((nearest.exit_spawn as Vector2).distance_to(from) <= (b.exit_spawn as Vector2).distance_to(from) + 0.01)
+	assert_eq(layout.nearest_building_of(["castelo"], from), {})
+
+
+func test_pick_place_returns_a_compatible_building() -> void:
+	await _setup(Vector2(3360, 3360))
+	manager.enabled = false
+	var found := 0
+	for t in CrimeProfiles.types_for("Cidade"):
+		var place: Dictionary = manager.pick_place(t, player.global_position)
+		if place.is_empty():
+			continue
+		found += 1
+		assert_true(CrimeProfiles.near_of(t).has(place.type), "%s em frente a %s" % [t.id, place.type])
+		var d: float = (place.exit_spawn as Vector2).distance_to(player.global_position)
+		assert_true(d >= manager.MIN_DISTANCE and d <= manager.MAX_PLACE_DISTANCE)
+	assert_gt(found, 3.0)
+	assert_eq(manager.pick_place(CrimeProfiles.find_type("cattle_theft"), player.global_position), {})
+
+
+func test_city_crime_appears_in_front_of_a_compatible_building() -> void:
+	await _setup(Vector2(3360, 3360))
+	manager.enabled = false
+	var with_place := 0
+	for i in 12:
+		manager.incidents.clear()
+		if not manager.try_spawn():
+			continue
+		var inc: Dictionary = manager.incidents[0]
+		if inc.place == "":
+			continue
+		with_place += 1
+		var building := {}
+		for b in layout.buildings():
+			if b.name == inc.place:
+				building = b
+		assert_true(CrimeProfiles.near_of(inc.type).has(building.type), "%s em frente a %s" % [inc.type.id, building.type])
+		assert_eq(inc.center, building.exit_spawn)
+		assert_eq(layout.building_at(inc.center), -1, "crime dentro de prédio")
+	assert_gt(with_place, 6.0)
+
+
+func test_country_crimes_still_use_a_free_point() -> void:
+	await _setup(Vector2(9500, 2000))
+	manager.enabled = false
+	assert_true(manager.try_spawn())
+	var inc: Dictionary = manager.incidents[0]
+	assert_eq(inc.place, "")
+	assert_eq(inc.region, "Campo")
+	assert_eq(CrimeProfiles.region_of(inc.type.id), "Campo")

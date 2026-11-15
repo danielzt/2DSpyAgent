@@ -10,7 +10,7 @@ const IDS := [
 	"asphalt", "sidewalk", "concrete", "grass", "dirt", "field", "field_green", "water",
 	"roof/slab", "roof/slab_light", "roof/tar", "roof/tile", "roof/tile_red", "roof/tile_brown", "roof/zinc",
 	"wall/brick", "wall/wood", "floor/wood", "floor/tile",
-	"dash_v", "dash_h", "cross_h", "cross_v",
+	"dash_v", "dash_h", "dash_lane_v", "dash_lane_h", "cross_h", "cross_v",
 ]
 
 static var _canvases := {}
@@ -160,6 +160,15 @@ static func _build(id: String) -> RefCounted:
 		"dash_h":
 			var t: RefCounted = PixelCanvas.new(24, 2)
 			t.rect(0, 0, 12, 2, _c("amber"))
+			return t
+		"dash_lane_v":
+			# divisória entre as duas faixas de um sentido da avenida
+			var t: RefCounted = PixelCanvas.new(1, 16)
+			t.rect(0, 0, 1, 8, _c("light"))
+			return t
+		"dash_lane_h":
+			var t: RefCounted = PixelCanvas.new(16, 1)
+			t.rect(0, 0, 8, 1, _c("light"))
 			return t
 		"cross_h":
 			var t: RefCounted = PixelCanvas.new(9, 1)

@@ -3,7 +3,7 @@ extends CanvasLayer
 ## região, nível e lugar (canto superior esquerdo), relógio (topo, ao centro), pontos e
 ## dinheiro (superior direito), instrução de interação (inferior esquerdo), mãos
 ## (inferior, ao centro) e vida com barra (inferior direito).
-## O lugar (bairro e rua) e o relógio ficam ocultos até os sistemas existirem.
+## O relógio fica oculto até o sistema existir (Fase 4).
 
 const PixelLabel := preload("res://scripts/ui/pixel_label.gd")
 
@@ -90,7 +90,7 @@ func region_text() -> String:
 	return _region.text
 
 
-## Bairro e rua (vazio esconde). Preenchido a partir da Fase 2.
+## Bairro e rua, ou o nome do prédio em um interior (vazio esconde).
 func set_place(text: String) -> void:
 	_place.text = text
 

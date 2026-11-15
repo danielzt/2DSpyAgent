@@ -7,11 +7,17 @@ const TrafficRoute := preload("res://scripts/vehicle/traffic_route.gd")
 const SidewalkGraph := preload("res://scripts/world/sidewalk_graph.gd")
 const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
 const PickupItemDefs := preload("res://scripts/items/item_defs.gd")
+const Population := preload("res://scripts/npc/population.gd")
+const NameGenerator := preload("res://scripts/world/name_generator.gd")
 
 const CITY_PEDESTRIANS := 110
 const COUNTRY_CIVILIANS := 12
 const CITY_CRIMINALS := 4
 const COUNTRY_CRIMINALS := 6
+## Seed do primeiro NPC do mundo (os seguintes somam o índice).
+const NPC_SEED_BASE := 1000
+## Margem em volta da estrada do campo em que o HUD ainda mostra o nome dela.
+const COUNTRY_ROAD_MARGIN := 60.0
 const NPC_MIN_START_DISTANCE := 350.0
 const CRIMINAL_MIN_START_DISTANCE := 700.0
 ## Carros de trânsito: [cruzamento de destino, direção de chegada].
@@ -37,8 +43,11 @@ var city
 var country
 ## Cada região: {id:String, name:String, rect:Rect2}
 var regions: Array[Dictionary] = []
-## Cada NPC: {position, kind, mode ("sidewalk"|"free"), from:Vector4i, to:Vector4i, crime:String}
+## Cada NPC: {position, kind, mode ("sidewalk"|"free"), from:Vector4i, to:Vector4i, crime:String,
+## seed:int, context:Dictionary}. `context` (trabalho e moradia) só existe para civis.
 var npcs: Array[Dictionary] = []
+## Trabalho e moradia dos NPCs (Population).
+var population
 ## Cada item no chão: {position:Vector2, item:String, amount:int}
 var pickups: Array[Dictionary] = []
 
@@ -51,7 +60,9 @@ func _init(p_seed: int = 2024) -> void:
 		{"id": "city", "name": "Cidade", "rect": Rect2(0, 0, cs, cs)},
 		{"id": "country", "name": "Campo", "rect": country.region_rect()},
 	]
+	population = Population.new(city.buildings, country.buildings, city.districts.names)
 	_generate_npcs(p_seed + 7)
+	_assign_population()
 	_generate_pickups(p_seed + 11)
 
 
@@ -93,6 +104,66 @@ func building_at(point: Vector2) -> int:
 	return -1
 
 
+func building_by_id(id: int) -> Dictionary:
+	for b in buildings():
+		if b.id == id:
+			return b
+	return {}
+
+
+## Id do bairro do ponto ("" fora da cidade).
+func district_id_at(point: Vector2) -> String:
+	return city.districts.district_at(point)
+
+
+## Nome do bairro do ponto ("" fora da cidade).
+func district_at(point: Vector2) -> String:
+	return city.districts.name_at(point)
+
+
+## Nome da rua do ponto: na cidade, a rua onde está ou a mais próxima; no campo, a estrada
+## (só perto dela).
+func street_name_at(point: Vector2) -> String:
+	if (regions[0].rect as Rect2).has_point(point):
+		return city.street_name_at(point)
+	if (country.road as Rect2).grow(COUNTRY_ROAD_MARGIN).has_point(point):
+		return NameGenerator.COUNTRY_ROAD
+	return ""
+
+
+## Texto do HUD: "Bairro • Rua" (o que existir).
+func place_text(point: Vector2) -> String:
+	var parts: Array[String] = []
+	for part in [district_at(point), street_name_at(point)]:
+		if part != "":
+			parts.append(part)
+	return " • ".join(parts)
+
+
+## Prédios dos tipos dados cuja saída fica entre `min_d` e `max_d` de `point`.
+func buildings_of(types: Array, point: Vector2, min_d := 0.0, max_d := INF) -> Array:
+	var result: Array = []
+	for b in buildings():
+		if not types.has(b.get("type", "")):
+			continue
+		var d := (b.exit_spawn as Vector2).distance_to(point)
+		if d >= min_d and d <= max_d:
+			result.append(b)
+	return result
+
+
+## Prédio mais próximo de `point` entre os tipos dados ({} se não houver).
+func nearest_building_of(types: Array, point: Vector2) -> Dictionary:
+	var best := {}
+	var best_d := INF
+	for b in buildings_of(types, point):
+		var d := (b.exit_spawn as Vector2).distance_to(point)
+		if d < best_d:
+			best_d = d
+			best = b
+	return best
+
+
 func vehicle_spawns() -> Array[Dictionary]:
 	var all: Array[Dictionary] = []
 	all.append_array(CityLayout.vehicle_spawns())
@@ -100,16 +171,19 @@ func vehicle_spawns() -> Array[Dictionary]:
 	return all
 
 
-## Cada carro de trânsito: {node:Vector2i, dir:Vector2i, position:Vector2, rotation:float}.
+## Cada carro de trânsito: {node:Vector2i, dir:Vector2i, lane:int, position:Vector2, rotation:float}.
+## `lane` é a faixa que o carro usa nas avenidas (alterna entre a de dentro e a de fora).
 func traffic_spawns() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	for t in TRAFFIC:
-		var node: Vector2i = t[0]
-		var dir: Vector2i = t[1]
+	for i in TRAFFIC.size():
+		var node: Vector2i = TRAFFIC[i][0]
+		var dir: Vector2i = TRAFFIC[i][1]
+		var lane := i % 2
 		result.append({
 			"node": node,
 			"dir": dir,
-			"position": TrafficRoute.lane_point(node, dir) - Vector2(dir) * TRAFFIC_START_BEFORE_NODE,
+			"lane": lane,
+			"position": TrafficRoute.lane_point(node, dir, lane) - Vector2(dir) * TRAFFIC_START_BEFORE_NODE,
 			"rotation": Vector2(dir).angle(),
 		})
 	return result
@@ -162,6 +236,16 @@ func _generate_npcs(npc_seed: int) -> void:
 	_scatter(rng, COUNTRY_CIVILIANS, "innocent", country_area, NPC_MIN_START_DISTANCE, "Campo")
 	_scatter(rng, CITY_CRIMINALS, "criminal", city_area, CRIMINAL_MIN_START_DISTANCE, "Cidade")
 	_scatter(rng, COUNTRY_CRIMINALS, "criminal", country_area, CRIMINAL_MIN_START_DISTANCE, "Campo")
+
+
+## Dá a cada NPC a sua seed e, aos civis, um trabalho e uma moradia na região onde estão.
+func _assign_population() -> void:
+	for i in npcs.size():
+		var npc: Dictionary = npcs[i]
+		npc["seed"] = NPC_SEED_BASE + i
+		npc["context"] = {}
+		if npc.kind == "innocent":
+			npc["context"] = population.context_for(npc.seed, region_at(npc.position))
 
 
 func _scatter(rng: RandomNumberGenerator, count: int, kind: String, area: Rect2, min_start_distance: float, region_name: String) -> void:

@@ -50,6 +50,8 @@ var stunned := false
 var talking := false
 ## Card de personalidade (nome, idade, traços...). O nome só aparece no card e no aviso do HUD.
 var identity: Dictionary = {}
+## Trabalho e moradia (Population.context_for); vazio para NPC avulso.
+var context: Dictionary = {}
 var display_name := ""
 var rng := RandomNumberGenerator.new()
 
@@ -79,7 +81,7 @@ func _ready() -> void:
 	else:
 		rng.randomize()
 	_fire_cooldown = rng.randf_range(0.2, FIRE_INTERVAL)
-	identity = NpcIdentity.generate(ai_seed if ai_seed != 0 else rng.randi(), kind)
+	identity = NpcIdentity.generate(ai_seed if ai_seed != 0 else rng.randi(), kind, context)
 	display_name = identity.name
 	z_index = ACTOR_Z
 	_look = CharacterSprites.look_for(kind, identity.seed)

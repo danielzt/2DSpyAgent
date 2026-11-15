@@ -73,7 +73,24 @@ func test_along_edges_follow_the_sidewalk_line() -> void:
 			var a := SidewalkGraph.position(n)
 			var b := SidewalkGraph.position(m)
 			assert_true(is_equal_approx(a.x, b.x) or is_equal_approx(a.y, b.y), "aresta diagonal")
-			assert_almost_eq(a.distance_to(b), CityLayout.BLOCK - SidewalkGraph.half() * 2.0, 0.01)
+			# o trecho vai de um cruzamento ao outro, descontando a meia largura de cada rua cruzada
+			var expected := CityLayout.BLOCK - SidewalkGraph.half(n.x) - SidewalkGraph.half(m.x)
+			if m.x == n.x:
+				expected = CityLayout.BLOCK - SidewalkGraph.half(n.y) - SidewalkGraph.half(m.y)
+			assert_almost_eq(a.distance_to(b), expected, 0.01)
+
+
+func test_avenue_sidewalk_is_farther_from_the_axis() -> void:
+	var line := CityLayout.AVENUE_LINE
+	assert_almost_eq(SidewalkGraph.half(line), CityLayout.AVENUE_ASPHALT / 2.0 + CityLayout.SIDEWALK / 2.0)
+	assert_gt(SidewalkGraph.half(line), SidewalkGraph.half(1))
+	# o canto de um cruzamento com a avenida fica no meio da calçada das duas ruas
+	var p := SidewalkGraph.position(Vector4i(line, 3, 1, 1))
+	assert_almost_eq(p.x, line * CityLayout.BLOCK + SidewalkGraph.half(line))
+	assert_almost_eq(p.y, 3 * CityLayout.BLOCK + SidewalkGraph.half(3))
+	# atravessar a avenida é mais longo que atravessar uma rua
+	var across := SidewalkGraph.position(Vector4i(line, 3, -1, 1))
+	assert_almost_eq(p.distance_to(across), SidewalkGraph.half(line) * 2.0)
 
 
 func test_cross_edges_cross_the_asphalt() -> void:

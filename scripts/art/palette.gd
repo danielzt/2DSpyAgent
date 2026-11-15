@@ -78,6 +78,16 @@ const TONES := {
 	"brown": ["brown_dark", "brown", "sand"],
 	"pink": ["purple", "pink", "white"],
 	"gray": ["shadow", "slate", "gray"],
+	# Tons de parede dos bairros (Fase 2).
+	"concrete": ["gray", "concrete", "cream"],
+	"silver": ["slate", "gray", "light"],
+	"snow": ["light", "white", "white"],
+	"cream": ["sand", "cream", "white"],
+	"clay": ["brown", "skin_dark", "skin_light"],
+	"sand": ["brown", "sand", "cream"],
+	"ice": ["sky", "ice", "white"],
+	"wine": ["ink", "wine", "red"],
+	"navy": ["ink", "navy", "blue"],
 }
 
 ## Opacidade da sombra projetada (cor tinta).

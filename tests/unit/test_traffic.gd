@@ -216,3 +216,66 @@ func test_stuck_traffic_car_recovers_by_reversing() -> void:
 	# Não fica encostado na parede: bate, volta e tenta de novo (a posição varia).
 	assert_true(car.global_position.x < wall.global_position.x - 10.0)
 	assert_true(is_instance_valid(car))
+
+
+# --- avenidas (Fase 2) ---
+
+func test_avenue_has_two_lanes_per_direction() -> void:
+	var line := CityLayout.AVENUE_LINE
+	var node := Vector2i(3, line)
+	var east := Vector2i(1, 0)
+	assert_eq(TrafficRoute.line_of(node, east), line, "rumo leste percorre a linha horizontal")
+	assert_eq(TrafficRoute.line_of(node, Vector2i(0, 1)), 3, "rumo sul percorre a linha vertical")
+	assert_almost_eq(TrafficRoute.lane_offset(node, east, 0), TrafficRoute.AVENUE_LANES[0])
+	assert_almost_eq(TrafficRoute.lane_offset(node, east, 1), TrafficRoute.AVENUE_LANES[1])
+	assert_almost_eq(TrafficRoute.lane_offset(node, east, 9), TrafficRoute.AVENUE_LANES[1], 0.01, "faixa inexistente vira a de fora")
+	assert_eq(TrafficRoute.lane_point(node, east, 1), TrafficRoute.node_position(node) + Vector2(0, TrafficRoute.AVENUE_LANES[1]))
+	assert_eq(TrafficRoute.lane_point(node, -east, 1), TrafficRoute.node_position(node) - Vector2(0, TrafficRoute.AVENUE_LANES[1]))
+	# quem só cruza a avenida continua na faixa única da rua comum
+	assert_almost_eq(TrafficRoute.lane_offset(node, Vector2i(0, 1), 1), TrafficRoute.LANE_OFFSET)
+	assert_eq(TrafficRoute.lane_point(Vector2i(3, 3), east, 1), TrafficRoute.lane_point(Vector2i(3, 3), east))
+
+
+func test_avenue_lanes_fit_in_the_asphalt_without_overlapping() -> void:
+	var half_car := 13.0
+	var lanes: Array = TrafficRoute.AVENUE_LANES
+	assert_gt(lanes[0] - half_car, 4.0, "faixa de dentro livre das linhas do eixo")
+	assert_true(lanes[1] - lanes[0] >= half_car * 2.0, "as duas faixas não se sobrepõem")
+	assert_true(lanes[1] + half_car < CityLayout.AVENUE_ASPHALT / 2.0, "faixa de fora dentro do asfalto")
+
+
+func test_lane_target_follows_the_chosen_avenue_lane() -> void:
+	var node := Vector2i(4, CityLayout.AVENUE_LINE)
+	var pos := TrafficRoute.node_position(node) + Vector2(-300, 10)
+	var inner := TrafficRoute.lane_target(pos, node, Vector2i(1, 0), 100.0, 0)
+	var outer := TrafficRoute.lane_target(pos, node, Vector2i(1, 0), 100.0, 1)
+	assert_almost_eq(inner.y, TrafficRoute.node_position(node).y + TrafficRoute.AVENUE_LANES[0])
+	assert_almost_eq(outer.y, TrafficRoute.node_position(node).y + TrafficRoute.AVENUE_LANES[1])
+	assert_almost_eq(inner.x, pos.x + 100.0)
+
+
+func test_traffic_cars_alternate_avenue_lanes() -> void:
+	var layout = preload("res://scripts/world/world_layout.gd").new()
+	var lanes := {}
+	for t in layout.traffic_spawns():
+		lanes[t.lane] = true
+		var expected: Vector2 = TrafficRoute.lane_point(t.node, t.dir, t.lane) - Vector2(t.dir) * layout.TRAFFIC_START_BEFORE_NODE
+		assert_eq(t.position, expected)
+	assert_eq(lanes.size(), 2)
+
+
+func test_ai_car_keeps_its_avenue_lane() -> void:
+	var line := CityLayout.AVENUE_LINE
+	var node := Vector2i(4, line)
+	var car := CAR_SCENE.instantiate()
+	car.ai_controlled = true
+	car.ai_seed = 3
+	car.ai_lane = 1
+	car.position = TrafficRoute.lane_point(node, Vector2i(1, 0), 1) - Vector2(400, 0)
+	car.start_route(node, Vector2i(1, 0))
+	tree.root.add_child(car)
+	cars.append(car)
+	await wait_physics_frames(60)
+	var lane_y: float = TrafficRoute.node_position(node).y + TrafficRoute.AVENUE_LANES[1]
+	assert_almost_eq(car.global_position.y, lane_y, 6.0, "carro saiu da faixa de fora da avenida")
+	assert_gt(car.global_position.x, TrafficRoute.node_position(node).x - 400.0)

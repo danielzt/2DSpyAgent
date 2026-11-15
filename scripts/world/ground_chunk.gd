@@ -15,6 +15,9 @@ const TEXEL := 2.0
 const OVERLAY_Z := 5
 const SHADOW_TEXELS_PER_FLOOR := 3
 const CROSSWALK_HALF := 12.0
+## Avenida: afastamento das duas linhas contínuas do eixo e das divisórias de faixa.
+const AVENUE_CENTER_GAP := 4.0
+const AVENUE_LANE_DIVIDER := 47.0
 const DECOR_KINDS := ["tuft", "tuft", "tuft", "rock", "flowers", "bush"]
 
 ## Coordenada do pedaço na grade do mundo (não só da cidade).
@@ -130,29 +133,49 @@ func _draw_road_marks(lot: Rect2) -> void:
 	var block := CityLayout.BLOCK
 	var left := chunk.x * block
 	var top := chunk.y * block
-	var dash_v := SpriteFactory.tile("dash_v")
-	var dash_h := SpriteFactory.tile("dash_h")
-	draw_texture_rect(dash_v, _t(Rect2(left - 2.0, lot.position.y, 4.0, lot.size.y)), true)
-	draw_texture_rect(dash_h, _t(Rect2(lot.position.x, top - 2.0, lot.size.x, 4.0)), true)
+	_center_line(true, chunk.x, left, lot.position.y, lot.size.y)
+	_center_line(false, chunk.y, top, lot.position.x, lot.size.x)
 	if chunk.x == CityLayout.CELLS - 1:
-		draw_texture_rect(dash_v, _t(Rect2(left + block - 2.0, lot.position.y, 4.0, lot.size.y)), true)
+		_center_line(true, chunk.x + 1, left + block, lot.position.y, lot.size.y)
 	if chunk.y == CityLayout.CELLS - 1:
-		draw_texture_rect(dash_h, _t(Rect2(lot.position.x, top + block - 2.0, lot.size.x, 4.0)), true)
+		_center_line(false, chunk.y + 1, top + block, lot.position.x, lot.size.x)
 
-	var half := SidewalkGraph.half()
-	var reach := CityLayout.ASPHALT / 2.0
 	var cross_h := SpriteFactory.tile("cross_h")
 	var cross_v := SpriteFactory.tile("cross_v")
 	# Rua da esquerda: faixas junto aos cruzamentos de cima e de baixo.
+	var reach_x := CityLayout.asphalt(chunk.x) / 2.0
 	for node_y in [chunk.y, chunk.y + 1]:
 		if _is_inner_node(Vector2i(chunk.x, node_y)):
-			var y: float = node_y * block + (half if node_y == chunk.y else -half)
-			draw_texture_rect(cross_h, _t(Rect2(left - reach, y - CROSSWALK_HALF, reach * 2.0, CROSSWALK_HALF * 2.0)), true)
+			var half_y := SidewalkGraph.half(node_y)
+			var y: float = node_y * block + (half_y if node_y == chunk.y else -half_y)
+			draw_texture_rect(cross_h, _t(Rect2(left - reach_x, y - CROSSWALK_HALF, reach_x * 2.0, CROSSWALK_HALF * 2.0)), true)
 	# Rua de cima: faixas junto aos cruzamentos da esquerda e da direita.
+	var reach_y := CityLayout.asphalt(chunk.y) / 2.0
 	for node_x in [chunk.x, chunk.x + 1]:
 		if _is_inner_node(Vector2i(node_x, chunk.y)):
-			var x: float = node_x * block + (half if node_x == chunk.x else -half)
-			draw_texture_rect(cross_v, _t(Rect2(x - CROSSWALK_HALF, top - reach, CROSSWALK_HALF * 2.0, reach * 2.0)), true)
+			var half_x := SidewalkGraph.half(node_x)
+			var x: float = node_x * block + (half_x if node_x == chunk.x else -half_x)
+			draw_texture_rect(cross_v, _t(Rect2(x - CROSSWALK_HALF, top - reach_y, CROSSWALK_HALF * 2.0, reach_y * 2.0)), true)
+
+
+## Marcação do eixo de uma rua, de `from` por `length` px ao longo dela. Rua comum: faixa
+## tracejada âmbar. Avenida: duas linhas contínuas no eixo e divisórias tracejadas entre
+## as duas faixas de cada sentido.
+func _center_line(vertical: bool, line: int, axis: float, from: float, length: float) -> void:
+	if not CityLayout.is_avenue(line):
+		var dash := SpriteFactory.tile("dash_v" if vertical else "dash_h")
+		draw_texture_rect(dash, _t(_along(vertical, axis - 2.0, 4.0, from, length)), true)
+		return
+	var amber := Palette.get_color("amber")
+	for side in [-1.0, 1.0]:
+		draw_rect(_t(_along(vertical, axis + side * AVENUE_CENTER_GAP - 1.0, 2.0, from, length)), amber)
+		var lane := SpriteFactory.tile("dash_lane_v" if vertical else "dash_lane_h")
+		draw_texture_rect(lane, _t(_along(vertical, axis + side * AVENUE_LANE_DIVIDER - 1.0, 2.0, from, length)), true)
+
+
+## Retângulo de uma marcação: `across`/`thickness` atravessam a rua, `from`/`length` vão ao longo dela.
+static func _along(vertical: bool, across: float, thickness: float, from: float, length: float) -> Rect2:
+	return Rect2(across, from, thickness, length) if vertical else Rect2(from, across, length, thickness)
 
 
 static func _is_inner_node(node: Vector2i) -> bool:

@@ -2,6 +2,9 @@ extends RefCounted
 ## Layout lógico da região Campo: estrada de terra, fazendas, plantações e árvores.
 ## Determinístico por seed. Ocupa um retângulo à direita da cidade.
 
+const NameGenerator := preload("res://scripts/world/name_generator.gd")
+const BuildingStyle := preload("res://scripts/world/building_style.gd")
+
 const SIZE := Vector2(6720, 6720)
 const ROAD_WIDTH := 120.0
 const ROAD_Y := 3360.0            # alinhada com uma rua da cidade (6 * BLOCK)
@@ -31,18 +34,26 @@ func _init(p_origin: Vector2 = Vector2.ZERO, p_seed: int = 2025) -> void:
 	road = Rect2(origin.x, ROAD_Y - ROAD_WIDTH / 2.0, SIZE.x, ROAD_WIDTH)
 
 	# Fazendas ao norte da estrada, com a porta voltada para ela.
+	var used_names := {}
 	for k in FARM_COUNT:
+		var type := "farm_store" if k == FARM_SHOP_INDEX else "farm"
 		var x := origin.x + 400.0 + k * 880.0
 		var rect := Rect2(x, road.position.y - 40.0 - FARM_SIZE.y, FARM_SIZE.x, FARM_SIZE.y)
 		var door := Rect2(rect.get_center().x - DOOR_WIDTH / 2.0, rect.end.y, DOOR_WIDTH, DOOR_DEPTH)
 		buildings.append({
 			"id": FARM_ID_BASE + k,
 			"rect": rect,
-			"color": Color.from_hsv(rng.randf_range(0.0, 0.12), 0.5, rng.randf_range(0.5, 0.75)),
+			"color": BuildingStyle.wall_color("wall/wood"),
 			"door": door,
 			"exit_spawn": Vector2(door.get_center().x, door.end.y + EXIT_SPAWN_OFFSET),
 			"shop": "farm_store" if k == FARM_SHOP_INDEX else "",
 			"roof": [] as Array[Rect2],
+			"district": "country",
+			"floors": 1,
+			"wall": "wall/wood",
+			"roof_kind": "roof/tile",
+			"type": type,
+			"name": NameGenerator.building_name(type, rng, used_names),
 		})
 
 	# Plantações ao sul da estrada.

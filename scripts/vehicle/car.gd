@@ -44,6 +44,8 @@ const AI_TURN_MARGIN := 45.0      # começa a próxima perna esta distância ant
 @export var tone := "red"
 @export var ai_controlled := false
 @export var ai_seed := 1
+## Faixa usada nas avenidas pelo trânsito (0 = de dentro, 1 = de fora).
+@export var ai_lane := 0
 
 var speed := 0.0
 var driver: Node = null
@@ -180,7 +182,7 @@ func _ai_inputs(delta: float) -> Vector2:
 		return Vector2.ZERO
 	if TrafficRoute.reached_node(global_position, _route_node, _route_dir, AI_TURN_MARGIN):
 		_advance_route()
-	var to := TrafficRoute.lane_target(global_position, _route_node, _route_dir, AI_LANE_LOOKAHEAD) - global_position
+	var to := TrafficRoute.lane_target(global_position, _route_node, _route_dir, AI_LANE_LOOKAHEAD, ai_lane) - global_position
 	var diff := angle_difference(rotation, to.angle())
 	var steer := clampf(diff * 2.0, -1.0, 1.0)
 

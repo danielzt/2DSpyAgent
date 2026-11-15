@@ -3,6 +3,7 @@ extends "res://scripts/interaction/interact_zone.gd"
 ## entra no prédio (ou sai dele).
 
 const ShopDefs := preload("res://scripts/items/shop_defs.gd")
+const NameGenerator := preload("res://scripts/world/name_generator.gd")
 
 @export var building_id := -1
 @export var exits := false
@@ -10,11 +11,16 @@ const ShopDefs := preload("res://scripts/items/shop_defs.gd")
 @export var return_position := Vector2.ZERO
 ## Tipo de loja do prédio ("" se for um prédio comum).
 @export var shop := ""
+## Tipo (BuildingDefs) e nome próprio do prédio; o nome aparece na instrução do HUD.
+@export var building_type := ""
+@export var building_name := ""
 
 
 func _ready() -> void:
 	if exits:
 		verb = "sair"
+	elif building_name != "":
+		verb = "entrar %s" % NameGenerator.at_place(building_name)
 	elif shop != "":
 		verb = "entrar na %s" % ShopDefs.shop_name(shop)
 	else:
@@ -31,4 +37,4 @@ func activate() -> void:
 	if exits:
 		GameState.go_outside()
 	else:
-		GameState.go_inside(building_id, return_position, shop)
+		GameState.go_inside(building_id, return_position, shop, building_type, building_name)

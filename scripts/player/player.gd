@@ -39,6 +39,8 @@ var vehicle: Node = null
 var talk_target: Node = null
 var talking_with: Node = null
 var region_name := ""
+## Bairro e rua onde o jogador está (ou o nome do prédio, dentro de um interior).
+var place_name := ""
 var hud
 var dialog
 var inventory_panel
@@ -106,6 +108,7 @@ func _process(delta: float) -> void:
 	_update_sprite(delta)
 	hud.set_prompt(current_prompt())
 	hud.set_region(region_name)
+	hud.set_place(place_name)
 	hud.set_health(health, max_health())
 	hud.set_level("Nível %d • XP %d/%d" % [profile.level, profile.xp, profile.xp_for_next()])
 	hud.set_hands(hands_text())

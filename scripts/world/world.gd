@@ -55,6 +55,7 @@ func _ready() -> void:
 		car.tone = variant.tone
 		car.position = t.position
 		car.rotation = t.rotation
+		car.ai_lane = t.lane
 		car.start_route(t.node, t.dir)
 		add_child(car)
 		traffic_index += 1
@@ -63,7 +64,8 @@ func _ready() -> void:
 		var npc := NPC_SCENE.instantiate()
 		npc.kind = n.kind
 		npc.crime = n.crime
-		npc.ai_seed = 1000 + npc_index
+		npc.ai_seed = n.seed
+		npc.context = n.context
 		npc.position = n.position
 		if n.mode == "sidewalk":
 			npc.start_on_sidewalk(n.from, n.to)
@@ -86,6 +88,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	for p in get_tree().get_nodes_in_group("players"):
 		p.region_name = layout.region_at(p.global_position)
+		p.place_name = layout.place_text(p.global_position)
 
 
 ## Base do mundo: asfalto sob a cidade e grama sob o campo (dois retângulos de tile
@@ -184,6 +187,8 @@ func _add_building(b: Dictionary) -> void:
 	door.building_id = b.id
 	door.return_position = b.exit_spawn
 	door.shop = b.shop
+	door.building_type = b.get("type", "")
+	door.building_name = b.get("name", "")
 	door.position = door_rect.get_center()
 	var shape := CollisionShape2D.new()
 	var rs := RectangleShape2D.new()

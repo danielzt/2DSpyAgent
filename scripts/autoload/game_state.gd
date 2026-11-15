@@ -9,6 +9,9 @@ const InventoryScript := preload("res://scripts/items/inventory.gd")
 
 var building_id := -1
 var building_shop := ""
+## Tipo (BuildingDefs) e nome próprio do prédio em que o jogador está.
+var building_type := ""
+var building_name := ""
 var return_position := Vector2.ZERO
 var has_return := false
 
@@ -22,9 +25,11 @@ func is_inside() -> bool:
 
 
 ## Só altera o estado (testável sem trocar de cena).
-func set_inside(id: int, p_return_position: Vector2, shop := "") -> void:
+func set_inside(id: int, p_return_position: Vector2, shop := "", type := "", p_name := "") -> void:
 	building_id = id
 	building_shop = shop
+	building_type = type
+	building_name = p_name
 	return_position = p_return_position
 	has_return = true
 
@@ -32,6 +37,8 @@ func set_inside(id: int, p_return_position: Vector2, shop := "") -> void:
 func set_outside() -> void:
 	building_id = -1
 	building_shop = ""
+	building_type = ""
+	building_name = ""
 
 
 ## Posição onde o jogador deve reaparecer no mundo; consome o retorno pendente.
@@ -40,8 +47,8 @@ func consume_return_position() -> Vector2:
 	return return_position
 
 
-func go_inside(id: int, p_return_position: Vector2, shop := "") -> void:
-	set_inside(id, p_return_position, shop)
+func go_inside(id: int, p_return_position: Vector2, shop := "", type := "", p_name := "") -> void:
+	set_inside(id, p_return_position, shop, type, p_name)
 	_change_scene.call_deferred(INTERIOR_SCENE)
 
 
