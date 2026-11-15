@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="2DGTA"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/title/title.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -22,6 +22,7 @@ GameState="*res://scripts/autoload/game_state.gd"
 Score="*res://scripts/autoload/score_keeper.gd"
 DisplaySetup="*res://scripts/autoload/display_setup.gd"
 WorldClock="*res://scripts/autoload/world_clock.gd"
+Transition="*res://scripts/autoload/transition.gd"
 
 [display]
 

@@ -2,6 +2,7 @@ extends Node
 ## Estado global de navegação entre o mundo externo e os interiores.
 
 const MAIN_SCENE := "res://scenes/main.tscn"
+const TITLE_SCENE := "res://scenes/title/title.tscn"
 const INTERIOR_SCENE := "res://scenes/interior/interior.tscn"
 
 const ProfileScript := preload("res://scripts/player/player_profile.gd")
@@ -24,6 +25,8 @@ var reveal_seconds := 0.0
 var world_seed := 2024
 var _world_layout
 var has_return := false
+## Opções de conforto: tremor de câmera (Fase 5).
+var screen_shake := true
 
 # Dados do jogador sobrevivem às trocas de cena (o nó Player é recriado a cada cena).
 var _profiles := {}
@@ -43,6 +46,8 @@ func set_inside(id: int, p_return_position: Vector2, shop := "", type := "", p_n
 	building_name = p_name
 	return_position = p_return_position
 	has_return = true
+	for index in _profiles:
+		_profiles[index].know_building(id)  # visitado: o ícone entra no mapa
 
 
 func set_outside() -> void:
@@ -59,17 +64,40 @@ func consume_return_position() -> Vector2:
 
 
 func go_inside(id: int, p_return_position: Vector2, shop := "", type := "", p_name := "", p_width := 240.0) -> void:
-	set_inside(id, p_return_position, shop, type, p_name, p_width)
-	_change_scene.call_deferred(INTERIOR_SCENE)
+	if Transition.busy:
+		return
+	# O estado só muda com a íris fechada (Transition roda o `before`).
+	Transition.go(INTERIOR_SCENE, set_inside.bind(id, p_return_position, shop, type, p_name, p_width))
 
 
 func go_outside() -> void:
-	set_outside()
-	_change_scene.call_deferred(MAIN_SCENE)
+	if Transition.busy:
+		return
+	Transition.go(MAIN_SCENE, set_outside)
 
 
-func _change_scene(path: String) -> void:
-	get_tree().change_scene_to_file(path)
+## Volta ao menu de título (zera a partida).
+func go_to_title() -> void:
+	if Transition.busy:
+		return
+	Transition.go(TITLE_SCENE, func() -> void:
+		set_outside()
+		new_game())
+
+
+## Começa uma partida nova: perfis, inventários, relógio e pontos zerados.
+func new_game() -> void:
+	reset_players()
+	has_return = false
+	WorldClock.reset()
+	Score.reset()
+
+
+## Do título para o jogo.
+func start_game() -> void:
+	if Transition.busy:
+		return
+	Transition.go(MAIN_SCENE, new_game)
 
 
 func profile_for(player_index: int) -> RefCounted:

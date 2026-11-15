@@ -29,7 +29,7 @@ scenes/            cenas
   combat/          projétil
 scripts/
   main.gd          instancia o jogador no mundo
-  autoload/        InputSetup, GameState, Score, DisplaySetup, WorldClock (singletons)
+  autoload/        InputSetup, GameState, Score, DisplaySetup, WorldClock, Transition (singletons)
   player/          player.gd, player_profile.gd (ficha e atributos)
   interaction/     interact_zone.gd (zona "Pressione E")
   vehicle/         car.gd, traffic_route.gd

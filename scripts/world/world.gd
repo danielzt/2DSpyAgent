@@ -14,6 +14,7 @@ const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
 const DayCycle := preload("res://scripts/world/day_cycle.gd")
 const BuildingDefs := preload("res://scripts/world/building_defs.gd")
 const LightLayerScript := preload("res://scripts/world/light_layer.gd")
+const TireMarksScript := preload("res://scripts/effects/tire_marks.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 const BuildingArt := preload("res://scripts/art/building_art.gd")
@@ -35,6 +36,10 @@ const REVEAL_MAX := 4
 ## jogadores alguém pode aparecer ou sumir sem ser visto.
 const POPULATION_CHECK := 2.0
 const OFFSCREEN_DISTANCE := 1000.0
+## Mapa: de quanto em quanto tempo conferir os prédios por perto, e a que distância da parede
+## o jogador "vê" o prédio (ele ganha ícone no mapa).
+const SEEN_CHECK := 0.5
+const SEEN_RADIUS := 380.0
 
 var layout
 var props
@@ -43,6 +48,8 @@ var incidents
 ## Tinta do ambiente (cor da hora) e camada de luz.
 var ambient: CanvasModulate
 var lights
+## Marcas de pneu deixadas pelo carro do jogador (Fase 5).
+var tire_marks: Node2D
 
 var _tip_timer := TIP_DELAY
 var _tip_incident_id := -1
@@ -55,6 +62,7 @@ var _traffic_nodes := {}
 var _dismissed_npcs := {}
 var _dismissed_traffic := {}
 var _population_timer := POPULATION_CHECK
+var _seen_timer := 0.0
 
 func _ready() -> void:
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
@@ -100,6 +108,11 @@ func _ready() -> void:
 	_add_wall(Rect2(-40, s.y, s.x + 80, 40))
 	_add_wall(Rect2(-40, 0, 40, s.y))
 	_add_wall(Rect2(s.x, 0, 40, s.y))
+
+	tire_marks = Node2D.new()
+	tire_marks.set_script(TireMarksScript)
+	tire_marks.name = "TireMarks"
+	add_child(tire_marks)
 
 	incidents = IncidentManagerScript.new()
 	incidents.layout = layout
@@ -235,6 +248,10 @@ func _process(delta: float) -> void:
 	if _population_timer <= 0.0:
 		_population_timer = POPULATION_CHECK
 		sync_population()
+	_seen_timer -= delta
+	if _seen_timer <= 0.0:
+		_seen_timer = SEEN_CHECK
+		mark_seen_buildings()
 	_update_tip(delta)
 	var targets := current_targets()
 	for p in get_tree().get_nodes_in_group("players"):
@@ -243,6 +260,20 @@ func _process(delta: float) -> void:
 		p.targets = targets
 		if not p.died.is_connected(_on_player_died):
 			p.died.connect(_on_player_died.bind(p))
+
+
+## Os prédios a até SEEN_RADIUS de um jogador entram no mapa dele. Retorna quantos eram novos.
+func mark_seen_buildings() -> int:
+	var added := 0
+	for p in get_tree().get_nodes_in_group("players"):
+		var known: Dictionary = p.profile.known_buildings
+		for b in layout.buildings():
+			if known.has(b.id):
+				continue
+			if (b.rect as Rect2).grow(SEEN_RADIUS).has_point(p.global_position):
+				known[b.id] = true
+				added += 1
+	return added
 
 
 # --- derrota, pistas e alvos ---

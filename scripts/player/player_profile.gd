@@ -58,6 +58,16 @@ var xp_boost := 0.0
 ## Dia do mundo do último treino na academia e do último briefing com missão (-1 = nunca).
 var last_train_day := -1
 var last_briefing_day := -1
+## Prédios que o jogador já visitou ou viu de perto: id -> true. Só eles ganham ícone no mapa.
+var known_buildings := {}
+
+
+## Marca o prédio como conhecido. Retorna true se era novo.
+func know_building(id: int) -> bool:
+	if known_buildings.has(id):
+		return false
+	known_buildings[id] = true
+	return true
 
 
 func _init(p_index := 1) -> void:

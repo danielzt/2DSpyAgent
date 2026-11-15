@@ -9,7 +9,18 @@ const TrafficRoute := preload("res://scripts/vehicle/traffic_route.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 const CarSprites := preload("res://scripts/art/car_sprites.gd")
 
+const Fx := preload("res://scripts/effects/fx.gd")
+
 const ACTOR_Z := 3
+
+# Efeitos (Fase 5)
+const WHEEL_BACK := 20.0          # do centro do carro às rodas de trás
+const WHEEL_SIDE := 9.0           # do eixo às rodas
+const DUST_MIN_SPEED := 90.0
+const DUST_INTERVAL := 0.07
+const SKID_BRAKE_SPEED := 150.0   # freando acima disso deixa marca
+const SKID_TURN_SPEED := 220.0    # curva forte acima disso deixa marca
+const CRASH_SHAKE_SPEED := 120.0  # batida acima disso sacode a câmera
 
 const MAX_FORWARD := 340.0
 const MAX_REVERSE := 140.0
@@ -60,6 +71,7 @@ var _reverse_time := 0.0
 var _probe := KinematicCollision2D.new()
 var _sprite: Sprite2D
 var _shown_direction := -1
+var _dust_timer := 0.0
 
 
 func _ready() -> void:
@@ -154,6 +166,32 @@ func _physics_process(delta: float) -> void:
 	knock = knock.move_toward(Vector2.ZERO, KNOCK_DECAY * delta)
 	move_and_slide()
 	_handle_collisions(speed_before)
+	_trail_effects(delta, throttle, steer, speed_before)
+
+
+## Poeira na terra, marcas de pneu em freada e curva forte (Fase 5). Só enfeite.
+func _trail_effects(delta: float, throttle: float, steer: float, current_speed: float) -> void:
+	var forward := Vector2.RIGHT.rotated(rotation)
+	var rear := global_position - forward * WHEEL_BACK
+	_dust_timer -= delta
+	if absf(current_speed) > DUST_MIN_SPEED and Fx.is_dirt(global_position):
+		if _dust_timer <= 0.0:
+			_dust_timer = DUST_INTERVAL
+			Fx.puff(get_parent(), rear, -forward * current_speed * 0.15, "sand", 0.55)
+	if not is_instance_valid(driver):
+		return  # só o carro do jogador deixa marcas
+	var marks := get_tree().get_first_node_in_group("tire_marks")
+	if marks == null:
+		return
+	var skidding := not Fx.is_dirt(global_position) and (
+			(throttle * current_speed < 0.0 and absf(current_speed) > SKID_BRAKE_SPEED)
+			or (absf(steer) > 0.5 and absf(current_speed) > SKID_TURN_SPEED))
+	var side := forward.orthogonal() * WHEEL_SIDE
+	for wheel in 2:
+		if skidding:
+			marks.add_mark(get_instance_id() * 2 + wheel, rear + side * (1.0 if wheel == 0 else -1.0), rotation)
+		else:
+			marks.lift(get_instance_id() * 2 + wheel)
 
 
 func _handle_collisions(speed_before: float) -> void:
@@ -168,6 +206,8 @@ func _handle_collisions(speed_before: float) -> void:
 		if wall_handled:
 			continue
 		wall_handled = true
+		if is_instance_valid(driver) and absf(speed_before) > CRASH_SHAKE_SPEED and driver.has_method("shake"):
+			driver.shake(clampf(absf(speed_before) / 110.0, 2.0, 4.0))
 		var r := collision_response(Vector2.RIGHT.rotated(rotation), speed_before, col.get_normal())
 		speed = r.speed
 		if (r.knock as Vector2).length() > knock.length():

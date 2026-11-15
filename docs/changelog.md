@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-15 (4)
+
+- Fase 5 do redesenho: efeitos (clarão e cápsula do tiro, faíscas, poeira, marcas de pneu, tremor de câmera desligável), transição em íris ao entrar e sair de prédios (autoload `Transition`), mapa de tela cheia (M) e minimapa no HUD com ícone por tipo de prédio visitado ou visto, tela de título com a cidade à noite e tela de pausa (Esc) com mapa e controles
+- Teste de regras de arte: nenhum `ColorRect` nem cor fora da paleta nos scripts e cenas
+- Runner de testes agora mostra só os problemas por padrão (`-- verbose` lista tudo)
+- 781 testes (97 novos). Detalhes: [redesign-fase-5.md](redesign-fase-5.md)
+- Roteiro: nova **Fase 6** (casas e bairro residencial, ruas estreitas e curvas, casa do agente, mapa com pontos e direção no HUD, interiores completos como hospital e delegacia)
+
 ## 2026-11-15 (3)
 
 - Dia do mundo reduzido de 24 para 12 min reais (`DayCycle.DAY_SECONDS = 720`; 1 hora de jogo = 30 s). Testes do relógio ajustados

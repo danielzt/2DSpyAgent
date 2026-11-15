@@ -8,7 +8,12 @@ Toda feature nova precisa de testes automatizados na mesma mudança.
 Godot_v4.7.2-stable_win64_console.exe --headless --path . -s tests/run_tests.gd
 ```
 
-Para rodar só alguns arquivos, passe termos do nome depois de `--` (ex.: `-s tests/run_tests.gd -- combat traffic`).
+Por padrão o runner mostra **só os problemas**: os arquivos e testes que falharam, com a mensagem, e o
+resumo final (`N testes, M asserções, K falha(s)`). Para listar todos os testes, acrescente `verbose`
+depois de `--`.
+
+Para rodar só alguns arquivos, passe termos do nome depois de `--` (ex.: `-s tests/run_tests.gd -- combat traffic`;
+combina com `verbose`).
 Antes de concluir uma mudança, rode sempre a suíte inteira.
 
 Código de saída `0` = tudo passou; `1` = alguma falha. Na primeira vez (ou após adicionar
@@ -33,7 +38,7 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 - Para comportamento de nós, instancie a cena em `tree.root` e dê `queue_free()` no `after_each`.
 - Input em teste: `Input.action_press("p1_right")` e solte no `after_each`.
 
-## Cobertura atual (684 testes)
+## Cobertura atual (781 testes)
 
 | Arquivo | Cobre |
 |---|---|
@@ -71,6 +76,11 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 | `test_services.gd` | 13 serviços (custo, efeito, falta de dinheiro), só pela ação de input na zona, NPCs dos interiores |
 | `test_day_cycle.gd` | relógio, fases, horários, cor ambiente com piso de luminosidade, horas das luzes |
 | `test_lights.gd` | camada de luz, janelas e letreiros, faróis, interiores claros, portas fechadas, população por hora |
+| `test_effects.gd` | clarão e cápsula do tiro, faíscas, poeira, marcas de pneu (limite de 200), tremor de câmera, limite de partículas |
+| `test_transition.gd` | geometria da íris, tempos de 0,25 s, estado só muda com a íris fechada, novo jogo |
+| `test_map.gd` | ícones por tipo, geometria do mapa, prédios conhecidos, minimapa no HUD, mapa de tela cheia, tecla M |
+| `test_pause_title.gd` | menu em fonte pixel, controles, pausa que congela, opção de tremor, arte e tela de título |
+| `test_art_rules.gd` | varredura: nenhum `ColorRect`/`Polygon2D`/`Line2D` e nenhuma cor fora da paleta nos scripts e cenas |
 | `test_world_visuals.gd` | cena real sem `ColorRect`, pedaços de chão, sprites e animação, ordem de desenho, HUD |
 
 O aviso `Tipo de morte desconhecido` impresso durante `test_score` é esperado

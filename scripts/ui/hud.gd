@@ -7,6 +7,7 @@ extends CanvasLayer
 
 const PixelLabel := preload("res://scripts/ui/pixel_label.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
+const Minimap := preload("res://scripts/ui/minimap.gd")
 
 const MARGIN := 16
 const LINE := 38.0
@@ -28,6 +29,7 @@ var _place: Control
 var _clock: Control
 var _toast_time := 0.0
 var _arrows: Control
+var _minimap: Control
 var _arrow_dirs: Array[Vector2] = []
 
 
@@ -53,6 +55,14 @@ func _ready() -> void:
 	_arrows.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_arrows.draw.connect(_draw_arrows)
 	add_child(_arrows)
+	_minimap = Minimap.new()
+	_minimap.visible = false
+	add_child(_minimap)
+	_minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_minimap.offset_left = -Minimap.SIDE - MARGIN
+	_minimap.offset_right = -MARGIN
+	_minimap.offset_top = MARGIN + LINE * 2.0 + 6.0
+	_minimap.offset_bottom = _minimap.offset_top + Minimap.SIDE
 	Score.changed.connect(set_score)
 	set_score(Score.points)
 
@@ -137,6 +147,24 @@ func _draw_arrows() -> void:
 		var pos := half + Vector2(dir.x * (half.x - ARROW_MARGIN), dir.y * (half.y - ARROW_MARGIN))
 		_arrows.draw_set_transform(pos, dir.angle(), Vector2(ARROW_SCALE, ARROW_SCALE))
 		_arrows.draw_texture(texture, -Vector2(texture.get_size()) / 2.0)
+
+
+## Minimapa no canto superior direito (fica escondido dentro de prédios).
+func set_minimap(layout, known: Dictionary, center: Vector2, targets: Array, delta := 0.0) -> void:
+	_minimap.visible = true
+	_minimap.set_state(layout, known, center, targets, delta)
+
+
+func hide_minimap() -> void:
+	_minimap.visible = false
+
+
+func minimap_visible() -> bool:
+	return _minimap.visible
+
+
+func minimap() -> Control:
+	return _minimap
 
 
 ## Hora do mundo (vazio esconde).

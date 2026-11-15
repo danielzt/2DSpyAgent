@@ -8,6 +8,8 @@ const PixelFont := preload("res://scripts/art/pixel_font.gd")
 const CharacterSprites := preload("res://scripts/art/character_sprites.gd")
 const CarSprites := preload("res://scripts/art/car_sprites.gd")
 const PropSprites := preload("res://scripts/art/prop_sprites.gd")
+const FxSprites := preload("res://scripts/art/fx_sprites.gd")
+const MapIcons := preload("res://scripts/art/map_icons.gd")
 const TileFactory := preload("res://scripts/art/tile_factory.gd")
 
 ## Tamanho de um texel em px do mundo.
@@ -40,6 +42,16 @@ static func tile(id: String) -> ImageTexture:
 
 static func prop(id: String) -> ImageTexture:
 	return _cached("prop/" + id, func() -> RefCounted: return PropSprites.canvas(id))
+
+
+## Ícone do mapa (placa 9x9 com o glifo da categoria, ou "you"/"alert").
+static func map_icon(glyph: String) -> ImageTexture:
+	return _cached("map/" + glyph, func() -> RefCounted: return MapIcons.canvas(glyph))
+
+
+## Sprite de efeito (clarão, faísca, poeira, marca de pneu).
+static func fx(id: String) -> ImageTexture:
+	return _cached("fx/" + id, func() -> RefCounted: return FxSprites.canvas(id))
 
 
 ## Quadro de personagem (16x20 texels). `frame`: 0 parado, 1 e 2 passos.

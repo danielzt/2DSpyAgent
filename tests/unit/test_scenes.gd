@@ -133,6 +133,7 @@ func test_pressing_interact_at_door_enters_building() -> void:
 	Input.action_press("p1_interact")
 	await wait_physics_frames(2)
 	Input.action_release("p1_interact")
+	await _wait_transition()
 	assert_true(GameState.is_inside(), "E deveria entrar")
 	assert_eq(GameState.building_id, 12)
 	assert_eq(GameState.return_position, target.exit_spawn)
@@ -191,6 +192,7 @@ func test_interior_exit_requires_pressing_interact() -> void:
 	Input.action_press("p1_interact")
 	await wait_physics_frames(2)
 	Input.action_release("p1_interact")
+	await _wait_transition()
 	assert_false(GameState.is_inside(), "E deveria sair")
 	await _cleanup(interior)
 
@@ -264,6 +266,7 @@ func test_entering_a_building_records_its_type_and_name() -> void:
 	Input.action_press("p1_interact")
 	await wait_physics_frames(2)
 	Input.action_release("p1_interact")
+	await _wait_transition()
 	assert_eq(GameState.building_type, target.type)
 	assert_eq(GameState.building_name, target.name)
 	await wait_frames(3)
@@ -418,3 +421,8 @@ func test_entering_passes_the_facade_width_to_the_interior() -> void:
 	for d in tree.get_nodes_in_group("building_doors"):
 		assert_almost_eq(d.facade_width, (layout.building_by_id(d.building_id).rect as Rect2).size.x)
 	await _cleanup(main)
+
+
+## Espera a íris fechar (o estado da troca de cena só muda com ela fechada).
+func _wait_transition() -> void:
+	await tree.create_timer(Transition.DURATION + 0.15).timeout

@@ -1,6 +1,6 @@
 # Roteiro do redesenho visual e do mundo com contexto
 
-> Lista de trabalho do redesenho. **Fases 0 a 4 concluídas; falta a Fase 5.** Cada item tem um status;
+> Lista de trabalho do redesenho. **Fases 0 a 5 concluídas; a Fase 6 (casas, mapa com pontos e interiores completos) é a próxima.** Cada item tem um status;
 > atualize a coluna na mesma mudança em que o item avançar.
 > O design detalhado (paleta, resolução, valores concretos) está em
 > `docs/redesign-visual.md`.
@@ -29,7 +29,8 @@ assets externos, GDScript, GL Compatibility, lógica pura em `RefCounted` com se
 | 2 | Cidade com contexto | Feito (aguardando avaliação do autor) |
 | 3 | Interiores com finalidade | Feito (aguardando avaliação do autor) |
 | 4 | Dia e noite | Feito (aguardando avaliação do autor; desempenho noturno acima da meta) |
-| 5 | Acabamento | Pendente |
+| 5 | Acabamento | Feito (aguardando avaliação do autor) |
+| 6 | Casas, casa do agente, mapa com pontos e interiores completos | Pendente (pedido do autor em 15/11) |
 
 ## Como trabalhar
 
@@ -184,17 +185,43 @@ Detalhes do que foi feito: [redesign-fase-4.md](redesign-fase-4.md).
 
 | # | Item | Status |
 |---|---|---|
-| 5.1 | Clarão e cápsula do tiro | Pendente |
-| 5.2 | Faísca de impacto | Pendente |
-| 5.3 | Poeira do carro | Pendente |
-| 5.4 | Marcas de pneu | Pendente |
-| 5.5 | Tremor leve de câmera | Pendente |
-| 5.6 | Transição ao entrar e sair de prédios | Pendente |
-| 5.7 | Minimapa ou mapa com bairros e ícones por tipo de prédio | Pendente |
-| 5.8 | Tela de título no estilo novo | Pendente |
-| 5.9 | Tela de pausa no estilo novo | Pendente |
-| 5.10 | Revisão geral de consistência: nenhum retângulo placeholder sobrando | Pendente |
-| 5.11 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Pendente |
+| 5.1 | Clarão e cápsula do tiro | Feito |
+| 5.2 | Faísca de impacto | Feito |
+| 5.3 | Poeira do carro | Feito |
+| 5.4 | Marcas de pneu | Feito |
+| 5.5 | Tremor leve de câmera | Feito |
+| 5.6 | Transição ao entrar e sair de prédios | Feito |
+| 5.7 | Minimapa ou mapa com bairros e ícones por tipo de prédio | Feito |
+| 5.8 | Tela de título no estilo novo | Feito |
+| 5.9 | Tela de pausa no estilo novo | Feito |
+| 5.10 | Revisão geral de consistência: nenhum retângulo placeholder sobrando | Feito |
+| 5.11 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Feito |
+
+## Fase 6 — Casas, casa do agente, mapa com pontos e interiores completos
+
+> Pedido do autor (15/11): a cidade só tem prédios, falta uma **área residencial com casas**; o
+> jogador deve ter **uma casa para dormir**, achá-la no **mapa**, **marcar pontos** e ser
+> **direcionado na tela**; os **interiores estão vazios** (hospital com gente de branco, delegacia,
+> casa do jogador, cada tipo caprichado: com o espaço cheio, o tamanho deixa de parecer grande);
+> as **ruas podem ter curvas** e ser **mais estreitas nas áreas residenciais**.
+
+| # | Item | Status |
+|---|---|---|
+| 6.1 | Bairro residencial de verdade: lotes com várias casas pequenas, quintais, cercas e garagens (hoje há só `house`/`apartment` como prédios comuns) | Pendente |
+| 6.2 | Ruas estreitas nos bairros residenciais (corredor e asfalto menores; ajustar calçadas, carros estacionados, trânsito e lotes) | Pendente |
+| 6.3 | Ruas menos simétricas: estudo e protótipo de trechos curvos (impacto em lotes, rotas do trânsito, luzes e mapa) antes de adotar | Pendente |
+| 6.4 | Casa do agente: uma casa do bairro residencial é a dele (marcada no mapa e no HUD), com porta própria | Pendente |
+| 6.5 | Dentro da casa do agente: cama (dormir avança a hora e cura), baú, armário, cozinha, banheiro, mesa de trabalho; arrumada e cheia | Pendente |
+| 6.6 | Mapa: marcar pontos (vários, com nome e cor), remover, mostrar no minimapa; a casa do agente já vem marcada | Pendente |
+| 6.7 | Direção na tela: seta no HUD e distância até o ponto ativo; depois, linha-guia pela rua (rota) | Pendente |
+| 6.8 | Interiores densos: ocupação mínima por modelo e uniformes por papel (teste automático) | Pendente |
+| 6.9 | Hospital completo: recepção, triagem, macas, quartos, UTI, farmácia, equipe de branco e pacientes | Pendente |
+| 6.10 | Delegacia completa: balcão, mesas e computadores, celas com presos, sala do delegado, policiais | Pendente |
+| 6.11 | Revisão dos outros 13 modelos de interior (mesmo critério de enchimento e de personagens) e da escala dos tamanhos | Pendente |
+| 6.12 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Pendente |
+
+Decisões em aberto da fase: a casa é fixa ou escolhida/comprada; ruas curvas em toda a cidade ou só
+em alguns bairros (risco alto para o trânsito e para a geração dos lotes); rota automática até o ponto.
 
 ## Testes esperados (além dos existentes)
 

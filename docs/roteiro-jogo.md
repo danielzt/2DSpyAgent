@@ -18,8 +18,9 @@
 
 | Etapa | Assunto | Depende de | Status |
 |---|---|---|---|
+| E1b | Redesenho, Fase 6 (casas, casa do agente, mapa com pontos, interiores completos) | E1 | Pendente |
 | E1 | Redesenho, Fases 2 a 4 (cidade com contexto, interiores, dia e noite) | — | Feito (falta o item 1.2) |
-| E2 | Base: menu inicial, pausa, save, opções | — | Pendente |
+| E2 | Base: menu inicial, pausa, save, opções | — | Parcial (menu inicial e pausa na Fase 5; faltam save e opções) |
 | E3 | Split-screen local (até 4) | E2 | Pendente |
 | E4 | Corpo a corpo, armas e atributos | — | Pendente |
 | E5 | Percepção e scanner | E4 | Pendente |

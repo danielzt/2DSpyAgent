@@ -4,6 +4,7 @@ extends Area2D
 
 const BULLET_SCENE_PATH := "res://scenes/combat/bullet.tscn"
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
+const Fx := preload("res://scripts/effects/fx.gd")
 
 const BULLET_Z := 4
 
@@ -43,6 +44,7 @@ func _physics_process(delta: float) -> void:
 	position += direction * speed * delta
 	lifetime -= delta
 	if lifetime <= 0.0:
+		Fx.ground_hit(get_parent(), global_position)  # o tiro cai no chão
 		queue_free()
 
 
@@ -63,10 +65,12 @@ func _on_body_entered(body: Node) -> void:
 		# Tiro em carro com motorista fere o motorista (quando o alvo são jogadores).
 		if target_group == "players" and is_instance_valid(body.driver):
 			body.driver.take_damage(damage, source)
+		Fx.sparks(get_parent(), global_position, direction)
 		queue_free()
 		return
 	if body.is_in_group("players") or body.is_in_group("npcs"):
 		return  # atravessa personagens que não são alvo
+	Fx.sparks(get_parent(), global_position, direction)  # parede
 	queue_free()
 
 

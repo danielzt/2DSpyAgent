@@ -3,17 +3,19 @@ extends Node
 ## Jogador 1: WASD anda, mouse mira, botão esquerdo/direito usam a mão esquerda/direita,
 ##   E interage, F conversa, I inventário, C ficha. Gamepad 0.
 ## Jogador 2: setas, Enter interage, Num. conversa, Num0/Num1 mãos, Num2 inventário, Num3 ficha. Gamepad 1.
-## Ações: p{N}_up, _down, _left, _right, _interact, _talk, _use_left, _use_right, _inventory, _character.
+## Mapa (M / Num5) e pausa (Esc / Num+). Gamepad: ombro esquerdo abre o mapa, Guide pausa.
+## Ações: p{N}_up, _down, _left, _right, _interact, _talk, _use_left, _use_right, _inventory, _character,
+## _map, _pause.
 
 const DEADZONE := 0.2
 
 const PLAYER_KEYS := {
 	1: {"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "interact": KEY_E, "talk": KEY_F,
 		"use_left": KEY_NONE, "use_right": KEY_NONE, "inventory": KEY_I, "character": KEY_C,
-		"mouse": true, "pad": 0},
+		"map": KEY_M, "pause": KEY_ESCAPE, "mouse": true, "pad": 0},
 	2: {"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "interact": KEY_ENTER,
 		"talk": KEY_KP_PERIOD, "use_left": KEY_KP_0, "use_right": KEY_KP_1, "inventory": KEY_KP_2,
-		"character": KEY_KP_3, "mouse": false, "pad": 1},
+		"character": KEY_KP_3, "map": KEY_KP_5, "pause": KEY_KP_ADD, "mouse": false, "pad": 1},
 }
 
 
@@ -40,6 +42,8 @@ func _register_player(n: int, k: Dictionary) -> void:
 	_set_action("p%d_talk" % n, _button_events(k.talk, JOY_BUTTON_Y, pad))
 	_set_action("p%d_inventory" % n, _button_events(k.inventory, JOY_BUTTON_BACK, pad))
 	_set_action("p%d_character" % n, _button_events(k.character, JOY_BUTTON_START, pad))
+	_set_action("p%d_map" % n, _button_events(k.map, JOY_BUTTON_LEFT_SHOULDER, pad))
+	_set_action("p%d_pause" % n, _button_events(k.pause, JOY_BUTTON_GUIDE, pad))
 	var left := _button_events(k.use_left, JOY_BUTTON_X, pad)
 	var right := _button_events(k.use_right, JOY_BUTTON_B, pad)
 	if k.mouse:

@@ -4,6 +4,7 @@ extends CharacterBody2D
 ## Matar um NPC como jogador altera a pontuação (inocente tira pontos, criminoso dá).
 
 const BulletScript := preload("res://scripts/combat/bullet.gd")
+const Fx := preload("res://scripts/effects/fx.gd")
 const NpcIdentity := preload("res://scripts/npc/npc_identity.gd")
 const SidewalkGraph := preload("res://scripts/world/sidewalk_graph.gd")
 const PickupScript := preload("res://scripts/items/pickup.gd")
@@ -301,6 +302,7 @@ func _attack(target: Node2D) -> void:
 		_fire_cooldown = FIRE_INTERVAL
 		var aim := dir.rotated(rng.randf_range(-AIM_SPREAD, AIM_SPREAD))
 		BulletScript.fire(get_parent(), global_position + aim * BULLET_OFFSET, aim, self, "players")
+		Fx.shot(get_parent(), global_position, aim, false)
 
 
 func _nearest_player_in_range() -> Node2D:
