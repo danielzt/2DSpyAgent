@@ -18,6 +18,9 @@ func _reset_globals() -> void:
 	var score := root.get_node_or_null("Score")
 	if score != null:
 		score.reset()
+	var clock := root.get_node_or_null("WorldClock")
+	if clock != null:
+		clock.reset()
 
 
 func _run_all() -> void:

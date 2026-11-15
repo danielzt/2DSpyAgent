@@ -96,7 +96,7 @@ func refresh() -> void:
 	_clear(_buy_list)
 	for item_id in ShopDefs.stock(_shop_id):
 		var def := ItemDefs.get_def(item_id)
-		var row := _row("%s — %s" % [def.name, def.description], "Comprar $%d" % ItemDefs.price(item_id))
+		var row := _row("%s — %s" % [def.name, def.description], "Comprar $%d" % ShopDefs.price_in(_shop_id, item_id))
 		(row.get_child(1) as Button).pressed.connect(buy.bind(item_id))
 		_buy_list.add_child(row)
 	_clear(_sell_list)

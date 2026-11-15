@@ -6,6 +6,8 @@ const INTERIOR_SCENE := preload("res://scenes/interior/interior.tscn")
 const WorldLayout := preload("res://scripts/world/world_layout.gd")
 const InteriorLayout := preload("res://scripts/interior/interior_layout.gd")
 const DoorScript := preload("res://scripts/world/door.gd")
+const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
+const NPC_SCENE := preload("res://scenes/npc/npc.tscn")
 
 
 func before_each() -> void:
@@ -166,7 +168,7 @@ func test_interior_scene_builds_room() -> void:
 	await wait_frames(2)
 	var players := tree.get_nodes_in_group("players")
 	assert_eq(players.size(), 1)
-	assert_eq(players[0].global_position, InteriorLayout.spawn_point())
+	assert_eq(players[0].global_position, interior.layout.spawn_point())
 	assert_eq(players[0].region_name, "Interior")
 	var exits := tree.get_nodes_in_group("exit_doors")
 	assert_eq(exits.size(), 1)
@@ -182,7 +184,7 @@ func test_interior_exit_requires_pressing_interact() -> void:
 	tree.root.add_child(interior)
 	await wait_physics_frames(2)
 	var player = tree.get_nodes_in_group("players")[0]
-	player.global_position = InteriorLayout.exit_door().get_center()
+	player.global_position = interior.layout.exit_door().get_center()
 	await wait_physics_frames(3)
 	assert_true(GameState.is_inside(), "saiu sem apertar E")
 	assert_true(player.current_prompt().contains("sair"))
@@ -199,6 +201,7 @@ func test_interior_uses_building_id_for_furniture() -> void:
 	tree.root.add_child(interior)
 	await wait_frames(2)
 	assert_eq(interior.layout.furniture, InteriorLayout.new(9).furniture)
+	assert_eq(interior.layout.building_id, 9)
 	interior.queue_free()
 	await wait_frames(2)
 
@@ -280,4 +283,138 @@ func test_world_civilians_know_where_they_work_and_live() -> void:
 		assert_false(layout.building_by_id(npc.identity.home_id).is_empty())
 		linked += 1
 	assert_eq(linked, WorldLayout.CITY_PEDESTRIANS + WorldLayout.COUNTRY_CIVILIANS)
+	await _cleanup(main)
+
+
+# --- mecânicas dos serviços no mundo (Fase 3) ---
+
+func test_defeat_costs_half_the_cash_and_wakes_at_the_hospital() -> void:
+	var main := await _start_main()
+	var player = tree.get_nodes_in_group("players")[0]
+	var layout := WorldLayout.new()
+	await wait_frames(2)
+	player.profile.money = 200
+	player.profile.bank = 300
+	player.take_damage(999.0)
+	await wait_frames(1)
+	var hospital: Dictionary = layout.nearest_building_of(["hospital"], WorldLayout.spawn_point())
+	assert_eq(player.global_position, hospital.exit_spawn)
+	assert_eq(player.profile.money, 100)
+	assert_eq(player.profile.bank, 300, "o dinheiro do banco fica")
+	assert_almost_eq(player.health, player.max_health())
+	assert_true(player.hud.toast_text().contains(hospital.name), player.hud.toast_text())
+	assert_true(player.hud.toast_text().contains("$100"))
+	await _cleanup(main)
+
+
+func test_stunning_a_criminal_adds_a_prisoner_to_deliver() -> void:
+	var main := await _start_main()
+	var player = tree.get_nodes_in_group("players")[0]
+	var crook := NPC_SCENE.instantiate()
+	crook.kind = "criminal"
+	crook.ai_seed = 5
+	crook.position = Vector2(9000, 600)
+	main.add_child(crook)
+	var civilian := NPC_SCENE.instantiate()
+	civilian.ai_seed = 6
+	civilian.position = Vector2(9200, 600)
+	main.add_child(civilian)
+	await wait_frames(1)
+	crook.stun(3.0, player)
+	assert_eq(player.profile.prisoners, 1)
+	crook.stun(3.0, player)
+	assert_eq(player.profile.prisoners, 1, "o mesmo criminoso só conta uma vez")
+	civilian.stun(3.0, player)
+	assert_eq(player.profile.prisoners, 1, "inocente não é preso")
+	await _cleanup(main)
+
+
+func test_tip_becomes_a_crime_and_the_hud_points_to_it() -> void:
+	var layout := WorldLayout.new()
+	var bars: Array = layout.buildings_of(["bar"], WorldLayout.spawn_point(), 1200.0)
+	var bar: Dictionary = bars[0]
+	GameState.tip = {"crime": "bar_brawl", "crime_name": "Briga de bar", "place": bar.name,
+		"building_id": bar.id, "position": bar.exit_spawn, "region": "Cidade"}
+	var main := await _start_main()
+	var world: Node = main.get_node("World")
+	world.incidents.enabled = false
+	var player = tree.get_nodes_in_group("players")[0]
+	await wait_frames(2)
+	assert_eq(player.targets, [bar.exit_spawn], "antes de o crime começar a seta já aponta o lugar")
+	assert_eq(player.hud.target_arrow_count(), 1)
+	assert_eq(world.incidents.active_count(), 0)
+	world._tip_timer = 0.0
+	await wait_frames(2)
+	assert_eq(world.incidents.active_count(), 1)
+	var incident: Dictionary = world.incidents.incidents[0]
+	assert_eq(incident.type.id, "bar_brawl")
+	assert_eq(incident.center, bar.exit_spawn)
+	assert_eq(incident.place, bar.name)
+	assert_false(GameState.tip.is_empty(), "a pista fica até o crime ser resolvido")
+	for c in incident.criminals:
+		c.take_damage(99.0)
+	world.incidents._check_resolved()
+	await wait_frames(2)
+	assert_eq(GameState.tip, {})
+	assert_eq(player.targets, [])
+	assert_eq(player.hud.target_arrow_count(), 0)
+	await _cleanup(main)
+
+
+func test_informant_reveal_marks_nearby_criminals_for_a_while() -> void:
+	var main := await _start_main()
+	var world: Node = main.get_node("World")
+	world.incidents.enabled = false
+	var player = tree.get_nodes_in_group("players")[0]
+	world.incidents.spawn_incident("Cidade", player.global_position + Vector2(700, 0), CrimeProfiles.find_type("gang_fight"))
+	for c in world.incidents.incidents[0].criminals:
+		c.set_physics_process(false)
+	await wait_frames(2)
+	assert_eq(player.targets, [], "sem o informante ninguém é marcado")
+	GameState.reveal_seconds = 60.0
+	await wait_frames(2)
+	assert_eq(player.targets.size(), 3)
+	assert_eq(player.hud.target_arrow_count(), 3)
+	assert_true(GameState.reveal_seconds < 60.0, "o tempo da revelação corre")
+	GameState.reveal_seconds = 0.001
+	await wait_frames(3)
+	assert_eq(player.targets, [])
+	await _cleanup(main)
+
+
+func test_reveal_is_limited_in_range_and_count() -> void:
+	var main := await _start_main()
+	var world: Node = main.get_node("World")
+	world.incidents.enabled = false
+	var player = tree.get_nodes_in_group("players")[0]
+	var gang := CrimeProfiles.find_type("gang_fight")
+	world.incidents.spawn_incident("Cidade", player.global_position + Vector2(600, 0), gang)
+	world.incidents.spawn_incident("Cidade", player.global_position + Vector2(0, 700), gang)
+	world.incidents.spawn_incident("Cidade", player.global_position + Vector2(world.REVEAL_RANGE + 600.0, 0), gang)
+	GameState.reveal_seconds = 60.0
+	await wait_frames(2)
+	assert_eq(player.targets.size(), world.REVEAL_MAX)
+	for t in player.targets:
+		assert_true((t as Vector2).distance_to(player.global_position) <= world.REVEAL_RANGE)
+	await _cleanup(main)
+
+
+func test_agency_cars_use_the_workshop_paint() -> void:
+	GameState.profile_for(1).car_paint = "wine"
+	var main := await _start_main()
+	var agency := 0
+	for car in tree.get_nodes_in_group("vehicles"):
+		if not car.ai_controlled:
+			agency += 1
+			assert_eq(car.model, "agent")
+			assert_eq(car.tone, "wine")
+	assert_eq(agency, WorldLayout.new().vehicle_spawns().size())
+	await _cleanup(main)
+
+
+func test_entering_passes_the_facade_width_to_the_interior() -> void:
+	var main := await _start_main()
+	var layout := WorldLayout.new()
+	for d in tree.get_nodes_in_group("building_doors"):
+		assert_almost_eq(d.facade_width, (layout.building_by_id(d.building_id).rect as Rect2).size.x)
 	await _cleanup(main)

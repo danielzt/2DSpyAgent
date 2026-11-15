@@ -10,6 +10,7 @@ const IDS := [
 	"asphalt", "sidewalk", "concrete", "grass", "dirt", "field", "field_green", "water",
 	"roof/slab", "roof/slab_light", "roof/tar", "roof/tile", "roof/tile_red", "roof/tile_brown", "roof/zinc",
 	"wall/brick", "wall/wood", "floor/wood", "floor/tile",
+	"floor/carpet", "floor/checker", "floor/concrete", "floor/dance", "floor/marble",
 	"dash_v", "dash_h", "dash_lane_v", "dash_lane_h", "cross_h", "cross_v",
 ]
 
@@ -152,6 +153,41 @@ static func _build(id: String) -> RefCounted:
 			for i in range(0, SIZE, 8):
 				t.hline(0, i, SIZE, _c("concrete"))
 				t.vline(i, 0, SIZE, _c("concrete"))
+			return t
+		"floor/carpet":
+			var t := _filled("wine")
+			for y in range(0, SIZE, 8):
+				for x in range(((y / 8) % 2) * 4, SIZE, 8):
+					t.px(x, y, _c("red"))
+					t.px(x + 1, y + 1, _c("red"))
+			return t
+		"floor/checker":
+			var t := _filled("cream")
+			for y in range(0, SIZE, 8):
+				for x in range(((y / 8) % 2) * 8, SIZE, 16):
+					t.rect(x, y, 8, 8, _c("red"))
+			return t
+		"floor/concrete":
+			var t := _filled("gray")
+			t.speckle(_c("slate"), 0.03, seed_value)
+			t.speckle(_c("light"), 0.02, seed_value + 1)
+			t.hline(0, 0, SIZE, _c("slate"))
+			t.vline(0, 0, SIZE, _c("slate"))
+			return t
+		"floor/dance":
+			var t := _filled("shadow")
+			var lights := ["magenta", "purple", "neon_cyan", "blue"]
+			for y in range(0, SIZE, 8):
+				for x in range(0, SIZE, 8):
+					t.rect(x + 1, y + 1, 6, 6, _c(lights[((x / 8) * 3 + (y / 8) * 5) % lights.size()]))
+			return t
+		"floor/marble":
+			var t := _filled("light")
+			t.speckle(_c("white"), 0.06, seed_value)
+			t.speckle(_c("gray"), 0.012, seed_value + 1)
+			for i in range(0, SIZE, 16):
+				t.hline(0, i, SIZE, _c("gray"))
+				t.vline(i, 0, SIZE, _c("gray"))
 			return t
 		"dash_v":
 			var t: RefCounted = PixelCanvas.new(2, 24)

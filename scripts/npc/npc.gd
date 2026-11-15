@@ -43,6 +43,8 @@ const MOVING_SPEED := 5.0
 @export var crime := ""
 ## Civis da cidade andam pelas calçadas (grafo de calçadas); os demais vagam livremente.
 @export var use_sidewalks := false
+## Fica parado no lugar (funcionários e clientes dos interiores). Ainda foge se for atacado.
+@export var stationary := false
 
 var health: float = 0.0
 var dead := false
@@ -144,6 +146,9 @@ func stun(duration: float, source: Node = null) -> void:
 		Score.register_stun(kind)
 		if kind == "criminal" and source.has_method("gain_xp"):
 			source.gain_xp(XP_CRIMINAL_STUN)
+		# Criminoso atordoado vira preso a entregar na delegacia.
+		if kind == "criminal" and source.get("profile") != null:
+			source.profile.prisoners += 1
 
 
 ## Só é possível conversar com civis (criminosos são hostis por enquanto).
@@ -241,6 +246,9 @@ func _drop_loot() -> void:
 
 
 func _wander(delta: float) -> void:
+	if stationary:
+		velocity = Vector2.ZERO
+		return
 	if use_sidewalks:
 		_walk_sidewalk(delta, WALK_SPEED)
 		return

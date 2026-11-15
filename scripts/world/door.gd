@@ -14,6 +14,8 @@ const NameGenerator := preload("res://scripts/world/name_generator.gd")
 ## Tipo (BuildingDefs) e nome próprio do prédio; o nome aparece na instrução do HUD.
 @export var building_type := ""
 @export var building_name := ""
+## Largura da fachada (px): define o tamanho do interior.
+@export var facade_width := 240.0
 
 
 func _ready() -> void:
@@ -37,4 +39,4 @@ func activate() -> void:
 	if exits:
 		GameState.go_outside()
 	else:
-		GameState.go_inside(building_id, return_position, shop, building_type, building_name)
+		GameState.go_inside(building_id, return_position, shop, building_type, building_name, facade_width)

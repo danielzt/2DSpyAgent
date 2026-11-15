@@ -32,7 +32,8 @@ func add(id: String, amount := 1) -> bool:
 		return false
 	if not _stacks.has(id) and _stacks.size() >= MAX_STACKS:
 		return false
-	if count(id) + amount > MAX_COUNT:
+	var limit := ItemDefs.max_count(id)
+	if count(id) + amount > (limit if limit > 0 else MAX_COUNT):
 		return false
 	_stacks[id] = count(id) + amount
 	changed.emit()

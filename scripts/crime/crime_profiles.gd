@@ -101,6 +101,25 @@ static func region_of(type_id: String) -> String:
 	return ""
 
 
+## Pista de um crime que vai acontecer: sorteia um tipo de crime da cidade e um prédio
+## compatível, de preferência perto de `near_point`. `layout` é o WorldLayout.
+## {crime, crime_name, place, building_id, position, region} ou {} se não houver prédio.
+static func make_tip(layout: RefCounted, rng: RandomNumberGenerator, near_point: Vector2, night := false) -> Dictionary:
+	for attempt in 8:
+		var type := pick("Cidade", rng, layout.district_id_at(near_point), night)
+		if type.is_empty() or near_of(type).is_empty():
+			continue
+		var options: Array = layout.buildings_of(near_of(type), near_point, 300.0, 2500.0)
+		if options.is_empty():
+			options = layout.buildings_of(near_of(type), near_point)
+		if options.is_empty():
+			continue
+		var b: Dictionary = options[rng.randi_range(0, options.size() - 1)]
+		return {"crime": type.id, "crime_name": type.name, "place": b.name, "building_id": b.id,
+			"position": b.exit_spawn, "region": "Cidade"}
+	return {}
+
+
 ## Direção aproximada de `to` vista de `from` ("ao norte", "a nordeste"...).
 static func direction_text(from: Vector2, to: Vector2) -> String:
 	var d := to - from

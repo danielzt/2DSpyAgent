@@ -16,6 +16,8 @@ const SPEED_PER_POINT := 0.06     # +6% de velocidade ao andar
 const DAMAGE_PER_POINT := 0.20    # +20% de dano das armas
 const HEALTH_PER_POINT := 2.0     # +2 de vida máxima
 const XP_PER_POINT := 0.10        # +10% de XP
+const XP_BOOST := 1.25            # bônus temporário de XP (sessão de cinema)
+const DEFEAT_LOSS := 0.5          # fração do dinheiro em mãos perdida ao ser derrotado
 
 const STATS := [
 	{"id": "speed", "name": "Velocidade", "effect": "+6% de velocidade ao andar por ponto"},
@@ -43,6 +45,19 @@ var unspent := START_POINTS
 var stats := {"speed": 1, "strength": 1, "vitality": 1, "intelligence": 1}
 ## Sementes de NPCs com quem já conversou (cada um dá XP só uma vez).
 var talked := {}
+## Vida atual, guardada entre trocas de cena (-1 = vida cheia).
+var health := -1.0
+## Dinheiro guardado no banco: não se perde ao ser derrotado.
+var bank := 0
+## Criminosos atordoados ainda não entregues na delegacia.
+var prisoners := 0
+## Cor dos carros da agência (CarSprites.AGENT_PAINTS), trocada na oficina.
+var car_paint := "black"
+## Segundos restantes do bônus de XP da sessão de cinema.
+var xp_boost := 0.0
+## Dia do mundo do último treino na academia e do último briefing com missão (-1 = nunca).
+var last_train_day := -1
+var last_briefing_day := -1
 
 
 func _init(p_index := 1) -> void:
@@ -121,7 +136,21 @@ func max_health() -> float:
 
 
 func xp_multiplier() -> float:
-	return 1.0 + XP_PER_POINT * (stat("intelligence") - 1)
+	var boost := XP_BOOST if xp_boost > 0.0 else 1.0
+	return (1.0 + XP_PER_POINT * (stat("intelligence") - 1)) * boost
+
+
+## Derrota: perde parte do dinheiro que carrega (o do banco fica). Retorna quanto perdeu.
+func lose_money_on_defeat() -> int:
+	var lost := int(money * DEFEAT_LOSS)
+	add_money(-lost)
+	return lost
+
+
+## Conta o tempo do bônus de XP.
+func tick(delta: float) -> void:
+	if xp_boost > 0.0:
+		xp_boost = maxf(xp_boost - delta, 0.0)
 
 
 ## Quantos traços de personalidade de um NPC o jogador enxerga (0 a 2).

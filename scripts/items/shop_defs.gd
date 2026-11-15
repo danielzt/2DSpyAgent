@@ -8,6 +8,9 @@ const SHOPS := {
 	"pharmacy": {"name": "Farmácia", "stock": ["medkit"]},
 	"agent_store": {"name": "Loja do Agente", "stock": ["shield", "taser", "medkit"]},
 	"farm_store": {"name": "Armazém Rural", "stock": ["medkit", "shotgun"]},
+	"market": {"name": "Mercado", "stock": ["snack", "medkit"]},
+	# Aberto 24 h, mas cobra 50% a mais.
+	"gas_station": {"name": "Conveniência do Posto", "stock": ["snack", "medkit"], "markup": 1.5},
 }
 
 
@@ -23,11 +26,17 @@ static func stock(shop_id: String) -> Array:
 	return SHOPS[shop_id].stock if SHOPS.has(shop_id) else []
 
 
+## Preço de um item nesta loja (algumas cobram mais caro).
+static func price_in(shop_id: String, item_id: String) -> int:
+	var markup: float = SHOPS[shop_id].get("markup", 1.0) if SHOPS.has(shop_id) else 1.0
+	return roundi(ItemDefs.price(item_id) * markup)
+
+
 ## Compra 1 unidade. Retorna "ok", "not_sold", "no_money" ou "no_space".
 static func buy(shop_id: String, item_id: String, inventory: RefCounted, profile: RefCounted) -> String:
 	if not stock(shop_id).has(item_id):
 		return "not_sold"
-	var price := ItemDefs.price(item_id)
+	var price := price_in(shop_id, item_id)
 	if profile.money < price:
 		return "no_money"
 	if not inventory.add(item_id):

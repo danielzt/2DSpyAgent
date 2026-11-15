@@ -41,6 +41,10 @@ var talking_with: Node = null
 var region_name := ""
 ## Bairro e rua onde o jogador está (ou o nome do prédio, dentro de um interior).
 var place_name := ""
+## Alvos apontados pelas setas do HUD (posições no mundo): pista de crime, criminosos revelados.
+var targets: Array = []
+## Dinheiro perdido na última derrota (para o aviso).
+var last_defeat_loss := 0
 var hud
 var dialog
 var inventory_panel
@@ -78,7 +82,8 @@ func _ready() -> void:
 	respawn_position = global_position
 	profile = GameState.profile_for(player_index)
 	inventory = GameState.inventory_for(player_index)
-	health = max_health()
+	# A vida é guardada na ficha entre trocas de cena (entrar em um prédio não cura).
+	health = max_health() if profile.health <= 0.0 else minf(profile.health, max_health())
 	_last_max_health = max_health()
 	profile.changed.connect(_on_profile_changed)
 	hud = HudScript.new()
@@ -95,6 +100,8 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	if profile != null:
+		profile.health = health
 	if profile != null and profile.changed.is_connected(_on_profile_changed):
 		profile.changed.disconnect(_on_profile_changed)
 
@@ -106,6 +113,9 @@ func _input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_update_sprite(delta)
+	profile.tick(delta)
+	hud.set_clock(WorldClock.text())
+	hud.set_targets(global_position, targets)
 	hud.set_prompt(current_prompt())
 	hud.set_region(region_name)
 	hud.set_place(place_name)
@@ -415,6 +425,9 @@ func _die() -> void:
 		exit_vehicle()
 	if talking_with != null:
 		end_conversation()
+	# Derrota: perde parte do dinheiro em mãos (o do banco fica) e volta ao ponto de retorno
+	# (o mundo o troca pela porta do hospital).
+	last_defeat_loss = profile.lose_money_on_defeat()
 	health = max_health()
 	global_position = respawn_position
 	velocity = Vector2.ZERO

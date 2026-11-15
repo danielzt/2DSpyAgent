@@ -23,6 +23,11 @@ const ITEMS := {
 		"heal": 4.0,
 		"description": "Recupera 4 de vida ao usar. Consumível.", "price": 40,
 	},
+	"snack": {
+		"id": "snack", "name": "Lanche", "kind": "tool",
+		"heal": 3.0, "max_count": 5,
+		"description": "Recupera 3 de vida ao usar. Leve até 5.", "price": 12,
+	},
 	"shield": {
 		"id": "shield", "name": "Escudo balístico", "kind": "shield",
 		"description": "Segure para bloquear tiros vindos da frente. Andar fica 40% mais lento.", "price": 250,
@@ -40,6 +45,11 @@ static func exists(id: String) -> bool:
 
 static func all_ids() -> Array:
 	return ITEMS.keys()
+
+
+## Quantas unidades cabem na mochila (0 = sem limite próprio).
+static func max_count(id: String) -> int:
+	return get_def(id).get("max_count", 0)
 
 
 static func price(id: String) -> int:

@@ -98,8 +98,9 @@ func test_shops_get_sign_awning_and_their_own_colors() -> void:
 		found[b.shop] = style
 		assert_true(style.front, "loja tem vitrine")
 		assert_ne(style.awning, "")
-		assert_eq(style.wall, BuildingStyle.SHOP_STYLES[b.shop].wall)
-	assert_eq(found.size(), 3)
+		if BuildingStyle.SHOP_STYLES.has(b.shop):
+			assert_eq(style.wall, BuildingStyle.SHOP_STYLES[b.shop].wall)
+	assert_eq(found.size(), 5, "armaria, farmácia, loja do agente, mercado e posto")
 	assert_ne(found["armory"].sign_fg, found["pharmacy"].sign_fg)
 
 

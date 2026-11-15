@@ -66,16 +66,24 @@ static func generate(p_seed: int, kind := "innocent", context := {}) -> Dictiona
 		"mood": MOODS[rng.randi_range(0, MOODS.size() - 1)],
 		"years": rng.randi_range(1, 30),
 	}
+	for key in context:
+		identity[key] = context[key]
 	if context.has("role"):
-		for key in context:
-			identity[key] = context[key]
 		identity.job = context.role
 	return identity
 
 
-## True se a identidade está ligada a prédios do mundo.
+## True se a identidade está ligada a prédios do mundo (trabalho e moradia).
 static func has_place(identity: Dictionary) -> bool:
-	return identity.get("work_name", "") != "" and identity.get("home_name", "") != ""
+	return has_work(identity) and has_home(identity)
+
+
+static func has_work(identity: Dictionary) -> bool:
+	return identity.get("work_name", "") != "" and identity.get("role", "") != ""
+
+
+static func has_home(identity: Dictionary) -> bool:
+	return identity.get("home_name", "") != ""
 
 
 static func answer(identity: Dictionary, question_id: String) -> String:
@@ -84,7 +92,7 @@ static func answer(identity: Dictionary, question_id: String) -> String:
 		"greet":
 			return (MOOD_GREETINGS[identity.mood] as String) + suffix
 		"job":
-			if has_place(identity):
+			if has_work(identity):
 				return "Sou %s %s há %d anos." % [identity.role, NameGenerator.at_place(identity.work_name), identity.years] + suffix
 			return "Trabalho com %s há %d anos." % [identity.job, identity.years] + suffix
 		"suspicious":
@@ -92,7 +100,7 @@ static func answer(identity: Dictionary, question_id: String) -> String:
 				return "Não vi nada. E eu tenho pressa."
 			return INNOCENT_TIPS[identity.seed % INNOCENT_TIPS.size()] + suffix
 		"about":
-			if has_place(identity):
+			if has_home(identity):
 				var where: String = NameGenerator.at_place(identity.home_name)
 				if identity.get("district", "") != "":
 					where += ", %s" % NameGenerator.at_place(identity.district)
@@ -102,7 +110,7 @@ static func answer(identity: Dictionary, question_id: String) -> String:
 
 
 static func summary(identity: Dictionary) -> String:
-	if has_place(identity):
+	if has_work(identity):
 		return "%d anos • %s: %s • humor %s" % [identity.age, identity.job, identity.work_name, identity.mood]
 	return "%d anos • trabalha com %s • humor %s" % [identity.age, identity.job, identity.mood]
 

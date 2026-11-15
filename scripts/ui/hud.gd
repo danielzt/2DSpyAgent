@@ -3,12 +3,18 @@ extends CanvasLayer
 ## região, nível e lugar (canto superior esquerdo), relógio (topo, ao centro), pontos e
 ## dinheiro (superior direito), instrução de interação (inferior esquerdo), mãos
 ## (inferior, ao centro) e vida com barra (inferior direito).
-## O relógio fica oculto até o sistema existir (Fase 4).
+## Setas na borda da tela apontam alvos fora de vista (pista de crime, criminosos revelados).
 
 const PixelLabel := preload("res://scripts/ui/pixel_label.gd")
+const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 
 const MARGIN := 16
 const LINE := 38.0
+## Setas de alvo: distância da borda da tela, alvo mais perto que isto não ganha seta.
+const ARROW_MARGIN := 90.0
+const ARROW_MIN_DISTANCE := 260.0
+const ARROW_SCALE := 3.0
+const MAX_ARROWS := 4
 
 var _prompt: Control
 var _region: Control
@@ -21,6 +27,8 @@ var _toast: Control
 var _place: Control
 var _clock: Control
 var _toast_time := 0.0
+var _arrows: Control
+var _arrow_dirs: Array[Vector2] = []
 
 
 func _ready() -> void:
@@ -39,6 +47,12 @@ func _ready() -> void:
 	_health.bar_ratio = 1.0
 	_prompt = _make_label(Control.PRESET_BOTTOM_LEFT, "neon_cyan", "teal")
 	_prompt.visible = false
+	_arrows = Control.new()
+	_arrows.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_arrows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_arrows.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_arrows.draw.connect(_draw_arrows)
+	add_child(_arrows)
 	Score.changed.connect(set_score)
 	set_score(Score.points)
 
@@ -99,7 +113,33 @@ func place_text() -> String:
 	return _place.text
 
 
-## Hora do mundo (vazio esconde). Preenchido a partir da Fase 4.
+## Setas na borda da tela apontando os alvos (posições no mundo), vistos de `from`.
+## Alvo já perto do jogador não ganha seta.
+func set_targets(from: Vector2, targets: Array) -> void:
+	var dirs: Array[Vector2] = []
+	for target in targets:
+		var to: Vector2 = (target as Vector2) - from
+		if to.length() >= ARROW_MIN_DISTANCE and dirs.size() < MAX_ARROWS:
+			dirs.append(to.normalized())
+	if dirs != _arrow_dirs:
+		_arrow_dirs = dirs
+		_arrows.queue_redraw()
+
+
+func target_arrow_count() -> int:
+	return _arrow_dirs.size()
+
+
+func _draw_arrows() -> void:
+	var texture := SpriteFactory.prop("target_arrow")
+	var half := _arrows.size / 2.0
+	for dir in _arrow_dirs:
+		var pos := half + Vector2(dir.x * (half.x - ARROW_MARGIN), dir.y * (half.y - ARROW_MARGIN))
+		_arrows.draw_set_transform(pos, dir.angle(), Vector2(ARROW_SCALE, ARROW_SCALE))
+		_arrows.draw_texture(texture, -Vector2(texture.get_size()) / 2.0)
+
+
+## Hora do mundo (vazio esconde).
 func set_clock(text: String) -> void:
 	_clock.text = text
 

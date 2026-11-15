@@ -21,6 +21,7 @@ InputSetup="*res://scripts/autoload/input_setup.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 Score="*res://scripts/autoload/score_keeper.gd"
 DisplaySetup="*res://scripts/autoload/display_setup.gd"
+WorldClock="*res://scripts/autoload/world_clock.gd"
 
 [display]
 

@@ -216,7 +216,10 @@ func test_shops_are_assigned() -> void:
 	assert_eq(counts.get("armory", 0), 2)
 	assert_eq(counts.get("pharmacy", 0), 3)
 	assert_eq(counts.get("agent_store", 0), 2)
-	assert_eq(counts.size(), 3)
+	# mercado e posto passaram a vender (comida para levar) na Fase 3
+	assert_true(counts.get("market", 0) >= BuildingDefs.min_count("market"))
+	assert_true(counts.get("gas_station", 0) >= BuildingDefs.min_count("gas_station"))
+	assert_eq(counts.size(), 5)
 
 
 func test_building_colors_come_from_the_palette() -> void:

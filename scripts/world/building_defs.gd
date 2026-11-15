@@ -58,13 +58,13 @@ const DEFS := {
 		"wall": "wall/white", "roof": "roof/slab_light", "shop": "pharmacy",
 		"staff": ["balconista"], "hours": [7, 23], "service": "Loja"},
 	"market": {"name": "Mercado", "short": "Mercado", "districts": ["residential", "center"], "min": 3, "max": 5,
-		"min_size": 200, "max_floors": 2, "front": true, "awning": "yellow", "sign_fg": "amber", "sign_bg": "green_dark",
+		"min_size": 200, "max_floors": 2, "front": true, "awning": "yellow", "sign_fg": "amber", "sign_bg": "green_dark", "shop": "market",
 		"staff": ["caixa", "estoquista"], "hours": [7, 22], "service": "Loja de comida para levar"},
 	"workshop": {"name": "Oficina", "short": "Oficina", "districts": ["industrial", "residential"], "min": 2, "max": 3,
 		"min_size": 200, "max_floors": 2, "sign_fg": "orange", "sign_bg": "ink",
 		"staff": ["auxiliar de mecânica", "lanterneiro"], "hours": [7, 19], "service": "Pintar e consertar o carro"},
 	"gas_station": {"name": "Posto", "short": "Posto", "districts": ["industrial", "residential", "center"], "min": 2, "max": 3,
-		"min_size": 200, "max_floors": 1, "front": true, "awning": "red", "sign_fg": "white", "sign_bg": "red",
+		"min_size": 200, "max_floors": 1, "front": true, "awning": "red", "sign_fg": "white", "sign_bg": "red", "shop": "gas_station",
 		"staff": ["frentista"], "hours": [0, 24], "service": "Conveniência 24 h"},
 	"cinema": {"name": "Cinema", "short": "Cine", "districts": ["center", "nightlife"], "min": 1, "max": 2,
 		"min_size": 240, "awning": "red", "sign_fg": "amber", "sign_bg": "wine",
@@ -143,6 +143,21 @@ static func is_open(type: String, hour: float) -> bool:
 	if open <= close:
 		return hour >= open and hour < close
 	return hour >= open or hour < close
+
+
+## True se o tipo nunca fecha.
+static func always_open(type: String) -> bool:
+	var hours: Array = def(type).get("hours", [0, 24])
+	return hours[1] - hours[0] >= 24
+
+
+static func opening_hour(type: String) -> int:
+	return def(type).get("hours", [0, 24])[0]
+
+
+## Aviso da porta de um prédio fechado.
+static func closed_text(type: String) -> String:
+	return "Fechado — abre às %02d:00" % opening_hour(type)
 
 
 static func fits(type: String, rect: Rect2) -> bool:

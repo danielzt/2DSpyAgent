@@ -10,6 +10,7 @@ const BuildingStyle := preload("res://scripts/world/building_style.gd")
 const GroundChunkScript := preload("res://scripts/world/ground_chunk.gd")
 const PickupScript := preload("res://scripts/items/pickup.gd")
 const IncidentManagerScript := preload("res://scripts/crime/incident_manager.gd")
+const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 const BuildingArt := preload("res://scripts/art/building_art.gd")
@@ -22,11 +23,18 @@ const TEXEL := 2.0
 const BUILDING_Z := 2
 const FARM_YARD_MARGIN := 24.0
 const TRACK_OFFSET := 18.0
+## Segundos entre o jogador chegar à rua e o crime da pista começar.
+const TIP_DELAY := 4.0
+## Criminosos revelados pelo informante: até onde e quantos.
+const REVEAL_RANGE := 1800.0
+const REVEAL_MAX := 4
 
 var layout
 var props
 var incidents
 
+var _tip_timer := TIP_DELAY
+var _tip_incident_id := -1
 
 func _ready() -> void:
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
@@ -42,6 +50,7 @@ func _ready() -> void:
 	for spawn in layout.vehicle_spawns():
 		var car := CAR_SCENE.instantiate()
 		car.model = "agent"   # carros da agência: os únicos que o jogador dirige
+		car.tone = GameState.profile_for(1).car_paint   # pintura escolhida na oficina
 		car.position = spawn.position
 		car.rotation = spawn.rotation
 		add_child(car)
@@ -81,14 +90,78 @@ func _ready() -> void:
 
 	incidents = IncidentManagerScript.new()
 	incidents.layout = layout
+	incidents.incident_resolved.connect(_on_incident_resolved)
 	add_child(incidents)
 	queue_redraw()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_update_tip(delta)
+	var targets := current_targets()
 	for p in get_tree().get_nodes_in_group("players"):
 		p.region_name = layout.region_at(p.global_position)
 		p.place_name = layout.place_text(p.global_position)
+		p.targets = targets
+		if not p.died.is_connected(_on_player_died):
+			p.died.connect(_on_player_died.bind(p))
+
+
+# --- derrota, pistas e alvos ---
+
+## Derrota: o agente acorda em frente ao hospital (e já perdeu parte do dinheiro em mãos).
+func _on_player_died(player: Node) -> void:
+	var hospital: Dictionary = layout.nearest_building_of(["hospital"], player.global_position)
+	if not hospital.is_empty():
+		player.global_position = hospital.exit_spawn
+		player.notify("Você acordou no %s. Perdeu $%d." % [hospital.name, player.last_defeat_loss], 7.0)
+
+
+## A pista (rumor de bar ou missão do briefing) vira um crime de verdade no lugar indicado,
+## pouco depois de o jogador chegar à rua. Ela só some quando o crime é resolvido.
+func _update_tip(delta: float) -> void:
+	if GameState.reveal_seconds > 0.0:
+		GameState.reveal_seconds = maxf(GameState.reveal_seconds - delta, 0.0)
+	var tip: Dictionary = GameState.tip
+	if tip.is_empty() or _tip_incident_id >= 0 or incidents == null:
+		return
+	if get_tree().get_nodes_in_group("players").is_empty():
+		return
+	_tip_timer -= delta
+	if _tip_timer > 0.0:
+		return
+	var type: Dictionary = CrimeProfiles.find_type(tip.get("crime", ""))
+	if type.is_empty():
+		GameState.tip = {}
+		return
+	var incident: Dictionary = incidents.spawn_incident(tip.get("region", "Cidade"), tip.position, type, tip.get("place", ""))
+	_tip_incident_id = incident.get("id", -1)
+
+
+func _on_incident_resolved(incident: Dictionary) -> void:
+	if incident.get("id", -2) == _tip_incident_id:
+		_tip_incident_id = -1
+		_tip_timer = TIP_DELAY
+		GameState.tip = {}
+
+
+## Posições que as setas do HUD apontam: o lugar da pista e, enquanto durar a revelação do
+## informante, os criminosos por perto.
+func current_targets() -> Array:
+	var targets: Array = []
+	var tip: Dictionary = GameState.tip
+	if not tip.is_empty():
+		targets.append(tip.position)
+	if GameState.reveal_seconds > 0.0:
+		var players := get_tree().get_nodes_in_group("players")
+		if not players.is_empty():
+			var from: Vector2 = (players[0] as Node2D).global_position
+			var found: Array = []
+			for npc in get_tree().get_nodes_in_group("npcs"):
+				if npc.kind == "criminal" and not npc.dead and (npc.global_position as Vector2).distance_to(from) <= REVEAL_RANGE:
+					found.append(npc.global_position)
+			found.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.distance_squared_to(from) < b.distance_squared_to(from))
+			targets.append_array(found.slice(0, REVEAL_MAX))
+	return targets
 
 
 ## Base do mundo: asfalto sob a cidade e grama sob o campo (dois retângulos de tile
@@ -189,6 +262,7 @@ func _add_building(b: Dictionary) -> void:
 	door.shop = b.shop
 	door.building_type = b.get("type", "")
 	door.building_name = b.get("name", "")
+	door.facade_width = rect.size.x
 	door.position = door_rect.get_center()
 	var shape := CollisionShape2D.new()
 	var rs := RectangleShape2D.new()
