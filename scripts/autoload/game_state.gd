@@ -103,8 +103,20 @@ func start_game() -> void:
 
 func profile_for(player_index: int) -> RefCounted:
 	if not _profiles.has(player_index):
-		_profiles[player_index] = ProfileScript.new(player_index)
+		var profile: RefCounted = ProfileScript.new(player_index)
+		_profiles[player_index] = profile
+		_welcome_home(profile)
 	return _profiles[player_index]
+
+
+## A ficha nova já conhece a casa do agente e a traz marcada no mapa e no HUD.
+func _welcome_home(profile: RefCounted) -> void:
+	var home: Dictionary = world_layout().home()
+	if home.is_empty():
+		return
+	profile.know_building(home.id)
+	profile.explore(home.exit_spawn)
+	profile.add_waypoint(home.exit_spawn, "Casa")
 
 
 func inventory_for(player_index: int) -> RefCounted:

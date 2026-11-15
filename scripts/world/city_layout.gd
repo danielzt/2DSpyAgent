@@ -25,6 +25,13 @@ const EXIT_SPAWN_OFFSET := 40.0  # distância abaixo da porta onde o jogador rea
 const MIN_BUILDING := 120.0
 const PARK_OFFSET := ASPHALT / 2.0 - CURB_PARKING   # rua comum: carro rente ao meio-fio (54)
 ## Quarteirões com um carro da agência estacionado na rua da esquerda (nenhum em avenida).
+## Casas do bairro residencial: chance de o lote ser só de casinhas, largura de cada uma,
+## vão entre elas e margens do lote (a do lado do beco é maior, para o jogador passar).
+const HOUSE_LOT_CHANCE := 0.6
+const HOUSE_WIDTH := Vector2(96.0, 128.0)
+const HOUSE_GAP := 28.0
+const HOUSE_SIDE := 12.0
+const HOUSE_OPEN_SIDE := 44.0
 const PARKED_CELLS := [Vector2i(1, 0), Vector2i(3, 2), Vector2i(5, 1), Vector2i(2, 4), Vector2i(7, 5), Vector2i(4, 3)]
 
 var world_seed: int
@@ -150,6 +157,9 @@ func _fill_lot(lot: Rect2, rng: RandomNumberGenerator, district: String) -> void
 	if rng.randf() < params.park:
 		_make_park(lot, rng)
 		return
+	if district == "residential" and rng.randf() < HOUSE_LOT_CHANCE:
+		_fill_houses(lot, rng, district)
+		return
 	var roll := rng.randf() * float(shapes[0] + shapes[1] + shapes[2])
 	if roll < shapes[0]:
 		var left := rng.randf_range(0.0, 60.0)
@@ -184,6 +194,26 @@ func _fill_lot(lot: Rect2, rng: RandomNumberGenerator, district: String) -> void
 				trees.append(Vector2(
 					rng.randf_range(yard.position.x + 35.0, yard.end.x - 35.0),
 					rng.randf_range(yard.position.y + 35.0, yard.end.y - 35.0)))
+
+
+## Lote residencial de casas pequenas em duas fileiras, com um beco no meio: as da fileira de
+## cima viram a porta para o beco; as de baixo, para a rua. O beco se abre por um dos lados do
+## lote (a margem livre ali deixa o jogador entrar).
+func _fill_houses(lot: Rect2, rng: RandomNumberGenerator, district: String) -> void:
+	var open_left := rng.randf() < 0.5
+	var rows := [[0.04, 0.28], [0.58, 0.37]]
+	for row in rows:
+		var y: float = lot.position.y + lot.size.y * row[0]
+		var depth: float = lot.size.y * row[1]
+		var x := lot.position.x + (HOUSE_OPEN_SIDE if open_left else HOUSE_SIDE)
+		var limit := lot.end.x - (HOUSE_SIDE if open_left else HOUSE_OPEN_SIDE)
+		while true:
+			var w := rng.randf_range(HOUSE_WIDTH.x, HOUSE_WIDTH.y)
+			if x + w > limit:
+				break
+			_add_building(Rect2(x, y, w, depth), rng, district)
+			buildings[buildings.size() - 1]["forced"] = "house"
+			x += w + HOUSE_GAP
 
 
 func _make_park(lot: Rect2, rng: RandomNumberGenerator) -> void:

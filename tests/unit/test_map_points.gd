@@ -18,6 +18,13 @@ func before_each() -> void:
 	s._ready()
 	s.free()
 	layout = WorldLayout.new()
+	# a ficha nova já traz a casa do agente (conhecida, explorada e marcada): estes testes
+	# começam do zero
+	var profile: RefCounted = GameState.profile_for(1)
+	profile.waypoints.clear()
+	profile.active_waypoint = -1
+	profile.known_buildings.clear()
+	profile.explored.clear()
 
 
 func after_each() -> void:
@@ -109,8 +116,10 @@ func test_new_game_clears_waypoints_and_fog() -> void:
 	profile.add_waypoint(Vector2(1, 1))
 	profile.explore(Vector2(100, 100))
 	GameState.new_game()
-	assert_eq(GameState.profile_for(1).waypoints.size(), 0)
-	assert_eq(GameState.profile_for(1).explored.size(), 0)
+	var fresh: RefCounted = GameState.profile_for(1)
+	assert_eq(fresh.waypoints.size(), 1, "só o ponto da casa")
+	assert_eq(fresh.waypoints[0].name, "Casa")
+	assert_false(fresh.is_explored(Vector2(100, 100)), "a neblina voltou")
 
 
 # --- pontos (dados) ---

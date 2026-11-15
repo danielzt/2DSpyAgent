@@ -30,21 +30,75 @@ const TEMPLATES := {
 	"farm_store": "shop", "hotel": "hotel", "restaurant": "restaurant", "diner": "restaurant", "bar": "bar",
 	"club": "club", "bank": "bank", "police": "police", "hospital": "hospital", "workshop": "workshop",
 	"cinema": "cinema", "gym": "gym", "office": "office", "newspaper": "office", "apartment": "home",
-	"house": "home", "farm": "home", "warehouse": "warehouse", "hq": "hq",
+	"house": "home", "farm": "home", "warehouse": "warehouse", "hq": "hq", "agent_home": "agent_home",
 }
 const DEFAULT_TEMPLATE := "home"
 ## Tamanho base e piso de cada modelo.
 const BASE_SIZE := {
-	"shop": "P", "hotel": "G", "restaurant": "M", "bar": "M", "club": "G", "bank": "M", "police": "G",
-	"hospital": "G", "workshop": "M", "cinema": "G", "gym": "M", "office": "M", "home": "P",
-	"warehouse": "G", "hq": "G",
+	"shop": "P", "hotel": "G", "restaurant": "M", "bar": "M", "club": "G", "bank": "M", "police": "M",
+	"hospital": "M", "workshop": "M", "cinema": "G", "gym": "M", "office": "M", "home": "P",
+	"warehouse": "G", "hq": "G", "agent_home": "M",
 }
 const FLOORS := {
 	"shop": "floor/tile", "hotel": "floor/carpet", "restaurant": "floor/wood", "bar": "floor/wood",
 	"club": "floor/concrete", "bank": "floor/marble", "police": "floor/tile", "hospital": "floor/marble",
 	"workshop": "floor/concrete", "cinema": "floor/carpet", "gym": "floor/wood", "office": "floor/tile",
-	"home": "floor/wood", "warehouse": "floor/concrete", "hq": "floor/tile",
+	"home": "floor/wood", "warehouse": "floor/concrete", "hq": "floor/tile", "agent_home": "floor/wood",
 }
+## Decoração que enche o espaço livre, por modelo: [móvel, largura, altura, mín., máx.].
+const DECOR := {
+	"shop": [["plant", 44, 44, 1, 2], ["trash", 32, 32, 1, 1]],
+	"hotel": [["plant", 44, 44, 2, 4], ["vending", 56, 64, 1, 1], ["sofa", 176, 64, 1, 2], ["trash", 32, 32, 1, 2]],
+	"restaurant": [["plant", 44, 44, 2, 3], ["trash", 32, 32, 1, 2]],
+	"bar": [["plant", 44, 44, 1, 2], ["speaker", 48, 72, 1, 2], ["trash", 32, 32, 1, 2]],
+	"club": [["speaker", 48, 72, 2, 4], ["plant", 44, 44, 1, 2]],
+	"bank": [["plant", 44, 44, 2, 3], ["file_cabinet", 48, 64, 2, 3]],
+	"police": [["trash", 32, 32, 1, 2]],
+	"hospital": [["plant", 44, 44, 2, 3], ["cart", 56, 44, 1, 2]],
+	"workshop": [["toolbox", 48, 32, 2, 3], ["tires", 56, 56, 1, 2]],
+	"cinema": [["plant", 44, 44, 2, 3], ["vending", 56, 64, 1, 1], ["trash", 32, 32, 1, 2]],
+	"gym": [["water_cooler", 40, 52, 1, 2], ["weights", 96, 40, 1, 2], ["plant", 44, 44, 1, 2]],
+	"office": [["plant", 44, 44, 2, 3], ["file_cabinet", 48, 64, 2, 3], ["water_cooler", 40, 52, 1, 1], ["bookshelf", 56, 150, 1, 1]],
+	"home": [["plant", 44, 44, 1, 2], ["trash", 32, 32, 0, 1]],
+	"agent_home": [["plant", 44, 44, 1, 2]],
+	"warehouse": [["crates", 72, 56, 3, 5], ["pallet", 72, 56, 2, 3]],
+	"hq": [["plant", 44, 44, 1, 2], ["file_cabinet", 48, 64, 1, 2]],
+}
+## O ponto está longe de móveis sólidos e paredes (cabe uma pessoa)?
+func _clear_of_solids(p: Vector2) -> bool:
+	var probe := Rect2(p - Vector2(24, 24), Vector2(48, 48))
+	for wall in walls:
+		if probe.intersects(wall):
+			return false
+	for item in items:
+		if item.solid and probe.intersects(item.rect):
+			return false
+	return true
+
+
+## O móvel cairia em cima de uma vaga de NPC ou de uma zona de serviço?
+func _blocks_people_or_services(rect: Rect2) -> bool:
+	for slot in npc_slots:
+		if rect.grow(30.0).has_point(slot.position):
+			return true
+	for z in zones:
+		if rect.intersects(z.rect):
+			return true
+	return false
+
+
+## Gente mínima por tamanho de interior (funcionários, clientes e moradores contam) e o papel
+## dos visitantes que completam o mínimo.
+const MIN_PEOPLE := {"P": 4, "M": 8, "G": 12}
+const GUEST_ROLES := {
+	"shop": ["cliente"], "hotel": ["hóspede"], "restaurant": ["cliente"], "bar": ["frequentador"],
+	"club": ["dançarino"], "bank": ["cliente"], "police": ["visitante"], "hospital": ["paciente", "acompanhante"],
+	"workshop": ["cliente"], "cinema": ["espectador"], "gym": ["aluno"], "office": ["visitante"],
+	"home": ["morador"], "agent_home": ["visitante"], "warehouse": ["estoquista"], "hq": ["cliente"],
+}
+## Modelos densos que nunca passam de certo tamanho, mesmo com fachada larga (o espaço fica cheio).
+const MAX_SIZE := {"police": "M", "hospital": "M"}
+const MIN_SIZE := {"police": "M", "hospital": "M", "agent_home": "M"}
 ## Tipos que usam o modelo num tamanho menor que o base.
 const SMALLER := ["diner"]
 
@@ -115,13 +169,16 @@ func _init(p_building_id: int = 0, p_type := "", facade_width := DEFAULT_FACADE)
 			_build_warehouse()
 		"hq":
 			_build_hq()
+		"agent_home":
+			_build_agent_home()
 		_:
 			_build_home()
 	if mirrored:
 		_mirror()
-	for item in items:
-		if item.solid:
-			furniture.append(item.rect)
+	_refresh_furniture()
+	# a decoração e a gente extra entram depois do espelhamento: a validação de alcance usa a
+	# planta final (a grade de 32 px não é simétrica ao espelhar)
+	_dress()
 
 
 # --- consultas ---
@@ -135,11 +192,13 @@ static func size_class_for(p_type: String, facade_width := DEFAULT_FACADE) -> St
 	var index := SIZE_ORDER.find(BASE_SIZE[template_of(p_type)])
 	if SMALLER.has(p_type):
 		index -= 1
+	var cap := SIZE_ORDER.find(MAX_SIZE.get(template_of(p_type), "G"))
 	if facade_width < NARROW_FACADE:
 		index -= 1
 	elif facade_width >= WIDE_FACADE:
 		index += 1
-	return SIZE_ORDER[clampi(index, 0, SIZE_ORDER.size() - 1)]
+	var floor_index := SIZE_ORDER.find(MIN_SIZE.get(template_of(p_type), "P"))
+	return SIZE_ORDER[clampi(index, floor_index, cap)]
 
 
 func room_rect() -> Rect2:
@@ -227,6 +286,8 @@ func unreachable() -> Array[String]:
 	var targets := {"saída": exit_door().grow(GRID)}
 	for z in zones:
 		targets["zona %s" % z.id] = z.rect
+	for room in rooms:
+		targets["cômodo %s" % room.name] = room.rect
 	for target_name in targets:
 		var rect: Rect2 = targets[target_name]
 		var reached := false
@@ -317,7 +378,10 @@ func _role(index := 0) -> String:
 
 ## Vagas de clientes: sorteia `count` pontos da lista (sem repetir).
 func _guests(role: String, points: Array, min_count: int, max_count: int) -> void:
-	var pool := points.duplicate()
+	var pool: Array = []
+	for point in points:
+		if _clear_of_solids(point):
+			pool.append(point)
 	var count := mini(_rng.randi_range(min_count, max_count), pool.size())
 	for i in count:
 		var pick := _rng.randi_range(0, pool.size() - 1)
@@ -525,66 +589,167 @@ func _build_bank() -> void:
 	_guests("cliente", [Vector2(w * 0.3, h * 0.6), Vector2(w * 0.7, h * 0.6), Vector2(w * 0.5, h * 0.52)], 1, 3)
 
 
-## Delegacia: recepção ao sul, sala dos agentes e celas ao norte.
+## Delegacia: celas ao norte-oeste, sala dos agentes, sala do delegado, sala de provas e a
+## recepção com o balcão ao sul.
 func _build_police() -> void:
 	var w := size.x
 	var h := size.y
-	var back := snappedf(h * 0.45, 2.0)
-	var cells_x := snappedf(w * 0.36, 2.0)
-	var bars_y := snappedf(h * 0.24, 2.0)
+	var back := snappedf(h * 0.46, 2.0)
+	var cells_x := snappedf(w * 0.34, 2.0)
+	var boss_x := snappedf(w * 0.76, 2.0)
+	var bars_y := snappedf(h * 0.26, 2.0)
+	var evidence_y := snappedf(h * 0.66, 2.0)
+	var evidence_x := snappedf(w * 0.22, 2.0)
 	_room("Celas", Rect2(0, 0, cells_x, back), "floor/concrete")
-	_room("Sala dos agentes", Rect2(cells_x + WALL_T, 0, w - cells_x - WALL_T, back), "floor/wood")
-	_wall_h(back, 0.0, w, [w * 0.62])
-	_wall_v(cells_x, 0.0, back, [h * 0.35])
+	_room("Sala dos agentes", Rect2(cells_x + WALL_T, 0, boss_x - cells_x - WALL_T, back), "floor/wood")
+	_room("Delegado", Rect2(boss_x + WALL_T, 0, w - boss_x - WALL_T, back), "floor/carpet")
+	_room("Provas", Rect2(0, evidence_y + WALL_T, evidence_x, h - evidence_y - WALL_T), "floor/concrete")
+	_wall_h(back, 0.0, w, [w * 0.2, w * 0.55, w * 0.88])
+	_wall_v(cells_x, 0.0, back, [h * 0.36])
+	_wall_v(boss_x, 0.0, back, [h * 0.3])
+	_wall_h(evidence_y, 0.0, evidence_x, [evidence_x * 0.5])
+	_wall_v(evidence_x, evidence_y, h, [h * 0.84])
+	# celas: grade, três beliches, privadas e presos
 	_put("cell_bars", Rect2(0, bars_y, cells_x, WALL_T))
 	var cell_w := cells_x / 3.0
+	var prisoners: Array = []
 	for i in 3:
 		if i > 0:
 			_wall_v(i * cell_w, 0.0, bars_y)
-		_put("bunk", Rect2(i * cell_w + 40.0, 30, 96, 56))
+		_put("bunk", Rect2(i * cell_w + 28.0, 28, 96, 56))
+		_put("toilet", Rect2(i * cell_w + cell_w - 56.0, 36, 28, 32))
+		prisoners.append(Vector2(i * cell_w + cell_w * 0.5, bars_y - 56.0))
+	_guests("preso", prisoners, 1, 3)
+	# sala dos agentes: seis mesas com computador, quadro de casos e armários
 	var desks: Array = []
 	for ix in 3:
 		for iy in 2:
-			var d := Rect2(w * 0.44 + ix * 260.0, 70.0 + iy * 200.0, 128, 64)
+			var d := Rect2(cells_x + 90.0 + ix * 250.0, 70.0 + iy * 190.0, 128, 64)
 			if _put("desk", d):
+				_put("computer", Rect2(d.position.x + 10.0, d.position.y + 8.0, 44, 32), false)
 				desks.append(Vector2(d.get_center().x, d.end.y + 30.0))
-	_put("locker", Rect2(w - 90.0, 40, 48, 240))
+	_put("board", Rect2(cells_x + 120.0, WALL_T, 240, 28), false)
+	_put("file_cabinet", Rect2(boss_x - 70.0, 40, 48, 120))
+	_put("water_cooler", Rect2(boss_x - 70.0, back - 100.0, 40, 52))
+	_put("trash", Rect2(cells_x + 40.0, back - 72.0, 32, 32))
 	_slot(_role(0), desks[0])
+	_slot(_role(0), desks[2 % desks.size()])
 	_slot(_role(1), desks[3 % desks.size()])
-	_service_counter(Rect2(w * 0.62, back + 130.0, 320, 48), _role(2), "deliver")
-	_put("board", Rect2(w * 0.18, back + WALL_T, 200, 24), false)
-	_put("bench", Rect2(120, h * 0.7, 176, 56))
-	_put("bench", Rect2(120, h * 0.82, 176, 56))
+	_slot(_role(0), desks[5 % desks.size()])
+	# sala do delegado
+	var bx := boss_x + WALL_T
+	var bw := w - bx
+	_put("desk", Rect2(bx + bw * 0.2, 90, 200, 72))
+	_put("computer", Rect2(bx + bw * 0.2 + 12.0, 98, 48, 36), false)
+	_put("bookshelf", Rect2(bx + 24.0, 24, 140, 36))
+	_put("file_cabinet", Rect2(w - 72.0, 40, 48, 120))
+	_put("sofa", Rect2(bx + 30.0, back - 110.0, 144, 56))
+	_put("plant", Rect2(w - 76.0, back - 80.0, 44, 44))
+	_slot(_role(3), Vector2(bx + bw * 0.2 + 100.0, 200.0))
+	# provas
+	_put("locker", Rect2(24, evidence_y + 48.0, 48, 160))
+	_put("shelf", Rect2(evidence_x - 72.0, evidence_y + 48.0, 40, 200))
+	_put("crates", Rect2(110, h - 130.0, 72, 56))
+	_slot(_role(4), Vector2(evidence_x * 0.5, evidence_y + 100.0))
+	# recepção: balcão com policial, bancos, vitrine de avisos
+	_service_counter(Rect2(w * 0.6, back + 130.0, 320, 48), _role(2), "deliver")
+	_put("board", Rect2(w * 0.3, back + WALL_T, 220, 24), false)
+	_put("bench", Rect2(w * 0.28, h * 0.72, 176, 56))
+	_put("bench", Rect2(w * 0.28, h * 0.84, 176, 56))
+	_put("bench", Rect2(w * 0.7, h * 0.78, 176, 56))
+	_put("vending", Rect2(w - 100.0, back + 40.0, 56, 64))
 	_put("plant", Rect2(w - 84, h - 110, 44, 44))
+	_put("plant", Rect2(evidence_x + 60.0, h - 110.0, 44, 44))
+	_guests("visitante", [Vector2(w * 0.28 + 88.0, h * 0.72 + 90.0), Vector2(w * 0.7 + 88.0, h * 0.78 + 90.0)], 1, 2)
 
 
-## Hospital: recepção ao sul, enfermaria e consultório ao norte.
+## Hospital completo: enfermaria, UTI e dois consultórios ao norte; recepção com balcão ao sul,
+## farmácia e sala de raio-X nos cantos. Equipe de branco e pacientes de camisola.
 func _build_hospital() -> void:
 	var w := size.x
 	var h := size.y
-	var back := snappedf(h * 0.45, 2.0)
-	var split := snappedf(w * 0.58, 2.0)
-	_room("Enfermaria", Rect2(0, 0, split, back), "floor/tile")
-	_room("Consultório", Rect2(split + WALL_T, 0, w - split - WALL_T, back), "floor/wood")
-	_wall_h(back, 0.0, w, [w * 0.3, w * 0.78])
-	_wall_v(split, 0.0, back)
+	var back := snappedf(h * 0.46, 2.0)
+	var ward_x := snappedf(w * 0.42, 2.0)
+	var icu_x := snappedf(w * 0.66, 2.0)
+	var half := snappedf(back * 0.5, 2.0)
+	var shop_y := snappedf(h * 0.66, 2.0)
+	var pharm_x := snappedf(w * 0.2, 2.0)
+	var xray_x := snappedf(w * 0.78, 2.0)
+	_room("Enfermaria", Rect2(0, 0, ward_x, back), "floor/tile")
+	_room("UTI", Rect2(ward_x + WALL_T, 0, icu_x - ward_x - WALL_T, back), "floor/marble")
+	_room("Consultório 1", Rect2(icu_x + WALL_T, 0, w - icu_x - WALL_T, half), "floor/wood")
+	_room("Consultório 2", Rect2(icu_x + WALL_T, half + WALL_T, w - icu_x - WALL_T, back - half - WALL_T), "floor/wood")
+	_room("Farmácia", Rect2(0, shop_y + WALL_T, pharm_x, h - shop_y - WALL_T), "floor/tile")
+	_room("Raio-X", Rect2(xray_x + WALL_T, shop_y + WALL_T, w - xray_x - WALL_T, h - shop_y - WALL_T), "floor/marble")
+	_wall_h(back, 0.0, w, [w * 0.18, w * 0.54, w * 0.86])
+	_wall_v(ward_x, 0.0, back, [back * 0.6])
+	_wall_v(icu_x, 0.0, back, [back * 0.28])
+	_wall_h(half, icu_x, w, [w * 0.83])
+	_wall_h(shop_y, 0.0, pharm_x, [pharm_x * 0.5])
+	_wall_v(pharm_x, shop_y, h, [h * 0.85])
+	_wall_h(shop_y, xray_x, w, [xray_x + (w - xray_x) * 0.5])
+	_wall_v(xray_x, shop_y, h, [h * 0.85])
+	# enfermaria: duas fileiras de leitos com cortinas, carrinho e equipe
 	var bedsides: Array = []
-	var x := 80.0
-	while x + 80.0 < split - 80.0:
-		_put("hospital_bed", Rect2(x, 40, 80, 136))
-		_put("screen_divider", Rect2(x + 110.0, 40, 16, 120))
-		bedsides.append(Vector2(x + 40.0, 220.0))
-		x += 230.0
-	_put("desk", Rect2(w * 0.7, 90, 160, 64))
-	_put("cabinet", Rect2(w - 110.0, 40, 64, 104))
-	_put("hospital_bed", Rect2(split + 60.0, 60, 80, 136))
-	_slot(_role(0), Vector2(w * 0.73, 190.0))
-	_slot(_role(1), Vector2(split * 0.5, back - 80.0))
-	_service_counter(Rect2(w * 0.6, back + 130.0, 320, 48), _role(2), "heal")
-	_put("bench", Rect2(120, h * 0.68, 176, 56))
-	_put("bench", Rect2(120, h * 0.82, 176, 56))
-	_put("plant", Rect2(40, back + 40.0, 44, 44))
-	_guests("paciente", bedsides, 1, 3)
+	var x := 70.0
+	while x + 90.0 < ward_x - 60.0:
+		if _put("hospital_bed", Rect2(x, 36, 80, 136)):
+			bedsides.append(Vector2(x + 40.0, 214.0))
+		_put("screen_divider", Rect2(x + 100.0, 36, 16, 120))
+		if _put("hospital_bed", Rect2(x, back - 176.0, 80, 136)):
+			bedsides.append(Vector2(x + 40.0, back - 214.0))
+		_put("screen_divider", Rect2(x + 100.0, back - 160.0, 16, 120))
+		x += 210.0
+	_put("cart", Rect2(ward_x - 90.0, back * 0.5 - 20.0, 56, 44))
+	_put("sink", Rect2(ward_x - 70.0, 40, 40, 36))
+	_slot(_role(1), Vector2(ward_x * 0.5, back * 0.5))
+	_slot(_role(5), Vector2(ward_x * 0.3, back * 0.5 + 10.0))
+	# UTI: leitos com monitores
+	var icu_w := icu_x - ward_x - WALL_T
+	for i in 3:
+		var bx := ward_x + WALL_T + 50.0 + i * (icu_w - 100.0) / 3.0
+		if _put("hospital_bed", Rect2(bx, 60, 80, 136)):
+			_put("monitor", Rect2(bx + 90.0, 60, 40, 40))
+			bedsides.append(Vector2(bx + 40.0, 236.0))
+	_put("cart", Rect2(ward_x + WALL_T + 40.0, back - 100.0, 56, 44))
+	_slot(_role(0), Vector2(ward_x + WALL_T + icu_w * 0.5, back - 90.0))
+	# consultórios: mesa com computador, maca, armários
+	for i in 2:
+		var top := 0.0 if i == 0 else half + WALL_T
+		var room_h := half if i == 0 else back - half - WALL_T
+		var rx := icu_x + WALL_T
+		_put("desk", Rect2(rx + 40.0, top + room_h * 0.4, 150, 60))
+		_put("computer", Rect2(rx + 52.0, top + room_h * 0.4 + 8.0, 44, 32), false)
+		_put("hospital_bed", Rect2(w - 120.0, top + 40.0, 80, 120))
+		_put("file_cabinet", Rect2(rx + 20.0, top + 24.0, 48, 60))
+		_put("cabinet", Rect2(w - 90.0, top + room_h - 100.0, 64, 80))
+		_slot(_role(0), Vector2(rx + 115.0, top + room_h * 0.4 + 100.0))
+	# recepção
+	var desk_y := snappedf(h * 0.68, 2.0)
+	_service_counter(Rect2(w * 0.58, desk_y, 320, 48), _role(2), "heal")
+	_put("computer", Rect2(w * 0.58 + 20.0, desk_y + 8.0, 44, 32), false)
+	var seats: Array = []
+	for row in 3:
+		for col in 2:
+			var bench := Rect2(w * 0.26 + col * 240.0, h * (0.68 + row * 0.1), 176, 56)
+			if _put("bench", bench):
+				seats.append(bench.get_center() + Vector2(0, 56.0))
+	_put("vending", Rect2(w * 0.78 - 140.0, back + 40.0, 56, 64))
+	_put("water_cooler", Rect2(w * 0.78 - 70.0, back + 40.0, 40, 52))
+	_put("plant", Rect2(w * 0.24, back + 40.0, 44, 44))
+	_put("plant", Rect2(w * 0.74, h * 0.9, 44, 44))
+	_put("trash", Rect2(w * 0.74, h * 0.8, 32, 32))
+	# farmácia: balcão, prateleiras de remédios
+	_put("counter", Rect2(pharm_x * 0.2, shop_y + 90.0, pharm_x * 0.6, 44))
+	_put("bottle_shelf", Rect2(24, shop_y + 40.0, 40, 130))
+	_slot(_role(3), Vector2(pharm_x * 0.5, shop_y + 62.0))
+	# raio-X
+	_put("xray", Rect2(xray_x + 60.0, shop_y + 50.0, 130, 100))
+	_put("hospital_bed", Rect2(w - 120.0, shop_y + 50.0, 80, 130))
+	_put("monitor", Rect2(xray_x + 60.0, h - 110.0, 40, 40))
+	_slot(_role(4), Vector2(xray_x + 120.0, shop_y + 200.0))
+	_guests("paciente", bedsides, 2, 5)
+	_guests("paciente", seats, 1, 3)
 
 
 ## Oficina: baia única com elevador, bancada, pneus e ferramentas.
@@ -686,31 +851,218 @@ func _build_office() -> void:
 		slot.staff = true
 
 
-## Moradia: sala, cozinha e quarto.
+## Moradia: sala, quarto, banheiro e cozinha.
 func _build_home() -> void:
 	var w := size.x
 	var h := size.y
-	var split := snappedf(w * 0.66, 2.0)
-	var mid := snappedf(h * 0.52, 2.0)
-	_room("Quarto", Rect2(split + WALL_T, 0, w - split - WALL_T, mid), "floor/carpet")
-	_room("Cozinha", Rect2(split + WALL_T, mid + WALL_T, w - split - WALL_T, h - mid - WALL_T), "floor/tile")
-	_wall_v(split, 0.0, mid, [mid * 0.55])
-	_wall_h(mid, split, w, [split + (w - split) * 0.3])
-	_wall_v(split, mid, h, [mid + (h - mid) * 0.45])
-	_put("bed", Rect2(w - 200.0, 40, 128, 88))
-	_put("wardrobe", Rect2(split + 40.0, 24, 112, 48))
-	_put("nightstand", Rect2(w - 250.0, 40, 40, 40))
-	_put("rug", Rect2(split + 110.0, mid * 0.5, 140, 80), false)
+	var split := snappedf(w * 0.68, 2.0)
+	var bed_y := snappedf(h * 0.4, 2.0)
+	var bath_y := snappedf(h * 0.62, 2.0)
+	var rx := split + WALL_T
+	_room("Sala", Rect2(0, 0, split, h), "floor/wood")
+	_room("Quarto", Rect2(rx, 0, w - rx, bed_y), "floor/carpet")
+	_room("Banheiro", Rect2(rx, bed_y + WALL_T, w - rx, bath_y - bed_y - WALL_T), "floor/tile")
+	_room("Cozinha", Rect2(rx, bath_y + WALL_T, w - rx, h - bath_y - WALL_T), "floor/tile")
+	_wall_v(split, 0.0, h, [bed_y * 0.55, bed_y + (bath_y - bed_y) * 0.5, bath_y + (h - bath_y) * 0.5])
+	_wall_h(bed_y, rx, w)
+	_wall_h(bath_y, rx, w)
+	# quarto
+	_put("bed", Rect2(w - 200.0, 36, 128, 96))
+	_put("nightstand", Rect2(w - 250.0, 36, 40, 40))
+	_put("wardrobe", Rect2(rx + 24.0, 24, 112, 48))
+	_put("rug", Rect2(rx + 90.0, bed_y * 0.45, 140, 80), false)
+	_put("desk", Rect2(rx + 24.0, bed_y - 84.0, 96, 48))
+	_put("computer", Rect2(rx + 30.0, bed_y - 78.0, 40, 28), false)
+	# banheiro
+	_put("toilet", Rect2(w - 70.0, bed_y + 40.0, 28, 36))
+	_put("bathtub", Rect2(rx + 20.0, bed_y + 40.0, 96, 56))
+	_put("sink", Rect2(w - 110.0, bath_y - 64.0, 40, 36))
+	# cozinha
+	_put("stove", Rect2(w - 150.0, bath_y + 50.0, 104, 56))
+	_put("fridge", Rect2(rx + 20.0, bath_y + 50.0, 64, 88))
+	_put("sink", Rect2(rx + 100.0, bath_y + 50.0, 56, 40))
+	_put("table", Rect2(rx + 80.0, h - 150.0, 112, 72))
+	_put("trash", Rect2(w - 70.0, h - 70.0, 32, 32))
+	# sala
 	_put("tv", Rect2(160, 24, 112, 40))
+	_put("rug", Rect2(130, 110, 170, 120), false)
 	_put("sofa", Rect2(128, 250, 176, 64))
-	_put("rug", Rect2(140, 110, 152, 110), false)
-	_put("table", Rect2(split * 0.52, 140, 112, 72))
+	_put("table", Rect2(split * 0.58, 150, 112, 72))
+	_put("bookshelf", Rect2(split - 80.0, 24, 56, 150))
 	_put("plant", Rect2(40, 40, 44, 44))
-	_put("shelf", Rect2(40, h * 0.6, 40, 160))
-	_put("stove", Rect2(w - 150.0, mid + 50.0, 104, 56))
-	_put("fridge", Rect2(w - 110.0, mid + 140.0, 64, 88))
-	_put("table", Rect2(split + 90.0, h - 190.0, 112, 72))
-	_guests("morador", [Vector2(split * 0.4, 380.0), Vector2(split + 180.0, mid * 0.8), Vector2(split * 0.75, 300.0)], 0, 2)
+	_put("plant", Rect2(split - 84.0, h * 0.5, 44, 44))
+	_put("shelf", Rect2(40, h * 0.5, 40, 160))
+	_put("coat_rack", Rect2(split - 80.0, h - 150.0, 36, 56))
+	_guests("morador", [Vector2(split * 0.4, 380.0), Vector2(rx + 180.0, bed_y * 0.8), Vector2(split * 0.7, 300.0),
+			Vector2(rx + 120.0, h - 80.0)], 1, 2)
+
+
+## Casa do agente: sala com mural de casos, escritório com o baú de equipamento, quarto com a
+## cama (dormir), cozinha e banheiro. É o refúgio do jogador.
+func _build_agent_home() -> void:
+	var w := size.x
+	var h := size.y
+	var mid_x := snappedf(w * 0.5, 2.0)
+	var hall_y := snappedf(h * 0.72, 2.0)
+	var office_y := snappedf(h * 0.36, 2.0)
+	var bath_x := snappedf(w * 0.78, 2.0)
+	_room("Sala", Rect2(0, 0, mid_x, hall_y), "floor/wood")
+	_room("Escritório", Rect2(mid_x + WALL_T, 0, w - mid_x - WALL_T, office_y), "floor/carpet")
+	_room("Quarto", Rect2(mid_x + WALL_T, office_y + WALL_T, w - mid_x - WALL_T, hall_y - office_y - WALL_T), "floor/carpet")
+	_room("Cozinha", Rect2(0, hall_y + WALL_T, bath_x, h - hall_y - WALL_T), "floor/tile")
+	_room("Banheiro", Rect2(bath_x + WALL_T, hall_y + WALL_T, w - bath_x - WALL_T, h - hall_y - WALL_T), "floor/tile")
+	_wall_v(mid_x, 0.0, hall_y, [office_y * 0.6, office_y + (hall_y - office_y) * 0.5])
+	_wall_h(office_y, mid_x, w, [mid_x + (w - mid_x) * 0.5])
+	_wall_h(hall_y, 0.0, w, [mid_x * 0.5, mid_x + (w - mid_x) * 0.5])
+	_wall_v(bath_x, hall_y, h, [hall_y + (h - hall_y) * 0.5])
+	# sala: sofá, TV, mural de casos e estantes
+	_put("tv", Rect2(mid_x * 0.35, 24, 140, 44))
+	_put("rug", Rect2(mid_x * 0.25, 130, 280, 160), false)
+	_put("sofa", Rect2(mid_x * 0.3, 330, 200, 64))
+	_put("table", Rect2(mid_x * 0.3 + 40.0, 220, 120, 70))
+	_put("board", Rect2(40, WALL_T, 220, 28), false)
+	_put("bookshelf", Rect2(24, 80, 56, 200))
+	_put("bookshelf", Rect2(mid_x - 84.0, 80, 56, 200))
+	_put("plant", Rect2(40, hall_y - 90.0, 44, 44))
+	_put("plant", Rect2(mid_x - 90.0, hall_y - 90.0, 44, 44))
+	_put("coat_rack", Rect2(mid_x - 90.0, 330, 36, 56))
+	# escritório: mesa de trabalho com dois monitores, arquivos e o baú
+	var ox := mid_x + WALL_T
+	_put("desk", Rect2(ox + 80.0, 90, 220, 72))
+	_put("monitor", Rect2(ox + 96.0, 96, 40, 40), false)
+	_put("monitor", Rect2(ox + 150.0, 96, 40, 40), false)
+	_put("file_cabinet", Rect2(ox + 24.0, 24, 48, 120))
+	_put("file_cabinet", Rect2(w - 72.0, 24, 48, 120))
+	_put("chest", Rect2(w - 150.0, office_y - 90.0, 100, 56))
+	_zone("stash", Rect2(w - 170.0, office_y - 90.0 + 56.0, 140, 70))
+	_put("board", Rect2(ox + 340.0, WALL_T, 200, 28), false)
+	# quarto: cama, criados-mudos, armários e tapete
+	_put("bed", Rect2(w - 250.0, office_y + 70.0, 150, 110))
+	_put("nightstand", Rect2(w - 296.0, office_y + 70.0, 40, 40))
+	_put("nightstand", Rect2(w - 96.0, office_y + 70.0, 40, 40))
+	_put("wardrobe", Rect2(ox + 24.0, office_y + 40.0, 120, 48))
+	_put("wardrobe", Rect2(ox + 160.0, office_y + 40.0, 120, 48))
+	_put("rug", Rect2(w - 300.0, office_y + 200.0, 220, 100), false)
+	_zone("rest", Rect2(w - 270.0, office_y + 70.0 + 110.0, 190, 70))
+	# cozinha
+	_put("stove", Rect2(40, hall_y + 50.0, 104, 56))
+	_put("fridge", Rect2(160, hall_y + 50.0, 64, 88))
+	_put("sink", Rect2(240, hall_y + 50.0, 56, 40))
+	_put("table", Rect2(60, h - 130.0, 130, 72))
+	_put("trash", Rect2(320, hall_y + 50.0, 32, 32))
+	_put("counter", Rect2(400, hall_y + 130.0, 360, 48))
+	_put("rug", Rect2(mid_x * 0.62, h - 170.0, 300, 120), false)
+	_put("table", Rect2(mid_x * 0.62 + 30.0, h - 150.0, 240, 80))
+	_put("stool", Rect2(mid_x * 0.62 + 40.0, h - 190.0, 36, 36))
+	_put("stool", Rect2(mid_x * 0.62 + 200.0, h - 190.0, 36, 36))
+	_put("plant", Rect2(bath_x - 90.0, h - 90.0, 44, 44))
+	_put("bookshelf", Rect2(bath_x - 90.0, hall_y + 36.0, 56, 100))
+	# banheiro
+	_put("bathtub", Rect2(bath_x + 40.0, hall_y + 40.0, 110, 60))
+	_put("toilet", Rect2(w - 70.0, hall_y + 50.0, 28, 36))
+	_put("sink", Rect2(w - 100.0, h - 70.0, 40, 36))
+
+
+## Gentes extras e decoração: enche o espaço que os modelos deixam livre (parede a parede) e
+## garante um mínimo de gente por tamanho de interior. Nada disso fecha um caminho: se a
+## validação de alcance falhar, a decoração do lote é retirada (por inteiro ou pela metade).
+func _dress() -> void:
+	var decor: Array = DECOR.get(template, [])
+	var items_before := items.size()
+	var tries := [1.0, 0.5, 0.25]
+	for share in tries:
+		items.resize(items_before)
+		_place_decor(decor, share)
+		_refresh_furniture()
+		if unreachable().is_empty():
+			break
+		items.resize(items_before)
+	_refresh_furniture()
+	if not unreachable().is_empty():
+		items.resize(items_before)
+		_refresh_furniture()
+	_fill_to_minimum()
+
+
+func _refresh_furniture() -> void:
+	furniture.clear()
+	for item in items:
+		if item.solid:
+			furniture.append(item.rect)
+
+
+## Põe cada móvel da tabela de decoração rente a uma parede de algum cômodo.
+func _place_decor(decor: Array, share: float) -> void:
+	if rooms.is_empty():
+		return
+	for entry in decor:
+		var count := roundi(_rng.randi_range(entry[3], entry[4]) * share)
+		var placed := 0
+		var attempts := 0
+		while placed < count and attempts < 30:
+			attempts += 1
+			var room: Dictionary = rooms[_rng.randi_range(0, rooms.size() - 1)]
+			var r: Rect2 = room.rect
+			var item_w: float = entry[1]
+			var item_h: float = entry[2]
+			if r.size.x < item_w + 60.0 or r.size.y < item_h + 60.0:
+				continue
+			var spot := Vector2.ZERO
+			match _rng.randi_range(0, 3):
+				0:
+					spot = Vector2(_rng.randf_range(r.position.x + 20.0, r.end.x - item_w - 20.0), r.position.y + 12.0)
+				1:
+					spot = Vector2(r.position.x + 12.0, _rng.randf_range(r.position.y + 20.0, r.end.y - item_h - 20.0))
+				2:
+					spot = Vector2(r.end.x - item_w - 12.0, _rng.randf_range(r.position.y + 20.0, r.end.y - item_h - 20.0))
+				_:
+					spot = Vector2(_rng.randf_range(r.position.x + 20.0, r.end.x - item_w - 20.0), r.end.y - item_h - 12.0)
+			var rect := Rect2(spot, Vector2(item_w, item_h))
+			if _blocks_people_or_services(rect):
+				continue
+			if _put(entry[0], rect):
+				placed += 1
+
+
+## Gente mínima por tamanho: o que o modelo não povoou é completado com visitantes em pontos livres.
+func _fill_to_minimum() -> void:
+	if template == "agent_home":
+		return  # a casa do agente não recebe estranhos
+	var minimum: int = MIN_PEOPLE[size_class]
+	var attempts := 0
+	while npc_slots.size() < minimum and attempts < 500:
+		attempts += 1
+		var p := Vector2(_rng.randf_range(80.0, size.x - 80.0), _rng.randf_range(80.0, size.y - 220.0))
+		if _is_free_spot(p):
+			_slot(_guest_role(), p, false)
+
+
+func _guest_role() -> String:
+	var roles: Array = GUEST_ROLES.get(template, ["visitante"])
+	return roles[_rng.randi_range(0, roles.size() - 1)]
+
+
+## O ponto está livre (fora de móveis, paredes, da saída e de outros NPCs) e dentro de um cômodo?
+func _is_free_spot(p: Vector2) -> bool:
+	var probe := Rect2(p - Vector2(22, 22), Vector2(44, 44))
+	for wall in walls:
+		if probe.intersects(wall):
+			return false
+	for item in items:
+		if item.solid and probe.intersects(item.rect):
+			return false
+	if probe.intersects(clear_zone()) or probe.intersects(_mirror_rect(clear_zone())):
+		return false
+	for slot in npc_slots:
+		if (slot.position as Vector2).distance_to(p) < 70.0:
+			return false
+	for z in zones:
+		if probe.intersects(z.rect):
+			return false
+	for room in rooms:
+		if (room.rect as Rect2).has_point(p):
+			return true
+	return rooms.is_empty()
 
 
 ## Armazém: galpão com pilhas de caixas, paletes e empilhadeira.

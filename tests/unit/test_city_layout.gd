@@ -133,8 +133,12 @@ func test_some_lots_hold_two_buildings_and_some_are_parks() -> void:
 
 func test_buildings_have_minimum_size() -> void:
 	for b in layout.buildings:
-		assert_true((b.rect as Rect2).size.x >= CityLayout.MIN_BUILDING - 0.01, "prédio %d estreito" % b.id)
-		assert_true((b.rect as Rect2).size.y >= 240.0 - 0.01, "prédio %d baixo" % b.id)
+		# as casinhas do bairro residencial são menores que os prédios comuns
+		var small: bool = b.get("forced", "") == "house"
+		var min_x: float = CityLayout.HOUSE_WIDTH.x - 4.0 if small else CityLayout.MIN_BUILDING
+		var min_y: float = 84.0 if small else 240.0
+		assert_true((b.rect as Rect2).size.x >= min_x - 0.01, "prédio %d estreito" % b.id)
+		assert_true((b.rect as Rect2).size.y >= min_y - 0.01, "prédio %d baixo" % b.id)
 
 
 func test_ids_are_sequential_and_unique() -> void:

@@ -47,7 +47,7 @@ func test_every_building_type_has_a_template() -> void:
 		var template: String = InteriorLayout.TEMPLATES[type]
 		assert_true(InteriorLayout.BASE_SIZE.has(template), template)
 		assert_true(TileFactory.has_tile(InteriorLayout.FLOORS[template]), template)
-	assert_eq(InteriorLayout.BASE_SIZE.size(), 15, "15 modelos de interior")
+	assert_eq(InteriorLayout.BASE_SIZE.size(), 16, "15 modelos de interior + a casa do agente")
 	assert_eq(InteriorLayout.template_of("castelo"), InteriorLayout.DEFAULT_TEMPLATE)
 
 
@@ -233,12 +233,14 @@ func test_guests_vary_and_have_roles() -> void:
 	var counts := {}
 	for id in 30:
 		var guests := 0
+		var spots := []
 		for slot in InteriorLayout.new(id, "bar").npc_slots:
 			assert_ne(slot.role, "")
 			if not slot.staff:
 				guests += 1
-		counts[guests] = true
-		assert_true(guests >= 2 and guests <= 5, "bar com %d clientes" % guests)
+				spots.append(slot.position)
+		counts[str(spots)] = true  # o total é completado até o mínimo; o que varia são os lugares
+		assert_true(guests >= 2 and guests <= InteriorLayout.MIN_PEOPLE["M"], "bar com %d clientes" % guests)
 	assert_gt(counts.size(), 1.0)
 	var residents := 0
 	for id in 30:

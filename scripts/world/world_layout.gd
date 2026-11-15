@@ -83,6 +83,14 @@ func buildings() -> Array[Dictionary]:
 	return all
 
 
+## A casa do agente (dicionário do prédio), ou {} se a cidade não tiver.
+func home() -> Dictionary:
+	for b in city.buildings:
+		if b.type == "agent_home":
+			return b
+	return {}
+
+
 func region_at(point: Vector2) -> String:
 	for r in regions:
 		if (r.rect as Rect2).has_point(point):

@@ -79,6 +79,8 @@ var _flee_threat := Vector2.ZERO
 var _stun_scored := false
 var _sprite: Sprite2D
 var _look := {}
+## Papel que define o uniforme (médico de branco, policial de azul...). Vazio = roupa comum.
+var uniform_role := ""
 var _sprite_direction := "down"
 var _anim_time := 0.0
 var _shown_key := ""
@@ -95,7 +97,7 @@ func _ready() -> void:
 	identity = NpcIdentity.generate(ai_seed if ai_seed != 0 else rng.randi(), kind, context)
 	display_name = identity.name
 	z_index = ACTOR_Z
-	_look = CharacterSprites.look_for(kind, identity.seed)
+	_look = CharacterSprites.look_for(kind, identity.seed, uniform_role)
 	_sprite = SpriteFactory.make_sprite(null, Vector2(CharacterSprites.PIVOT))
 	add_child(_sprite)
 	_update_sprite(0.0)

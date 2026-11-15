@@ -38,7 +38,7 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 - Para comportamento de nós, instancie a cena em `tree.root` e dê `queue_free()` no `after_each`.
 - Input em teste: `Input.action_press("p1_right")` e solte no `after_each`.
 
-## Cobertura atual (781 testes)
+## Cobertura atual (829 testes)
 
 | Arquivo | Cobre |
 |---|---|
@@ -80,6 +80,8 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 | `test_transition.gd` | geometria da íris, tempos de 0,25 s, estado só muda com a íris fechada, novo jogo |
 | `test_map.gd` | ícones por tipo, geometria do mapa, prédios conhecidos, minimapa no HUD, mapa de tela cheia, tecla M |
 | `test_pause_title.gd` | menu em fonte pixel, controles, pausa que congela, opção de tremor, arte e tela de título |
+| `test_map_points.gd` | neblina por quarteirão, pontos no mapa (clique, escolher, tirar), seta e distância no HUD |
+| `test_phase6.gd` | casinhas e becos, casa do agente, serviços de casa, uniformes, hospital, delegacia e gente mínima dos interiores |
 | `test_art_rules.gd` | varredura: nenhum `ColorRect`/`Polygon2D`/`Line2D` e nenhuma cor fora da paleta nos scripts e cenas |
 | `test_world_visuals.gd` | cena real sem `ColorRect`, pedaços de chão, sprites e animação, ordem de desenho, HUD |
 

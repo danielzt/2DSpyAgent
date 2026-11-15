@@ -89,7 +89,7 @@ func test_shops_get_sign_awning_and_their_own_colors() -> void:
 	var found := {}
 	for b in city.buildings:
 		var style := BuildingStyle.for_building(b)
-		if b.type == "house":
+		if BuildingDefs.def(b.type).get("no_sign", false):
 			assert_eq(style.sign, "")
 			continue
 		assert_eq(style.sign, b.name)
@@ -221,6 +221,7 @@ func test_wrap_sign_breaks_long_names_at_a_space() -> void:
 func test_every_sign_fits_its_building() -> void:
 	# o nome entra em até duas linhas; se não couber, vale o letreiro reserva do tipo
 	var full := 0
+	var signed := 0
 	for b in city.buildings:
 		var style := BuildingStyle.for_building(b)
 		var width_texels := int((b.rect as Rect2).size.x / 2.0)
@@ -228,12 +229,13 @@ func test_every_sign_fits_its_building() -> void:
 		if style.sign == "":
 			assert_eq(text, "")
 			continue
+		signed += 1
 		assert_true(PixelFont.measure(text).x + 6 <= width_texels - 2, "letreiro de %s não cabe" % b.name)
 		if b.shop != "":
 			assert_ne(text, "", "loja sem letreiro: %s" % b.name)
 		if text.replace("\n", " ") == style.sign:
 			full += 1
-	assert_gt(full, city.buildings.size() / 2.0, "a maioria dos prédios mostra o nome inteiro")
+	assert_gt(full, signed / 2.0, "a maioria dos prédios com letreiro mostra o nome inteiro")
 
 
 func test_sign_falls_back_to_the_short_text_or_nothing() -> void:

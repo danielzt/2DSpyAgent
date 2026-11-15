@@ -163,7 +163,8 @@ func test_new_game_resets_the_run() -> void:
 	GameState.has_return = true
 	GameState.new_game()
 	assert_eq(GameState.profile_for(1).money, GameState.profile_for(1).START_MONEY)
-	assert_eq(GameState.profile_for(1).known_buildings.size(), 0)
+	assert_eq(GameState.profile_for(1).known_buildings.size(), 1, "só a casa do agente")
+	assert_true(GameState.profile_for(1).known_buildings.has(GameState.world_layout().home().id))
 	assert_eq(Score.points, 0)
 	assert_eq(WorldClock.hour(), 8.0)
 	assert_false(GameState.has_return)

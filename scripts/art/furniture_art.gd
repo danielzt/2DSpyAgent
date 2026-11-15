@@ -20,6 +20,10 @@ const MATERIALS := {
 	"treadmill": "gray", "weights": "black", "water_cooler": "ice", "wardrobe": "brown", "tv": "black",
 	"pallet": "sand", "forklift": "yellow", "washer": "snow", "washer_secret": "snow", "basket": "sand",
 	"wall_screen": "navy", "briefing_table": "navy", "chest": "ramp:wood",
+	# Fase 6 (interiores completos)
+	"computer": "gray", "file_cabinet": "gray", "cart": "silver", "xray": "snow", "toilet": "snow",
+	"bathtub": "snow", "bookshelf": "ramp:wood", "vending": "red", "sink": "silver", "monitor": "gray",
+	"curtain": "ice", "trash": "gray", "coat_rack": "ramp:wood",
 }
 
 static var _canvases := {}
@@ -272,6 +276,47 @@ static func _build(kind: String, w: int, h: int) -> RefCounted:
 			c.rect(6, 2, 4, h / 3, _c("slate"))
 			c.rect(w - 10, 2, 4, h / 3, _c("slate"))
 			c.frame(4, h / 3, w - 8, h * 2 / 3 - 4, ink)
+		"computer", "monitor":
+			c.rect(3, 3, w - 6, maxi(h / 2, 4), _c("navy"))
+			c.rect(5, 5, w - 10, maxi(h / 2 - 4, 2), _c("neon_green") if kind == "monitor" else _c("sky"))
+			c.rect(3, h - 6, w - 6, 3, _c("slate"))
+		"file_cabinet":
+			for y in range(4, h - 4, 10):
+				c.rect(3, y, w - 6, 8, t[2])
+				c.rect(w / 2 - 3, y + 3, 6, 2, _c("slate"))
+		"cart":
+			c.rect(3, 3, w - 6, h / 2 - 2, _c("white"))
+			c.rect(w / 2 - 2, 5, 4, 3, _c("red"))
+			c.rect(3, h / 2 + 2, w - 6, h / 2 - 5, _c("slate"))
+		"xray":
+			c.ellipse(w / 2 - 14, h / 2 - 14, 28, 28, _c("slate"))
+			c.ellipse(w / 2 - 9, h / 2 - 9, 18, 18, _c("navy"))
+			c.rect(3, 3, 6, 3, _c("neon_green"))
+		"toilet":
+			c.ellipse(w / 2 - 6, h / 2 - 3, 12, 14, _c("white"))
+			c.rect(w / 2 - 7, 3, 14, 6, _c("light"))
+		"bathtub":
+			c.ellipse(4, 4, w - 8, h - 8, _c("ice"))
+			c.ellipse(7, 7, w - 14, h - 14, _c("sky"))
+		"bookshelf":
+			var tones := ["red", "teal", "amber", "blue", "green", "purple"]
+			for x in range(3, w - 4, 4):
+				c.rect(x, 3, 3, h / 2 - 3, _c(tones[(x / 4) % tones.size()]))
+				c.rect(x, h / 2 + 2, 3, h / 2 - 5, _c(tones[(x / 4 + 3) % tones.size()]))
+		"vending":
+			c.rect(3, 3, w - 6, h - 12, _c("ink"))
+			for y in range(5, h - 16, 8):
+				c.rect(5, y, w - 10, 3, _c("amber") if y % 16 == 5 else _c("teal"))
+			c.rect(w / 2 - 4, h - 8, 8, 3, _c("slate"))
+		"sink":
+			c.ellipse(w / 2 - 8, h / 2 - 5, 16, 10, _c("light"))
+			c.rect(w / 2 - 1, 3, 2, 6, _c("gray"))
+		"curtain":
+			for x in range(2, w - 2, 5):
+				c.vline(x, 1, h - 2, t[2])
+		"trash":
+			c.ellipse(2, 2, w - 4, h - 4, _c("slate"))
+			c.ellipse(5, 5, w - 10, h - 10, _c("shadow"))
 		"washer", "washer_secret":
 			var d := mini(w, h) - 14
 			c.ellipse(w / 2 - d / 2, h / 2 - d / 2 + 2, d, d, _c("slate"))

@@ -1,6 +1,6 @@
 # Roteiro do redesenho visual e do mundo com contexto
 
-> Lista de trabalho do redesenho. **Fases 0 a 5 concluídas; a Fase 6 (casas, mapa com pontos e interiores completos) é a próxima.** Cada item tem um status;
+> Lista de trabalho do redesenho. **Fases 0 a 5 concluídas; a Fase 6 está feita exceto as ruas estreitas e curvas (6.2 e 6.3).** Cada item tem um status;
 > atualize a coluna na mesma mudança em que o item avançar.
 > O design detalhado (paleta, resolução, valores concretos) está em
 > `docs/redesign-visual.md`.
@@ -30,7 +30,7 @@ assets externos, GDScript, GL Compatibility, lógica pura em `RefCounted` com se
 | 3 | Interiores com finalidade | Feito (aguardando avaliação do autor) |
 | 4 | Dia e noite | Feito (aguardando avaliação do autor; desempenho noturno acima da meta) |
 | 5 | Acabamento | Feito (aguardando avaliação do autor) |
-| 6 | Casas, casa do agente, mapa com pontos e interiores completos | Pendente (pedido do autor em 15/11) |
+| 6 | Casas, casa do agente, mapa com pontos e interiores completos | Feito, exceto ruas estreitas (6.2), ruas curvas (6.3) e rota automática |
 
 ## Como trabalhar
 
@@ -207,18 +207,18 @@ Detalhes do que foi feito: [redesign-fase-4.md](redesign-fase-4.md).
 
 | # | Item | Status |
 |---|---|---|
-| 6.1 | Bairro residencial de verdade: lotes com várias casas pequenas, quintais, cercas e garagens (hoje há só `house`/`apartment` como prédios comuns) | Pendente |
-| 6.2 | Ruas estreitas nos bairros residenciais (corredor e asfalto menores; ajustar calçadas, carros estacionados, trânsito e lotes) | Pendente |
-| 6.3 | Ruas menos simétricas: estudo e protótipo de trechos curvos (impacto em lotes, rotas do trânsito, luzes e mapa) antes de adotar | Pendente |
-| 6.4 | Casa do agente: uma casa do bairro residencial é a dele (marcada no mapa e no HUD), com porta própria | Pendente |
-| 6.5 | Dentro da casa do agente: cama (dormir avança a hora e cura), baú, armário, cozinha, banheiro, mesa de trabalho; arrumada e cheia | Pendente |
+| 6.1 | Bairro residencial de verdade: lotes com várias casas pequenas, quintais, cercas e garagens (hoje há só `house`/`apartment` como prédios comuns) | Feito (60% dos lotes residenciais são de casinhas em duas fileiras com beco) |
+| 6.2 | Ruas estreitas nos bairros residenciais (corredor e asfalto menores; ajustar calçadas, carros estacionados, trânsito e lotes) | Pendente (largura da rua depende só da linha; ver redesign-fase-6.md) |
+| 6.3 | Ruas menos simétricas: estudo e protótipo de trechos curvos (impacto em lotes, rotas do trânsito, luzes e mapa) antes de adotar | Pendente (só estudo; risco alto para trânsito, calçadas e lotes) |
+| 6.4 | Casa do agente: uma casa do bairro residencial é a dele (marcada no mapa e no HUD), com porta própria | Feito (casa mais perto do QG; já vem marcada como "Casa") |
+| 6.5 | Dentro da casa do agente: cama (dormir avança a hora e cura), baú, armário, cozinha, banheiro, mesa de trabalho; arrumada e cheia | Feito (cinco cômodos, dormir e baú) |
 | 6.6 | Mapa: marcar pontos (vários, com nome e cor), remover, mostrar no minimapa; a casa do agente já vem marcada | Feito (neblina, pontos por clique, vários pontos, minimapa) |
 | 6.7 | Direção na tela: seta no HUD e distância até o ponto ativo; depois, linha-guia pela rua (rota) | Feito a seta e a distância; a rota pela rua fica para depois |
-| 6.8 | Interiores densos: ocupação mínima por modelo e uniformes por papel (teste automático) | Pendente |
-| 6.9 | Hospital completo: recepção, triagem, macas, quartos, UTI, farmácia, equipe de branco e pacientes | Pendente |
-| 6.10 | Delegacia completa: balcão, mesas e computadores, celas com presos, sala do delegado, policiais | Pendente |
-| 6.11 | Revisão dos outros 13 modelos de interior (mesmo critério de enchimento e de personagens) e da escala dos tamanhos | Pendente |
-| 6.12 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Pendente |
+| 6.8 | Interiores densos: ocupação mínima por modelo e uniformes por papel (teste automático) | Feito (gente mínima por tamanho e uniformes por papel, com teste) |
+| 6.9 | Hospital completo: recepção, triagem, macas, quartos, UTI, farmácia, equipe de branco e pacientes | Feito |
+| 6.10 | Delegacia completa: balcão, mesas e computadores, celas com presos, sala do delegado, policiais | Feito |
+| 6.11 | Revisão dos outros 13 modelos de interior (mesmo critério de enchimento e de personagens) e da escala dos tamanhos | Feito (decoração por modelo e visitantes; sem rever as escalas dos tamanhos) |
+| 6.12 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Feito (829 testes; desempenho 2,06 ms; capturas em docs/img/fase6-*) |
 
 Decisões em aberto da fase: a casa é fixa ou escolhida/comprada; ruas curvas em toda a cidade ou só
 em alguns bairros (risco alto para o trânsito e para a geração dos lotes); rota automática até o ponto.

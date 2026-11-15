@@ -252,6 +252,7 @@ func _add_npcs() -> void:
 		npc.kind = "innocent"
 		npc.ai_seed = npc_seed(layout.building_id, i)
 		npc.stationary = true
+		npc.uniform_role = slot.role
 		npc.context = context_for(slot)
 		npc.position = slot.position
 		npc.set_meta("role", slot.role)

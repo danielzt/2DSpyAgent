@@ -17,6 +17,8 @@ const WAKE_HOUR := 7.0
 const MOVIE_HOURS := 2.0
 const MOVIE_XP_BOOST_SECONDS := 300.0
 const INFORMANT_SECONDS := 60.0
+## Kits médicos que o baú da casa do agente repõe por dia.
+const STASH_KITS := 3
 
 const DEFS := {
 	"sleep": {"verb": "dormir", "cost": 40},
@@ -32,6 +34,8 @@ const DEFS := {
 	"paint": {"verb": "pintar o carro da agência", "cost": 30},
 	"movie": {"verb": "assistir a uma sessão", "cost": 20},
 	"train": {"verb": "treinar", "cost": 30, "xp": 20},
+	"rest": {"verb": "dormir até de manhã", "cost": 0},
+	"stash": {"verb": "abrir o baú de equipamento", "cost": 0},
 }
 
 ## Serviços oferecidos por tipo de prédio (as lojas usam o ShopDefs).
@@ -39,6 +43,7 @@ const BY_TYPE := {
 	"hotel": ["sleep"], "restaurant": ["meal"], "diner": ["snack"], "bar": ["rumor"],
 	"club": ["informant"], "hospital": ["heal"], "police": ["deliver"], "bank": ["deposit", "withdraw"],
 	"hq": ["briefing"], "workshop": ["paint"], "cinema": ["movie"], "gym": ["train"],
+	"agent_home": ["rest", "stash"],
 }
 
 
@@ -80,6 +85,22 @@ static func use(id: String, actor: Object, world := {}) -> Dictionary:
 			if clock != null:
 				clock.advance_to(WAKE_HOUR)
 			return _r("ok", "Você dormiu bem. Vida cheia; são %s." % _time(clock))
+		"rest":
+			actor.health = actor.max_health()
+			if clock != null:
+				clock.advance_to(WAKE_HOUR)
+			return _r("ok", "Você dormiu em casa. Vida cheia; são %s." % _time(clock))
+		"stash":
+			var today: int = int(clock.day()) if clock != null else 0
+			if profile.last_stash_day == today:
+				return _r("no_need", "O baú está como você deixou hoje.")
+			var inv: RefCounted = actor.inventory
+			var missing_kits := maxi(STASH_KITS - inv.count("medkit"), 0)
+			profile.last_stash_day = today
+			if missing_kits > 0:
+				inv.add("medkit", missing_kits)
+				return _r("ok", "Você repôs %d kit(s) médico(s) do baú." % missing_kits)
+			return _r("no_need", "Seus kits médicos já estão completos.")
 		"meal", "snack":
 			if actor.health >= actor.max_health():
 				return _r("no_need", "Você não está com fome (vida cheia).")

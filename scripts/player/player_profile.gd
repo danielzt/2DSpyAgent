@@ -58,6 +58,8 @@ var xp_boost := 0.0
 ## Dia do mundo do último treino na academia e do último briefing com missão (-1 = nunca).
 var last_train_day := -1
 var last_briefing_day := -1
+## Dia do último uso do baú da casa do agente.
+var last_stash_day := -1
 ## Prédios que o jogador já visitou ou viu de perto: id -> true. Só eles ganham ícone no mapa.
 var known_buildings := {}
 

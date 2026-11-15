@@ -24,6 +24,13 @@ func before_each() -> void:
 	s._ready()
 	s.free()
 	layout = WorldLayout.new()
+	# a ficha nova já traz a casa do agente (conhecida, explorada e marcada): estes testes
+	# começam do zero
+	var profile: RefCounted = GameState.profile_for(1)
+	profile.waypoints.clear()
+	profile.active_waypoint = -1
+	profile.known_buildings.clear()
+	profile.explored.clear()
 
 
 func after_each() -> void:

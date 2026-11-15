@@ -27,10 +27,12 @@ func _counts(layout) -> Dictionary:
 # --- tabela ---
 
 func test_table_lists_every_type_once() -> void:
-	assert_eq(BuildingDefs.ORDER.size(), BuildingDefs.DEFS.size())
+	# a casa do agente fica fora do ORDER: é uma das casas, escolhida depois do sorteio
+	assert_eq(BuildingDefs.ORDER.size() + 1, BuildingDefs.DEFS.size())
 	for type in BuildingDefs.ORDER:
 		assert_true(BuildingDefs.exists(type), type)
-	assert_eq(BuildingDefs.DEFS.size(), 24, "21 urbanos + redação do jornal + 2 rurais")
+	assert_true(BuildingDefs.exists("agent_home"))
+	assert_eq(BuildingDefs.DEFS.size(), 25, "21 urbanos + redação do jornal + 2 rurais + casa do agente")
 	assert_false(BuildingDefs.exists("castelo"))
 	assert_eq(BuildingDefs.def("castelo"), {})
 
@@ -210,6 +212,9 @@ func test_door_is_reachable_from_the_sidewalk() -> void:
 				lot = candidate
 		assert_gt(lot.size.x, 0.0, "prédio %d fora de lote" % b.id)
 		var path := Rect2(door.position.x, door.position.y, door.size.x, lot.end.y + CityLayout.SIDEWALK / 2.0 - door.position.y)
+		if b.get("forced", "") == "house":
+			# as casas da fileira de cima abrem para o beco: basta o espaço do jogador à frente
+			path = Rect2(door.position.x, door.position.y, door.size.x, door.size.y + CityLayout.EXIT_SPAWN_OFFSET + 24.0)
 		for other in city.buildings:
 			if other.id != b.id:
 				assert_false((other.rect as Rect2).intersects(path), "prédio %d bloqueia a porta de %d" % [other.id, b.id])

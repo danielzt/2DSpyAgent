@@ -14,7 +14,7 @@ const GLYPH_OF := {
 	"agent_store": "bag", "armory": "gun", "pharmacy": "pill", "market": "bag",
 	"workshop": "tool", "gas_station": "tool", "cinema": "film", "gym": "weight",
 	"newspaper": "paper", "office": "case", "apartment": "home", "house": "home",
-	"warehouse": "box", "farm": "barn", "farm_store": "bag",
+	"warehouse": "box", "farm": "barn", "farm_store": "bag", "agent_home": "myhome",
 }
 
 ## Nome de cada glifo na legenda do mapa.
@@ -22,7 +22,7 @@ const LABELS := {
 	"hq": "QG", "law": "Delegacia", "cross": "Hospital", "coin": "Banco", "bed": "Hotel",
 	"fork": "Comida", "glass": "Bar e boate", "bag": "Lojas", "gun": "Armaria", "pill": "Farmácia",
 	"tool": "Oficina e posto", "film": "Cinema", "weight": "Academia", "paper": "Jornal",
-	"case": "Escritório", "home": "Moradia", "box": "Galpão", "barn": "Fazenda",
+	"case": "Escritório", "home": "Moradia", "myhome": "Sua casa", "box": "Galpão", "barn": "Fazenda",
 }
 
 ## Marcadores que não são prédios.
@@ -172,6 +172,16 @@ const GLYPHS := {
 		"bnnnnnb",
 		"bbbbbbb",
 		".......",
+	],
+	# a casa do agente: moradia com uma estrela na porta
+	"myhome": [
+		"...r...",
+		"..rrr..",
+		".rrrrr.",
+		"rrrrrrr",
+		".nnynn.",
+		".nyyyn.",
+		".nnynn.",
 	],
 	"box": [
 		".......",
