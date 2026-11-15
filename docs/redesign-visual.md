@@ -15,7 +15,7 @@
 | D2 | Resolução | **Manter 1280x720 e as unidades do mundo**; arte em pixel lógico de **2 px** | Baixo: é uma constante da fábrica de arte |
 | D3 | Lista de prédios | **Decidido:** 21 tipos urbanos + 2 rurais, sem corte (cinema, academia e posto ficam) | Baixo: é uma tabela |
 | D4 | Tamanho do mundo | Manter grade 12x12 e o campo; rios e litoral ficam para o marco 8 | Alto se entrar no meio |
-| D5 | Duração do dia | 24 min reais (1 hora de jogo = 60 s), começando às 08:00 | Nenhum: é uma constante |
+| D5 | Duração do dia | 12 min reais (1 hora de jogo = 30 s), começando às 08:00 | Nenhum: é uma constante |
 | D6 | Avenidas | **Decidido:** 2 avenidas reais (mais largas), cruzando no centro | Médio: mexe em calçadas e trânsito |
 | D7 | Mecânicas novas que os serviços exigem | Ver seção 7.3 (banco, oficina, mercado) | — |
 
@@ -445,7 +445,7 @@ Sem elas, o serviço seria enfeite. Preciso do seu sim ou não para cada uma:
 sinais de troca de hora e de fase. Vive entre trocas de cena, é zerado junto com `reset_players()` nos
 testes e, no multiplayer, o anfitrião envia o minuto atual.
 
-- 1 dia = 24 min reais (`DAY_SECONDS = 1440`); 1 hora de jogo = 60 s. Início às 08:00.
+- 1 dia = 12 min reais (`DAY_SECONDS = 720`); 1 hora de jogo = 30 s. Início às 08:00.
 - Fases: madrugada 00–05, amanhecer 05–08, dia 08–17, entardecer 17–19:30, noite 19:30–24.
 
 **Cor ambiente** (um `CanvasModulate` no mundo externo; interpolação linear entre as chaves):
@@ -540,6 +540,6 @@ da hora atual.
 | D2 | Resolução | Opção A: manter 1280x720, texel de 2 px |
 | D3 | Cortar `cinema`, `gym` e `gas_station`? | Não: os três ficam |
 | D4 | Tamanho do mundo | Sem resposta; vale a proposta (grade 12x12 e campo) |
-| D5 | Duração do dia | Sem resposta; vale a proposta (24 min) |
+| D5 | Duração do dia | Sem resposta; vale a proposta (24 min; depois ajustado para 12 min) |
 | D6 | Avenidas | Mais largas de verdade |
 | D7 | Mecânicas novas da seção 7.3 | **Assumido sim para as quatro** (banco, presos, comida, seta de alvo), para a Fase 3 seguir sem esperar. Confirmar; cada uma é isolada e fácil de retirar. Ver [redesign-fase-3.md](redesign-fase-3.md) |

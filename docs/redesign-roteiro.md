@@ -161,7 +161,7 @@ Detalhes do que foi feito: [redesign-fase-4.md](redesign-fase-4.md).
 | # | Item | Status |
 |---|---|---|
 | 4.1 | Relógio do mundo em um autoload, determinístico e pronto para multiplayer | Feito |
-| 4.2 | Duração do dia configurável (sugestão: 24 min reais) | Feito |
+| 4.2 | Duração do dia configurável (sugestão: 12 min reais) | Feito |
 | 4.3 | Hora visível no HUD | Feito |
 | 4.4 | Noite escura mas colorida e sempre legível: tinta azul/roxa saturada, nunca cinza nem preta | Feito |
 | 4.5 | Piso de luminosidade: jogador, NPCs, carros e portas continuam fáceis de ver | Feito |
@@ -221,6 +221,6 @@ A resolver na Fase 0 ou antes.
 | D2 | Resolução base: manter 1280x720 com pixel lógico maior ou baixar com escala inteira | Decidido: manter 1280x720, texel de 2 px |
 | D3 | Corte da lista de tipos de prédio e de interações para a primeira versão | Decidido: sem corte; cinema, academia e posto ficam (21 tipos urbanos + 2 rurais) |
 | D4 | Tamanho do mundo: manter a grade 12x12 e o campo, ou incluir rios, pontes e litoral | Em vigor por omissão: manter grade 12x12 e campo |
-| D5 | Duração do dia (sugestão: 24 min reais) | Em vigor por omissão: 24 min |
+| D5 | Duração do dia (sugestão: 12 min reais) | Em vigor por omissão: 12 min (ajustado do 24 original) |
 | D6 | Avenidas: mais largas de verdade (mexe em calçadas e trânsito) ou só pintura diferente | Decidido: mais largas de verdade; 2 avenidas cruzando no centro |
 | D7 | Mecânicas novas que alguns serviços exigem (perda de dinheiro ao ser derrotado, presos a entregar, item de comida, seta de alvo no HUD) | Assumido sim para as quatro, para a Fase 3 seguir (banco, delegacia, comida, seta); confirmar |

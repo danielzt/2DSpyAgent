@@ -14,7 +14,7 @@
 
 ### Relógio (`world/day_cycle.gd`, `autoload/world_clock.gd`)
 
-- `DayCycle`: lógica pura. Um dia dura 24 min reais (1 h de jogo = 60 s), começando às 08:00. Fases: madrugada 00 a 05,
+- `DayCycle`: lógica pura. Um dia dura 12 min reais (1 h de jogo = 30 s), começando às 08:00. Fases: madrugada 00 a 05,
   amanhecer 05 a 08, dia 08 a 17, entardecer 17 a 19:30, noite 19:30 a 24.
 - `WorldClock` (autoload): só acumula o tempo (`seconds`) e emite `hour_changed` e `phase_changed`. O estado inteiro
   é um número, então o anfitrião pode enviá-lo no multiplayer. `set_hour`, `advance_hours`, `advance_to` e `reset`.

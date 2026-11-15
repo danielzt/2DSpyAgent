@@ -3,8 +3,8 @@ extends RefCounted
 ## horários das luzes. O autoload WorldClock só acumula o tempo; tudo o que depende da
 ## hora é calculado aqui. Ver docs/redesign-visual.md, seção 8.
 
-## Um dia de jogo em segundos reais (24 min: 1 hora de jogo = 60 s).
-const DAY_SECONDS := 1440.0
+## Um dia de jogo em segundos reais (12 min: 1 hora de jogo = 30 s).
+const DAY_SECONDS := 720.0
 const START_HOUR := 8.0
 
 const PHASES := ["madrugada", "amanhecer", "dia", "entardecer", "noite"]

@@ -24,8 +24,8 @@ func after_each() -> void:
 # --- avanço (V7) ---
 
 func test_day_lasts_24_real_minutes_and_starts_at_eight() -> void:
-	assert_almost_eq(DayCycle.DAY_SECONDS, 24.0 * 60.0)
-	assert_almost_eq(DayCycle.seconds_per_hour(), 60.0)
+	assert_almost_eq(DayCycle.DAY_SECONDS, 12.0 * 60.0)
+	assert_almost_eq(DayCycle.seconds_per_hour(), 30.0)
 	assert_almost_eq(clock.hour(), DayCycle.START_HOUR)
 	assert_eq(clock.day(), 0)
 	assert_eq(clock.text(), "08:00")
@@ -33,25 +33,25 @@ func test_day_lasts_24_real_minutes_and_starts_at_eight() -> void:
 
 func test_hour_and_day_from_seconds() -> void:
 	assert_almost_eq(DayCycle.hour_of(0.0), 0.0)
-	assert_almost_eq(DayCycle.hour_of(720.0), 12.0)
-	assert_almost_eq(DayCycle.hour_of(1440.0 + 90.0), 1.5)
-	assert_eq(DayCycle.day_of(1439.0), 0)
-	assert_eq(DayCycle.day_of(1440.0), 1)
-	assert_eq(DayCycle.day_of(1440.0 * 3.5), 3)
+	assert_almost_eq(DayCycle.hour_of(360.0), 12.0)
+	assert_almost_eq(DayCycle.hour_of(720.0 + 45.0), 1.5)
+	assert_eq(DayCycle.day_of(719.0), 0)
+	assert_eq(DayCycle.day_of(720.0), 1)
+	assert_eq(DayCycle.day_of(720.0 * 3.5), 3)
 
 
 func test_clock_advances_with_time() -> void:
-	clock.advance_seconds(30.0)
+	clock.advance_seconds(15.0)
 	assert_almost_eq(clock.hour(), 8.5)
 	assert_eq(clock.text(), "08:30")
-	clock._process(60.0)
+	clock._process(30.0)
 	assert_almost_eq(clock.hour(), 9.5)
 	clock.paused = true
 	clock._process(600.0)
 	assert_almost_eq(clock.hour(), 9.5, 0.001, "pausado não anda")
 	clock.paused = false
 	clock.time_scale = 2.0
-	clock._process(30.0)
+	clock._process(15.0)
 	assert_almost_eq(clock.hour(), 10.5)
 	clock.advance_seconds(-50.0)
 	assert_almost_eq(clock.hour(), 10.5, 0.001, "o relógio não volta")
@@ -101,9 +101,9 @@ func test_signals_fire_when_hour_and_phase_change() -> void:
 	clock._ready()
 	clock.hour_changed.connect(func(h: int): hours.append(h))
 	clock.phase_changed.connect(func(p: String): phases.append(p))
-	clock.advance_seconds(30.0)
+	clock.advance_seconds(15.0)
 	assert_eq(hours, [])
-	clock.advance_seconds(40.0)
+	clock.advance_seconds(20.0)
 	assert_eq(hours, [9])
 	clock.set_hour(18.0)
 	assert_eq(phases, ["entardecer"])
