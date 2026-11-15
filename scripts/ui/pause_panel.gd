@@ -23,6 +23,7 @@ const LINE_HEIGHT := 28.0
 var player_index := 1
 var layout
 var known := {}
+var profile
 var player_position := Vector2.ZERO
 
 var _is_open := false
@@ -70,7 +71,8 @@ func _place_menu() -> void:
 		_menu.position = _origin() + Vector2(0.0, MAP_SIZE.y + 36.0)
 
 
-func open(p_layout, p_known: Dictionary, p_position: Vector2, p_player_index := 1) -> void:
+func open(p_layout, p_known: Dictionary, p_position: Vector2, p_player_index := 1, p_profile = null) -> void:
+	profile = p_profile
 	layout = p_layout
 	known = p_known
 	player_position = p_position
@@ -144,7 +146,7 @@ func _draw_screen() -> void:
 	# mapa
 	if layout != null:
 		var dest := map_rect()
-		MapView.draw(_canvas, layout, known, MapView.world_rect(layout), dest, 1.0)
+		MapView.draw(_canvas, layout, known, MapView.world_rect(layout), dest, 1.0, profile)
 		MapView.draw_glyph(_canvas, "you", MapView.to_screen(player_position, MapView.world_rect(layout), dest), 1.5, dest.grow(20.0))
 		_canvas.draw_rect(dest.grow(2.0), Palette.get_color("neon_cyan"), false, 2.0)
 	# controles

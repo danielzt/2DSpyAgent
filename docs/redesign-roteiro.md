@@ -212,8 +212,8 @@ Detalhes do que foi feito: [redesign-fase-4.md](redesign-fase-4.md).
 | 6.3 | Ruas menos simétricas: estudo e protótipo de trechos curvos (impacto em lotes, rotas do trânsito, luzes e mapa) antes de adotar | Pendente |
 | 6.4 | Casa do agente: uma casa do bairro residencial é a dele (marcada no mapa e no HUD), com porta própria | Pendente |
 | 6.5 | Dentro da casa do agente: cama (dormir avança a hora e cura), baú, armário, cozinha, banheiro, mesa de trabalho; arrumada e cheia | Pendente |
-| 6.6 | Mapa: marcar pontos (vários, com nome e cor), remover, mostrar no minimapa; a casa do agente já vem marcada | Pendente |
-| 6.7 | Direção na tela: seta no HUD e distância até o ponto ativo; depois, linha-guia pela rua (rota) | Pendente |
+| 6.6 | Mapa: marcar pontos (vários, com nome e cor), remover, mostrar no minimapa; a casa do agente já vem marcada | Feito (neblina, pontos por clique, vários pontos, minimapa) |
+| 6.7 | Direção na tela: seta no HUD e distância até o ponto ativo; depois, linha-guia pela rua (rota) | Feito a seta e a distância; a rota pela rua fica para depois |
 | 6.8 | Interiores densos: ocupação mínima por modelo e uniformes por papel (teste automático) | Pendente |
 | 6.9 | Hospital completo: recepção, triagem, macas, quartos, UTI, farmácia, equipe de branco e pacientes | Pendente |
 | 6.10 | Delegacia completa: balcão, mesas e computadores, celas com presos, sala do delegado, policiais | Pendente |

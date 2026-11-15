@@ -142,7 +142,7 @@ func pause() -> void:
 	var where := global_position
 	if GameState.is_inside():
 		where = GameState.return_position  # dentro de prédios, o mapa mostra a porta
-	pause_panel.open(GameState.world_layout(), profile.known_buildings, where, player_index)
+	pause_panel.open(GameState.world_layout(), profile.known_buildings, where, player_index, profile)
 
 
 func _process(delta: float) -> void:
@@ -151,10 +151,11 @@ func _process(delta: float) -> void:
 	profile.tick(delta)
 	hud.set_clock(WorldClock.text())
 	hud.set_targets(global_position, targets)
+	_follow_waypoint()
 	if GameState.is_inside():
 		hud.hide_minimap()
 	else:
-		hud.set_minimap(GameState.world_layout(), profile.known_buildings, global_position, targets, delta)
+		hud.set_minimap(GameState.world_layout(), profile.known_buildings, global_position, targets, delta, profile)
 	hud.set_prompt(current_prompt())
 	hud.set_region(region_name)
 	hud.set_place(place_name)
@@ -317,6 +318,24 @@ func toggle_character() -> void:
 	character_sheet.open(profile)
 
 
+## Chegou a este alcance (px) do ponto marcado: o ponto some e o HUD avisa.
+const WAYPOINT_ARRIVE := 110.0
+
+
+## O HUD indica o ponto ativo do mapa (só na rua); chegando perto, ele é desfeito.
+func _follow_waypoint() -> void:
+	var waypoint: Dictionary = profile.active_waypoint_data()
+	if GameState.is_inside() or waypoint.is_empty():
+		hud.set_waypoint(global_position, {})
+		return
+	if global_position.distance_to(waypoint.pos) <= WAYPOINT_ARRIVE:
+		notify("Chegou a %s" % waypoint.name, 4.0)
+		profile.remove_waypoint(profile.active_waypoint)
+		hud.set_waypoint(global_position, {})
+		return
+	hud.set_waypoint(global_position, waypoint)
+
+
 ## Abre ou fecha o mapa de tela cheia (só na rua: dentro de prédios não há mapa).
 func toggle_map() -> void:
 	if map_panel.is_open():
@@ -328,7 +347,7 @@ func toggle_map() -> void:
 	inventory_panel.close()
 	character_sheet.close()
 	shop_panel.close()
-	map_panel.open(GameState.world_layout(), profile.known_buildings, global_position, targets)
+	map_panel.open(GameState.world_layout(), profile.known_buildings, global_position, targets, profile)
 
 
 # --- loja, itens no chão, avisos ---

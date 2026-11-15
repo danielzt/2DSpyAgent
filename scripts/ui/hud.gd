@@ -8,6 +8,7 @@ extends CanvasLayer
 const PixelLabel := preload("res://scripts/ui/pixel_label.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 const Minimap := preload("res://scripts/ui/minimap.gd")
+const Palette := preload("res://scripts/art/palette.gd")
 
 const MARGIN := 16
 const LINE := 38.0
@@ -16,6 +17,8 @@ const ARROW_MARGIN := 90.0
 const ARROW_MIN_DISTANCE := 260.0
 const ARROW_SCALE := 3.0
 const MAX_ARROWS := 4
+## Pixels do mundo por metro (distância mostrada no ponto marcado).
+const METER := 32.0
 
 var _prompt: Control
 var _region: Control
@@ -29,6 +32,9 @@ var _place: Control
 var _clock: Control
 var _toast_time := 0.0
 var _arrows: Control
+var _waypoint: Control
+var _waypoint_dir := Vector2.ZERO
+var _waypoint_active := false
 var _minimap: Control
 var _arrow_dirs: Array[Vector2] = []
 
@@ -49,6 +55,8 @@ func _ready() -> void:
 	_health.bar_ratio = 1.0
 	_prompt = _make_label(Control.PRESET_BOTTOM_LEFT, "neon_cyan", "teal")
 	_prompt.visible = false
+	_waypoint = _make_label(Control.PRESET_CENTER_TOP, "neon_cyan", "teal", Vector2(0.0, LINE))
+	_waypoint.visible = false
 	_arrows = Control.new()
 	_arrows.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_arrows.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -140,9 +148,40 @@ func target_arrow_count() -> int:
 	return _arrow_dirs.size()
 
 
+## Ponto marcado no mapa: seta ciano na borda da tela e, no alto, o nome e a distância
+## (1 m = 32 px). Sem ponto ativo, passe um dicionário vazio. Perto do ponto a seta some.
+func set_waypoint(from: Vector2, waypoint: Dictionary) -> void:
+	if waypoint.is_empty():
+		if _waypoint_active:
+			_waypoint_active = false
+			_waypoint.visible = false
+			_arrows.queue_redraw()
+		return
+	var to: Vector2 = (waypoint.pos as Vector2) - from
+	_waypoint.text = "%s  %d m" % [waypoint.name, roundi(to.length() / METER)]
+	_waypoint.visible = true
+	var dir := to.normalized() if to.length() >= ARROW_MIN_DISTANCE else Vector2.ZERO
+	if dir != _waypoint_dir or not _waypoint_active:
+		_waypoint_dir = dir
+		_arrows.queue_redraw()
+	_waypoint_active = true
+
+
+func waypoint_text() -> String:
+	return _waypoint.text if _waypoint.visible else ""
+
+
+func waypoint_arrow_visible() -> bool:
+	return _waypoint_active and _waypoint_dir != Vector2.ZERO
+
+
 func _draw_arrows() -> void:
 	var texture := SpriteFactory.prop("target_arrow")
 	var half := _arrows.size / 2.0
+	if _waypoint_active and _waypoint_dir != Vector2.ZERO:
+		var wpos := half + Vector2(_waypoint_dir.x * (half.x - ARROW_MARGIN), _waypoint_dir.y * (half.y - ARROW_MARGIN))
+		_arrows.draw_set_transform(wpos, _waypoint_dir.angle(), Vector2(ARROW_SCALE + 1.0, ARROW_SCALE + 1.0))
+		_arrows.draw_texture(texture, -Vector2(texture.get_size()) / 2.0, Palette.get_color("neon_cyan"))
 	for dir in _arrow_dirs:
 		var pos := half + Vector2(dir.x * (half.x - ARROW_MARGIN), dir.y * (half.y - ARROW_MARGIN))
 		_arrows.draw_set_transform(pos, dir.angle(), Vector2(ARROW_SCALE, ARROW_SCALE))
@@ -150,9 +189,9 @@ func _draw_arrows() -> void:
 
 
 ## Minimapa no canto superior direito (fica escondido dentro de prédios).
-func set_minimap(layout, known: Dictionary, center: Vector2, targets: Array, delta := 0.0) -> void:
+func set_minimap(layout, known: Dictionary, center: Vector2, targets: Array, delta := 0.0, profile = null) -> void:
 	_minimap.visible = true
-	_minimap.set_state(layout, known, center, targets, delta)
+	_minimap.set_state(layout, known, center, targets, delta, profile)
 
 
 func hide_minimap() -> void:

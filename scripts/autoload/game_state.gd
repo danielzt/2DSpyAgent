@@ -48,6 +48,7 @@ func set_inside(id: int, p_return_position: Vector2, shop := "", type := "", p_n
 	has_return = true
 	for index in _profiles:
 		_profiles[index].know_building(id)  # visitado: o ícone entra no mapa
+		_profiles[index].explore(p_return_position)
 
 
 func set_outside() -> void:

@@ -19,6 +19,7 @@ var layout
 var known := {}
 var center := Vector2.ZERO
 var targets: Array = []
+var profile
 
 var _since_draw := 0.0
 var _drawn_center := Vector2(-1.0e9, -1.0e9)
@@ -33,7 +34,8 @@ func _ready() -> void:
 
 
 ## Atualiza o estado; o redesenho é limitado para o minimapa ser barato.
-func set_state(p_layout, p_known: Dictionary, p_center: Vector2, p_targets: Array, delta := 0.0) -> void:
+func set_state(p_layout, p_known: Dictionary, p_center: Vector2, p_targets: Array, delta := 0.0, p_profile = null) -> void:
+	profile = p_profile
 	layout = p_layout
 	known = p_known
 	targets = p_targets
@@ -60,7 +62,7 @@ func _draw() -> void:
 		draw_rect(dest, Palette.get_color("ink"))
 		return
 	var area := view()
-	MapView.draw(self, layout, known, area, dest, ICON_SCALE)
+	MapView.draw(self, layout, known, area, dest, ICON_SCALE, profile)
 	for target in targets:
 		var screen := MapView.to_screen(target, area, dest)
 		MapView.draw_glyph(self, "alert", screen.clamp(dest.position + Vector2(6, 6), dest.end - Vector2(6, 6)), MARKER_SCALE, dest)

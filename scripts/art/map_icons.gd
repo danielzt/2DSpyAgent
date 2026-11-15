@@ -26,7 +26,7 @@ const LABELS := {
 }
 
 ## Marcadores que não são prédios.
-const MARKERS := ["you", "alert"]
+const MARKERS := ["you", "alert", "pin", "pin_on"]
 
 const GLYPHS := {
 	"hq": [
@@ -200,6 +200,25 @@ const GLYPHS := {
 		"..CCC..",
 		"..CCC..",
 		".......",
+	],
+	# ponto marcado pelo jogador: bandeira (magenta) e a ativa (âmbar)
+	"pin": [
+		"mmm....",
+		"mmmm...",
+		"mmm....",
+		"m......",
+		"m......",
+		"m......",
+		"m......",
+	],
+	"pin_on": [
+		"yyy....",
+		"yyyy...",
+		"yyy....",
+		"y......",
+		"y......",
+		"y......",
+		"y......",
 	],
 	# alvo de crime: losango vermelho
 	"alert": [

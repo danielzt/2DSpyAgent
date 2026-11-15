@@ -62,6 +62,92 @@ var last_briefing_day := -1
 var known_buildings := {}
 
 
+## Quarteirões (grade de CityLayout.BLOCK sobre o mundo todo) já explorados: Vector2i -> true.
+## O que não foi explorado fica sob neblina no mapa.
+var explored := {}
+## Pontos marcados no mapa: [{pos: Vector2, name: String}]. O ativo é o que o HUD indica.
+var waypoints: Array = []
+var active_waypoint := -1
+const MAX_WAYPOINTS := 5
+## Alcance da exploração: quarteirões cujo retângulo fica a até esta distância do jogador.
+const EXPLORE_RADIUS := 600.0
+const CELL := 560.0
+
+
+static func cell_of(point: Vector2) -> Vector2i:
+	return Vector2i(int(floor(point.x / CELL)), int(floor(point.y / CELL)))
+
+
+## Explora os quarteirões em volta de `point`. Retorna quantos eram novos.
+func explore(point: Vector2) -> int:
+	var added := 0
+	var low := cell_of(point - Vector2(EXPLORE_RADIUS, EXPLORE_RADIUS))
+	var high := cell_of(point + Vector2(EXPLORE_RADIUS, EXPLORE_RADIUS))
+	for cx in range(low.x, high.x + 1):
+		for cy in range(low.y, high.y + 1):
+			var cell := Vector2i(cx, cy)
+			var rect := Rect2(Vector2(cell) * CELL, Vector2(CELL, CELL))
+			if rect.grow(EXPLORE_RADIUS - 1.0).has_point(point) and not explored.has(cell):
+				explored[cell] = true
+				added += 1
+	return added
+
+
+func is_explored(point: Vector2) -> bool:
+	return explored.has(cell_of(point))
+
+
+## Novo ponto no mapa (vira o ativo). Se já houver MAX_WAYPOINTS, o mais antigo sai.
+## Retorna o índice do ponto.
+func add_waypoint(pos: Vector2, label := "") -> int:
+	if waypoints.size() >= MAX_WAYPOINTS:
+		waypoints.pop_front()
+	var name_text := label if label != "" else "Ponto %d" % _next_number()
+	waypoints.append({"pos": pos, "name": name_text})
+	active_waypoint = waypoints.size() - 1
+	return active_waypoint
+
+
+func _next_number() -> int:
+	var used := {}
+	for w in waypoints:
+		used[w.name] = true
+	var n := 1
+	while used.has("Ponto %d" % n):
+		n += 1
+	return n
+
+
+func remove_waypoint(index: int) -> void:
+	if index < 0 or index >= waypoints.size():
+		return
+	waypoints.remove_at(index)
+	if waypoints.is_empty():
+		active_waypoint = -1
+	elif active_waypoint >= waypoints.size() or active_waypoint == index:
+		active_waypoint = waypoints.size() - 1
+	elif active_waypoint > index:
+		active_waypoint -= 1
+
+
+## Índice do ponto a até `radius` do ponto dado (o mais perto), ou -1.
+func waypoint_near(pos: Vector2, radius: float) -> int:
+	var best := -1
+	var best_d := radius
+	for i in waypoints.size():
+		var d: float = (waypoints[i].pos as Vector2).distance_to(pos)
+		if d <= best_d:
+			best_d = d
+			best = i
+	return best
+
+
+func active_waypoint_data() -> Dictionary:
+	if active_waypoint < 0 or active_waypoint >= waypoints.size():
+		return {}
+	return waypoints[active_waypoint]
+
+
 ## Marca o prédio como conhecido. Retorna true se era novo.
 func know_building(id: int) -> bool:
 	if known_buildings.has(id):

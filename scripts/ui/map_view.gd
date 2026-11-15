@@ -9,6 +9,8 @@ const MapIcons := preload("res://scripts/art/map_icons.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 
+## Opacidade da neblina sobre o que não foi explorado.
+const FOG_ALPHA := 0.88
 ## Raio do minimapa: 1 quarteirão e meio.
 const MINIMAP_RADIUS := CityLayout.BLOCK * 1.5
 ## Cores por bairro: [lote, prédio]. Todas da paleta.
@@ -91,7 +93,7 @@ static func _fill(canvas: CanvasItem, world_r: Rect2, view: Rect2, dest: Rect2, 
 
 ## Desenha o mapa de `view` (mundo) dentro de `dest` (tela). `icon_scale`: px por texel dos
 ## ícones. Ícones fora do retângulo são pulados. O chamador deve recortar (clip_contents).
-static func draw(canvas: CanvasItem, layout, known: Dictionary, view: Rect2, dest: Rect2, icon_scale := 2.0) -> void:
+static func draw(canvas: CanvasItem, layout, known: Dictionary, view: Rect2, dest: Rect2, icon_scale := 2.0, profile = null) -> void:
 	_fill(canvas, view, view, dest, "asphalt")
 	var city = layout.city
 	if view.intersects(Rect2(0, 0, CityLayout.city_size(), CityLayout.city_size())):
@@ -113,8 +115,38 @@ static func draw(canvas: CanvasItem, layout, known: Dictionary, view: Rect2, des
 		_fill(canvas, layout.country.road, view, dest, "asphalt")
 		for b in layout.country.buildings:
 			_fill(canvas, b.rect, view, dest, "brown")
+	if profile != null:
+		_draw_fog(canvas, profile, view, dest)
 	for icon in icons_in(layout, known, view):
 		draw_glyph(canvas, icon.glyph, to_screen(icon.pos, view, dest), icon_scale, dest)
+	if profile != null:
+		draw_waypoints(canvas, profile, view, dest, icon_scale)
+
+
+## Neblina sobre os quarteirões que o jogador ainda não explorou: o mapa mostra o mundo todo,
+## mas só o explorado aparece com clareza (os prédios ficam apenas insinuados).
+static func _draw_fog(canvas: CanvasItem, profile, view: Rect2, dest: Rect2) -> void:
+	var fog := Palette.get_color("ink")
+	fog = Color(fog.r, fog.g, fog.b, FOG_ALPHA)
+	var cell: float = profile.CELL
+	var low: Vector2i = profile.cell_of(view.position)
+	var high: Vector2i = profile.cell_of(view.end - Vector2.ONE)
+	var k := dest.size.x / view.size.x
+	for cx in range(low.x, high.x + 1):
+		for cy in range(low.y, high.y + 1):
+			if profile.explored.has(Vector2i(cx, cy)):
+				continue
+			var r := Rect2(Vector2(cx, cy) * cell, Vector2(cell, cell)).intersection(view)
+			if r.size.x > 0.0 and r.size.y > 0.0:
+				canvas.draw_rect(Rect2(dest.position + (r.position - view.position) * k, r.size * k), fog)
+
+
+## Pontos marcados: o ativo em âmbar, os outros em magenta.
+static func draw_waypoints(canvas: CanvasItem, profile, view: Rect2, dest: Rect2, icon_scale: float) -> void:
+	for i in profile.waypoints.size():
+		var pos: Vector2 = profile.waypoints[i].pos
+		if view.has_point(pos):
+			draw_glyph(canvas, "pin_on" if i == profile.active_waypoint else "pin", to_screen(pos, view, dest), icon_scale, dest.grow(30.0))
 
 
 ## Ícone centrado em `center`, só se couber em `bounds`.

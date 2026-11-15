@@ -266,6 +266,7 @@ func _process(delta: float) -> void:
 func mark_seen_buildings() -> int:
 	var added := 0
 	for p in get_tree().get_nodes_in_group("players"):
+		p.profile.explore(p.global_position)  # tira a neblina do mapa em volta
 		var known: Dictionary = p.profile.known_buildings
 		for b in layout.buildings():
 			if known.has(b.id):

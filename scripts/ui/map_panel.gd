@@ -27,6 +27,8 @@ const ICON_SCALE := 1.0
 const LEGEND_ICON_SCALE := 2.0
 const ROW := 24.0
 const HOVER_RADIUS := 12.0
+## Um clique a até tanto (px da tela) de um ponto já marcado escolhe esse ponto.
+const SNAP_PIXELS := 12.0
 const BLINK_SECONDS := 0.4
 
 var layout
@@ -34,6 +36,7 @@ var known := {}
 var player_position := Vector2.ZERO
 var player_index := 1
 var targets: Array = []
+var profile
 ## O que o mapa mostra: CITY ou COUNTRY.
 var mode := CITY
 
@@ -49,11 +52,13 @@ func _ready() -> void:
 	_canvas.mouse_filter = Control.MOUSE_FILTER_STOP
 	_canvas.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_canvas.draw.connect(_draw_map)
+	_canvas.gui_input.connect(_on_canvas_input)
 	add_child(_canvas)
 	visible = false
 
 
-func open(p_layout, p_known: Dictionary, p_position: Vector2, p_targets: Array) -> void:
+func open(p_layout, p_known: Dictionary, p_position: Vector2, p_targets: Array, p_profile = null) -> void:
+	profile = p_profile
 	layout = p_layout
 	known = p_known
 	player_position = p_position
@@ -139,11 +144,12 @@ func _draw_map() -> void:
 	_canvas.draw_rect(Rect2(Vector2.ZERO, screen), Color(ink.r, ink.g, ink.b, 0.94))
 	_text("MAPA", "neon_cyan", Vector2(MARGIN, MARGIN), 4.0)
 	_text("M ou Esc fecha. %s alterna cidade e campo." % _interact_key(), "gray", Vector2(MARGIN, MARGIN + 38.0), 2.0)
+	_text("Clique: marcar ponto. Botão direito: tirar.", "gray", Vector2(MARGIN, MARGIN + 100.0), 1.0)
 	if layout == null:
 		return
 	var view := view_rect()
 	var dest := map_rect(screen)
-	MapView.draw(_canvas, layout, known, view, dest, ICON_SCALE)
+	MapView.draw(_canvas, layout, known, view, dest, ICON_SCALE, profile)
 	_canvas.draw_rect(dest.grow(2.0), Palette.get_color("neon_cyan"), false, 2.0)
 	_text("CIDADE" if mode == CITY else "CAMPO", "amber", Vector2(MARGIN, MARGIN + 70.0), 3.0)
 	if mode == CITY:
@@ -152,6 +158,45 @@ func _draw_map() -> void:
 	_draw_markers(view, dest)
 	_draw_legend(dest)
 	_draw_hover(view, dest)
+
+
+## Clique esquerdo: marca um ponto (ou ativa o que já estiver perto). Retorna o índice, ou -1
+## se o clique foi fora do mapa ou não há ficha.
+func place_waypoint(screen_point: Vector2, screen: Vector2) -> int:
+	if profile == null or layout == null:
+		return -1
+	var view := view_rect()
+	var dest := map_rect(screen)
+	if not dest.has_point(screen_point):
+		return -1
+	var world := MapView.to_world(screen_point, view, dest)
+	var near: int = profile.waypoint_near(world, SNAP_PIXELS / (dest.size.x / view.size.x))
+	if near >= 0:
+		profile.active_waypoint = near
+		return near
+	return profile.add_waypoint(world)
+
+
+## Clique direito: tira o ponto mais perto do clique. Retorna true se tirou.
+func remove_waypoint_at(screen_point: Vector2, screen: Vector2) -> bool:
+	if profile == null or layout == null:
+		return false
+	var view := view_rect()
+	var dest := map_rect(screen)
+	var near: int = profile.waypoint_near(MapView.to_world(screen_point, view, dest), SNAP_PIXELS / (dest.size.x / view.size.x))
+	if near < 0:
+		return false
+	profile.remove_waypoint(near)
+	return true
+
+
+func _on_canvas_input(event: InputEvent) -> void:
+	if not _is_open or not (event is InputEventMouseButton) or not event.pressed:
+		return
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		place_waypoint(event.position, _canvas.size)
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		remove_waypoint_at(event.position, _canvas.size)
 
 
 func _interact_key() -> String:
