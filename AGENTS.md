@@ -65,7 +65,7 @@ docs/                documentação (ver regra abaixo)
 Antes de concluir uma mudança, rode os testes e confirme `0 falha(s)`:
 
 ```bash
-Godot_v4.7.2-stable_win64_console.exe --headless --path . -s tests/run_tests.gd
+Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . -s tests/run_tests.gd
 ```
 
 Após adicionar scripts novos, rode antes `--headless --path . --import`.

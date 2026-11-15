@@ -46,7 +46,7 @@ Por enquanto só o jogador 1 é criado em cena.
 Todo código novo precisa de testes. Para rodar **todos** (precisa do Godot 4.7.2 instalado):
 
 ```bash
-Godot_v4.7.2-stable_win64_console.exe --headless --path . -s tests/run_tests.gd
+Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . -s tests/run_tests.gd
 ```
 
 (Nesta máquina: `Z:\Dev\Godot\Godot_v4.7.2-stable\Godot_v4.7.2-stable_win64_console.exe`.)

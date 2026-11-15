@@ -5,11 +5,16 @@ Toda feature nova precisa de testes automatizados na mesma mudança.
 ## Como rodar
 
 ```bash
-Godot_v4.7.2-stable_win64_console.exe --headless --path . -s tests/run_tests.gd
+Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . -s tests/run_tests.gd
 ```
 
 Para rodar só alguns arquivos, passe termos do nome depois de `--` (ex.: `-s tests/run_tests.gd -- combat traffic`).
 Antes de concluir uma mudança, rode sempre a suíte inteira.
+
+`--fixed-fps 60` é essencial: sem ele o Godot sincroniza com o relógio e cada
+`wait_physics_frames(n)` custa n/60 s reais (a suíte levava ~180 s); com ele os quadros rodam o
+mais rápido possível com delta fixo (~23 s, e mais determinístico). O runner imprime
+`[lento] teste: N ms` para qualquer teste acima de 500 ms.
 
 Código de saída `0` = tudo passou; `1` = alguma falha. Na primeira vez (ou após adicionar
 scripts com `class_name`), rode antes `--headless --path . --import`.

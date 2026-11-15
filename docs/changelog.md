@@ -2,6 +2,8 @@
 
 ## 2026-11-15
 
+- Testes: suíte passou de ~182 s para ~23 s usando `--fixed-fps 60` (sem sincronizar com o relógio); runner avisa testes acima de 500 ms
+
 - Fase 2 do redesenho, cidade com contexto: duas avenidas mais largas cruzando no centro (duas faixas por sentido), seis bairros por seed com paredes, telhados, alturas e formatos de lote próprios
 - Tabela única de 24 tipos de prédio em `building_defs.gd` (cotas, tamanho mínimo, letreiro, funcionários, horário, serviço); as lojas viraram entradas da tabela com o mesmo estoque; novo tipo "redação do jornal"
 - Nome próprio por prédio (letreiro e instrução da porta), ruas e bairros com nome, "bairro • rua" no HUD
