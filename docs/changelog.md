@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-15 (6)
+
+- **E2, save e opções:** o jogo grava sozinho (`user://save.json`, funciona no navegador) ao entrar e sair de prédios, ao pausar e ao dormir/sair da casa. Guarda a seed, o relógio, os pontos e, por jogador, a ficha (nível, XP, atributos, dinheiro, banco, mapa explorado, prédios conhecidos, pontos marcados) e o inventário; o mundo é regenerado pela seed. O arquivo leva `version` e passa por `SaveGame.migrate`; save corrompido ou de versão futura é ignorado
+- Título ganha **Continuar** (só com save) e **Opções** (tela cheia, volume, tremor); a pausa ganha tela cheia e volume. As opções ficam em `user://options.cfg`, separadas do save
+- **E4, corpo a corpo:** cassetete (item novo, no kit inicial e na armaria) e **socos** com a mão esquerda vazia; golpe em arco curto à frente, sem munição, afetado pela Força
+- Runner de testes passa a usar arquivos de save e opções próprios (`user://test_*`)
+- 873 testes. Detalhes: [save-e-opcoes.md](save-e-opcoes.md)
+
 ## 2026-11-15 (5)
 
 - Fase 6 do redesenho: mapa com neblina no que não foi explorado; pontos marcados por clique no mapa (até 5) com seta e distância no HUD; bairro residencial com lotes de casinhas em duas fileiras e beco; **casa do agente** (a casa mais perto do QG, já marcada, com dormir de graça e baú); hospital, delegacia e casas completos; decoração e gente mínima em todos os interiores; uniformes por papel; 13 móveis novos

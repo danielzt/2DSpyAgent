@@ -85,7 +85,7 @@ func test_shops_sell_what_they_always_sold() -> void:
 	assert_eq(BuildingDefs.shop_of("agent_store"), "agent_store")
 	assert_eq(BuildingDefs.shop_of("farm_store"), "farm_store")
 	assert_eq(BuildingDefs.shop_of("bar"), "")
-	assert_eq(ShopDefs.stock("armory"), ["pistol", "shotgun", "taser"])
+	assert_eq(ShopDefs.stock("armory"), ["pistol", "shotgun", "taser", "baton"])
 	assert_eq(ShopDefs.stock("pharmacy"), ["medkit"])
 	assert_eq(ShopDefs.stock("agent_store"), ["shield", "taser", "medkit"])
 	assert_eq(ShopDefs.stock("farm_store"), ["medkit", "shotgun"])

@@ -7,6 +7,8 @@ const INTERIOR_SCENE := "res://scenes/interior/interior.tscn"
 
 const ProfileScript := preload("res://scripts/player/player_profile.gd")
 const InventoryScript := preload("res://scripts/items/inventory.gd")
+const SaveGame := preload("res://scripts/save/save_game.gd")
+const CityLayout := preload("res://scripts/world/city_layout.gd")
 
 var building_id := -1
 var building_shop := ""
@@ -33,8 +35,59 @@ var _profiles := {}
 var _inventories := {}
 
 
+## Autosave: só liga quando uma partida de verdade começa (título -> jogo); testes não gravam.
+var autosave := false
+
+
 func is_inside() -> bool:
 	return building_id >= 0
+
+
+## Grava o save. `position`: onde o jogador está no mundo (dentro de prédio vale a porta).
+func save_now(position := Vector2.ZERO) -> bool:
+	var spot := return_position if is_inside() or position == Vector2.ZERO else position
+	var players := {}
+	for index in _profiles:
+		players[index] = {"profile": _profiles[index], "inventory": inventory_for(index)}
+	return SaveGame.write(SaveGame.snapshot(world_seed, players, WorldClock.seconds, Score.points, spot))
+
+
+## Grava só se o autosave estiver ligado.
+func autosave_now(position := Vector2.ZERO) -> void:
+	if autosave:
+		save_now(position)
+
+
+## Carrega o save para a memória (sem trocar de cena). Retorna false se não houver save válido.
+func load_save() -> bool:
+	var data: Dictionary = SaveGame.read()
+	if data.is_empty():
+		return false
+	new_game()
+	world_seed = int(data.get("seed", world_seed))
+	_world_layout = null
+	CityLayout.use_seed(world_seed)
+	for key in data.get("players", {}):
+		var index := int(key)
+		var entry: Dictionary = data.players[key]
+		profile_for(index).from_dict(entry.get("profile", {}))
+		inventory_for(index).from_dict(entry.get("inventory", {}))
+	WorldClock.seconds = float(data.get("clock", WorldClock.seconds))
+	Score.points = int(data.get("points", 0))
+	return_position = SaveGame.vec(data.get("position"))
+	has_return = return_position != Vector2.ZERO
+	return true
+
+
+## Do título: continua a partida salva.
+func continue_game() -> void:
+	if Transition.busy or not SaveGame.exists():
+		return
+	Transition.go(MAIN_SCENE, func() -> void:
+		if load_save():
+			autosave = true
+		else:
+			new_game())
 
 
 ## Só altera o estado (testável sem trocar de cena).
@@ -49,6 +102,7 @@ func set_inside(id: int, p_return_position: Vector2, shop := "", type := "", p_n
 	for index in _profiles:
 		_profiles[index].know_building(id)  # visitado: o ícone entra no mapa
 		_profiles[index].explore(p_return_position)
+	autosave_now()
 
 
 func set_outside() -> void:
@@ -56,6 +110,7 @@ func set_outside() -> void:
 	building_shop = ""
 	building_type = ""
 	building_name = ""
+	autosave_now()
 
 
 ## Posição onde o jogador deve reaparecer no mundo; consome o retorno pendente.
@@ -82,6 +137,7 @@ func go_to_title() -> void:
 	if Transition.busy:
 		return
 	Transition.go(TITLE_SCENE, func() -> void:
+		autosave = false
 		set_outside()
 		new_game())
 
@@ -98,7 +154,9 @@ func new_game() -> void:
 func start_game() -> void:
 	if Transition.busy:
 		return
-	Transition.go(MAIN_SCENE, new_game)
+	Transition.go(MAIN_SCENE, func() -> void:
+		new_game()
+		autosave = true)
 
 
 func profile_for(player_index: int) -> RefCounted:

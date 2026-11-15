@@ -203,7 +203,7 @@ func test_pause_menu_options() -> void:
 	var player = await _player()
 	player.pause()
 	var panel = player.pause_panel
-	assert_eq(panel.menu().items.size(), 3)
+	assert_eq(panel.menu().items.size(), 5, "continuar, tremor, tela cheia, volume, título")
 	assert_eq(panel.menu().items[PausePanel.SHAKE], "Tremor de câmera: SIM")
 	panel.menu().chosen.emit(PausePanel.SHAKE)
 	assert_false(GameState.screen_shake)
@@ -269,8 +269,10 @@ func test_title_menu_has_new_game_and_controls() -> void:
 	_add(title)
 	await wait_frames(2)
 	var items: Array[String] = title.menu().items
-	assert_eq(items[TitleScreen.NEW_GAME], "Novo jogo")
-	assert_eq(items[TitleScreen.CONTROLS], "Controles")
+	assert_true(items.has(TitleScreen.NEW_GAME))
+	assert_true(items.has(TitleScreen.CONTROLS))
+	assert_true(items.has(TitleScreen.OPTIONS))
+	assert_false(items.has(TitleScreen.CONTINUE), "sem save não há Continuar")
 	assert_eq(items.has("Sair"), not OS.has_feature("web"))
 
 
@@ -278,7 +280,7 @@ func test_title_controls_overlay_opens_and_closes() -> void:
 	var title := TITLE_SCENE.instantiate()
 	_add(title)
 	await wait_frames(2)
-	title.menu().chosen.emit(TitleScreen.CONTROLS)
+	title.menu().chosen.emit(title.menu().items.find(TitleScreen.CONTROLS))
 	assert_true(title.controls_open)
 	assert_false(title.menu().active, "o menu espera")
 	title._unhandled_input(_event("ui_cancel"))

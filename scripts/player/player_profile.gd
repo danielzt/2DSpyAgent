@@ -166,6 +166,66 @@ func _init(p_index := 1) -> void:
 	traits = p.traits.duplicate()
 
 
+## Tudo que o save guarda da ficha (JSON: chaves de dicionário viram texto, Vector2 vira [x, y]).
+func to_dict() -> Dictionary:
+	var cells: Array = []
+	for cell in explored:
+		cells.append([cell.x, cell.y])
+	var points: Array = []
+	for w in waypoints:
+		points.append({"pos": [w.pos.x, w.pos.y], "name": w.name})
+	return {
+		"name": player_name, "codename": codename, "background": background, "traits": traits.duplicate(),
+		"money": money, "level": level, "xp": xp, "unspent": unspent, "stats": stats.duplicate(),
+		"talked": talked.keys(), "health": health, "bank": bank, "prisoners": prisoners,
+		"car_paint": car_paint, "xp_boost": xp_boost, "last_train_day": last_train_day,
+		"last_briefing_day": last_briefing_day, "last_stash_day": last_stash_day,
+		"known_buildings": known_buildings.keys(), "explored": cells,
+		"waypoints": points, "active_waypoint": active_waypoint,
+	}
+
+
+## Restaura a ficha de um save; campos que faltam ficam como estão (saves de versões antigas).
+func from_dict(data: Dictionary) -> void:
+	player_name = str(data.get("name", player_name))
+	codename = str(data.get("codename", codename))
+	background = str(data.get("background", background))
+	traits = Array(data.get("traits", traits))
+	money = int(data.get("money", money))
+	level = clampi(int(data.get("level", level)), 1, MAX_LEVEL)
+	xp = int(data.get("xp", xp))
+	unspent = int(data.get("unspent", unspent))
+	var saved_stats: Dictionary = data.get("stats", {})
+	for id in stats:
+		stats[id] = clampi(int(saved_stats.get(id, stats[id])), 1, MAX_STAT)
+	talked = {}
+	for key in data.get("talked", []):
+		talked[int(key)] = true
+	health = float(data.get("health", health))
+	bank = int(data.get("bank", bank))
+	prisoners = int(data.get("prisoners", prisoners))
+	car_paint = str(data.get("car_paint", car_paint))
+	xp_boost = float(data.get("xp_boost", xp_boost))
+	last_train_day = int(data.get("last_train_day", last_train_day))
+	last_briefing_day = int(data.get("last_briefing_day", last_briefing_day))
+	last_stash_day = int(data.get("last_stash_day", last_stash_day))
+	known_buildings = {}
+	for id in data.get("known_buildings", []):
+		known_buildings[int(id)] = true
+	explored = {}
+	for cell in data.get("explored", []):
+		if cell is Array and cell.size() >= 2:
+			explored[Vector2i(int(cell[0]), int(cell[1]))] = true
+	waypoints = []
+	for w in data.get("waypoints", []):
+		if w is Dictionary and w.get("pos") is Array and w.pos.size() >= 2:
+			waypoints.append({"pos": Vector2(float(w.pos[0]), float(w.pos[1])), "name": str(w.get("name", "Ponto"))})
+	active_waypoint = int(data.get("active_waypoint", -1))
+	if active_waypoint >= waypoints.size():
+		active_waypoint = waypoints.size() - 1
+	changed.emit()
+
+
 func stat(id: String) -> int:
 	return stats.get(id, 0)
 

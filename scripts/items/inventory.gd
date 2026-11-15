@@ -21,10 +21,32 @@ static func starter_kit() -> RefCounted:
 	inv.add("shield")
 	inv.add("taser")
 	inv.add("shotgun")
+	inv.add("baton")
 	inv.add("medkit", 3)
 	inv.equip("left", "pistol")
 	inv.equip("right", "shield")
 	return inv
+
+
+## Para o save: pilhas e mãos.
+func to_dict() -> Dictionary:
+	return {"stacks": _stacks.duplicate(), "hands": _hands.duplicate()}
+
+
+## Restaura do save, ignorando itens que não existem mais.
+func from_dict(data: Dictionary) -> void:
+	_stacks = {}
+	var saved: Dictionary = data.get("stacks", {})
+	for id in saved:
+		if ItemDefs.exists(id) and int(saved[id]) > 0:
+			_stacks[id] = int(saved[id])
+	_hands = {"left": "", "right": ""}
+	var hands: Dictionary = data.get("hands", {})
+	for hand in HANDS:
+		var id := str(hands.get(hand, ""))
+		if id != "" and _available_for(hand, id) > 0:
+			_hands[hand] = id
+	changed.emit()
 
 
 func add(id: String, amount := 1) -> bool:

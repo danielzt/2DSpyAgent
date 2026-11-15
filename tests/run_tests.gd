@@ -8,9 +8,14 @@ extends SceneTree
 
 const TEST_DIR := "res://tests/unit"
 const CityLayout := preload("res://scripts/world/city_layout.gd")
+const SaveGame := preload("res://scripts/save/save_game.gd")
+const Options := preload("res://scripts/save/options.gd")
 
 
 func _initialize() -> void:
+	# save e opções de teste: nunca tocam nos arquivos de verdade do jogador
+	SaveGame.path = "user://test_save.json"
+	Options.path = "user://test_options.cfg"
 	_run_all()
 
 
@@ -19,12 +24,17 @@ func _reset_globals() -> void:
 	var game_state := root.get_node_or_null("GameState")
 	if game_state != null:
 		game_state.reset_players()
+		game_state.autosave = false
 	var score := root.get_node_or_null("Score")
 	if score != null:
 		score.reset()
 	var clock := root.get_node_or_null("WorldClock")
 	if clock != null:
 		clock.reset()
+	SaveGame.delete()
+	Options.fullscreen = false
+	Options.volume = Options.MAX_VOLUME
+	Options.shake = true
 	# a largura das ruas é estado estático: volta à da cidade padrão entre os testes
 	CityLayout.use_seed(2024)
 	var transition := root.get_node_or_null("Transition")

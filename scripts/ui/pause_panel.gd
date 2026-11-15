@@ -3,6 +3,7 @@ extends CanvasLayer
 ## (continuar, tremor de câmera, voltar ao título). Fica acima do HUD e dos painéis.
 
 const MapView := preload("res://scripts/ui/map_view.gd")
+const Options := preload("res://scripts/save/options.gd")
 const PixelMenu := preload("res://scripts/ui/pixel_menu.gd")
 const ControlsText := preload("res://scripts/ui/controls_text.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
@@ -12,7 +13,9 @@ signal closed
 
 const RESUME := 0
 const SHAKE := 1
-const TITLE := 2
+const FULLSCREEN := 2
+const VOLUME := 3
+const TITLE := 4
 
 const MARGIN := 40.0
 const MAP_SIZE := Vector2(620.0, 330.0)
@@ -49,7 +52,7 @@ func _ready() -> void:
 
 
 func _refresh_items() -> void:
-	var items: Array[String] = ["Continuar", "Tremor de câmera: %s" % ("SIM" if GameState.screen_shake else "NÃO"), "Voltar ao título"]
+	var items: Array[String] = ["Continuar", Options.shake_text(), Options.fullscreen_text(), Options.volume_text(), "Voltar ao título"]
 	_menu.set_items(items)
 
 
@@ -83,6 +86,7 @@ func open(p_layout, p_known: Dictionary, p_position: Vector2, p_player_index := 
 	visible = true
 	_place_menu()
 	get_tree().paused = true
+	GameState.autosave_now(player_position)  # pausar também grava o progresso
 	_canvas.queue_redraw()
 
 
@@ -121,9 +125,15 @@ func _on_chosen(index: int) -> void:
 		RESUME:
 			close()
 		SHAKE:
-			GameState.screen_shake = not GameState.screen_shake
+			Options.toggle_shake()
 			_refresh_items()
 			_canvas.queue_redraw()
+		FULLSCREEN:
+			Options.toggle_fullscreen()
+			_refresh_items()
+		VOLUME:
+			Options.cycle_volume()
+			_refresh_items()
 		TITLE:
 			_is_open = false
 			visible = false
