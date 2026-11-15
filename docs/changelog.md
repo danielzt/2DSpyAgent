@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-15
+
+- Fase 2 do redesenho, cidade com contexto: duas avenidas mais largas cruzando no centro (duas faixas por sentido), seis bairros por seed com paredes, telhados, alturas e formatos de lote próprios
+- Tabela única de 24 tipos de prédio em `building_defs.gd` (cotas, tamanho mínimo, letreiro, funcionários, horário, serviço); as lojas viraram entradas da tabela com o mesmo estoque; novo tipo "redação do jornal"
+- Nome próprio por prédio (letreiro e instrução da porta), ruas e bairros com nome, "bairro • rua" no HUD
+- NPCs com trabalho e moradia em prédios reais, citados na conversa
+- Crimes por bairro e por tipo de prédio; três crimes novos (assalto a banco, briga de bar, arrombamento); o aviso cita o prédio
+- Correção: erro `Invalid type in function 'take_damage'` quando um criminoso morria com o tiro ainda no ar
+- Runner de testes com filtro opcional por arquivo; projeto passou a usar git
+- Desempenho: 1,73 ms para 1,81 ms por quadro nos mesmos pontos (+5%)
+- 577 testes (90 novos); 7 testes atualizados por mudança intencional, listados em [redesign-fase-2.md](redesign-fase-2.md)
+- Detalhes: [redesign-fase-2.md](redesign-fase-2.md)
+
 ## 2026-11-14 (9)
 
 - Plano do jogo completo em [roteiro-jogo.md](roteiro-jogo.md): 12 etapas (menu, save, split-screen até 4, corpo a corpo, percepção, quests, conversa com retrato, campanha, mapas aleatórios, co-op online, áudio, acabamento) e decisões em aberto

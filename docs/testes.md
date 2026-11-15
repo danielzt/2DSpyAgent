@@ -8,6 +8,9 @@ Toda feature nova precisa de testes automatizados na mesma mudança.
 Godot_v4.7.2-stable_win64_console.exe --headless --path . -s tests/run_tests.gd
 ```
 
+Para rodar só alguns arquivos, passe termos do nome depois de `--` (ex.: `-s tests/run_tests.gd -- combat traffic`).
+Antes de concluir uma mudança, rode sempre a suíte inteira.
+
 Código de saída `0` = tudo passou; `1` = alguma falha. Na primeira vez (ou após adicionar
 scripts com `class_name`), rode antes `--headless --path . --import`.
 
@@ -30,7 +33,7 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 - Para comportamento de nós, instancie a cena em `tree.root` e dê `queue_free()` no `after_each`.
 - Input em teste: `Input.action_press("p1_right")` e solte no `after_each`.
 
-## Cobertura atual (487 testes)
+## Cobertura atual (577 testes)
 
 | Arquivo | Cobre |
 |---|---|
@@ -61,6 +64,10 @@ Runner próprio, sem dependências externas (`tests/run_tests.gd`):
 | `test_sprites.gd` | personagens, carros, objetos e tiles (tamanho, paleta, variações), cache de texturas |
 | `test_building_art.gd` | estilo dos prédios, limite da fachada, letreiros, desenho sem buracos |
 | `test_street_props.gd` | mobiliário urbano, parques e quintais: determinismo, calçada livre, portas livres |
+| `test_districts.gd` | bairros: todo quarteirão com bairro, contiguidade, cotas, determinismo, efeito nos prédios |
+| `test_building_defs.gd` | tabela de tipos, cotas mínimas e máximas, tamanho mínimo, bairros permitidos, horários, porta alcançável |
+| `test_names.gd` | nomes de prédios e ruas: únicos, determinísticos, desenháveis pela fonte; texto de lugar do HUD |
+| `test_population.gd` | trabalho e moradia em prédios reais, falas que citam o lugar |
 | `test_world_visuals.gd` | cena real sem `ColorRect`, pedaços de chão, sprites e animação, ordem de desenho, HUD |
 
 O aviso `Tipo de morte desconhecido` impresso durante `test_score` é esperado

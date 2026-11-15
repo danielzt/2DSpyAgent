@@ -34,12 +34,13 @@ scripts/
   interaction/     interact_zone.gd (zona "Pressione E")
   vehicle/         car.gd, traffic_route.gd
   combat/          bullet.gd
-  npc/             npc.gd, npc_identity.gd (card de personalidade)
+  npc/             npc.gd, npc_identity.gd (card de personalidade), population.gd (trabalho e moradia)
   ui/              hud.gd, pixel_label.gd, ui_style.gd, dialog_card.gd, inventory_panel.gd,
                    character_sheet.gd, shop_panel.gd
   items/           item_defs.gd, inventory.gd, pickup.gd, shop_defs.gd
   world/           world.gd, ground_chunk.gd (nós); city/country/world_layout.gd, sidewalk_graph.gd,
-                   street_props_layout.gd, building_style.gd (lógica); door.gd
+                   street_props_layout.gd, building_style.gd, district_layout.gd (bairros),
+                   building_defs.gd (tipos de prédio), name_generator.gd (lógica); door.gd
   art/             fábrica de arte: palette, pixel_canvas, pixel_font, tile_factory, character_sprites,
                    car_sprites, prop_sprites, building_art, sprite_factory
   crime/           crime_profiles.gd, incident_manager.gd
@@ -89,16 +90,19 @@ o runner chama antes de cada teste).
 
 ## Cidade, calçadas e crimes
 
-- `CityLayout` sorteia o formato de cada lote (parque, prédio único, dois prédios, prédio com quintal) e atribui lojas.
+- `CityLayout` monta as ruas (largura por linha: `asphalt(linha)`, `corridor(linha)`; a linha 6 de cada eixo é avenida),
+  sorteia o formato de cada lote conforme o bairro e chama `BuildingDefs.assign` para dar tipo, loja e nome aos prédios.
+- `DistrictLayout`: seis bairros por seed, contíguos, um por quarteirão. `BuildingDefs`: tabela única dos tipos de prédio.
+  `NameGenerator`: nomes de prédios e ruas. `Population`: trabalho e moradia de cada civil.
 - `SidewalkGraph`: grafo de calçadas (nó = `Vector4i(cx, cy, qx, qy)`), usado pelos pedestres (`NPC.start_on_sidewalk`).
 - `CrimeProfiles` guarda os tipos de crime por região; `IncidentManager` (filho de `World`) cria crimes perto do jogador
-  conforme a região e paga o bônus quando são resolvidos.
+  conforme a região e o bairro, em frente a um prédio compatível com o tipo do crime, e paga o bônus quando são resolvidos.
 - Lojas: `ShopDefs` (lógica pura de compra e venda) + `ShopPanel` (UI) + balcão no interior (`GameState.building_shop`).
 
 ## Mundo
 
 `WorldLayout` = `CityLayout` + `CountryLayout` (regiões lado a lado, 13440x6720 px).
-`world.gd` cria os nós e atualiza `player.region_name` para o HUD.
+`world.gd` cria os nós e atualiza `player.region_name` e `player.place_name` (bairro e rua) para o HUD.
 
 ## Input
 

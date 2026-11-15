@@ -1,6 +1,6 @@
 # Roteiro do redesenho visual e do mundo com contexto
 
-> Lista de trabalho do redesenho. **Fases 0 e 1 concluídas; Fase 2 aprovada para começar, ainda não iniciada.** Cada item tem um status;
+> Lista de trabalho do redesenho. **Fases 0, 1 e 2 concluídas; a Fase 3 depende da decisão D7.** Cada item tem um status;
 > atualize a coluna na mesma mudança em que o item avançar.
 > O design detalhado (paleta, resolução, valores concretos) está em
 > `docs/redesign-visual.md`.
@@ -26,7 +26,7 @@ assets externos, GDScript, GL Compatibility, lógica pura em `RefCounted` com se
 |---|---|---|
 | 0 | Direção de arte e plano | Feito |
 | 1 | Base visual do mundo externo | Feito (aguardando avaliação do autor) |
-| 2 | Cidade com contexto | Pendente (decisões D3 e D6 tomadas; implementação a iniciar) |
+| 2 | Cidade com contexto | Feito (aguardando avaliação do autor) |
 | 3 | Interiores com finalidade | Pendente |
 | 4 | Dia e noite | Pendente |
 | 5 | Acabamento | Pendente |
@@ -67,7 +67,7 @@ Detalhes do que foi feito: [redesign-fase-1.md](redesign-fase-1.md).
 | # | Item | Status |
 |---|---|---|
 | 1.1 | Ruas: asfalto com textura, faixas, faixa de pedestre nos cruzamentos, meio-fio, bueiros, calçada com padrão | Feito |
-| 1.2 | Avenidas mais largas que ruas comuns | Adiado para a Fase 2 (D6 decidida: mais largas de verdade) |
+| 1.2 | Avenidas mais largas que ruas comuns | Feito na Fase 2 |
 | 1.3 | Prédios com volume em vista de cima: telhado com detalhes (caixa d'água, ar condicionado, claraboia) | Feito |
 | 1.4 | Fachada sul visível com porta, janelas, toldo e letreiro | Feito |
 | 1.5 | Sombra projetada dos prédios no chão | Feito |
@@ -78,50 +78,52 @@ Detalhes do que foi feito: [redesign-fase-1.md](redesign-fase-1.md).
 | 1.10 | Carros com modelos e cores variados, faróis e lanternas | Feito |
 | 1.11 | Campo: terra, plantações com fileiras, cercas, celeiros, árvores com copa e sombra | Feito |
 | 1.12 | HUD redesenhado no mesmo estilo (fonte pixel desenhada por código ou fonte padrão com moldura retrô) | Feito |
-| 1.13 | HUD com relógio, nome do bairro e da rua | Parcial: espaços prontos; bairro e rua entram na Fase 2, relógio na Fase 4 |
+| 1.13 | HUD com relógio, nome do bairro e da rua | Parcial: bairro e rua feitos na Fase 2; relógio na Fase 4 |
 | 1.14 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Feito |
 
 ## Fase 2 — Cidade com contexto
 
+Detalhes do que foi feito: [redesign-fase-2.md](redesign-fase-2.md). Nos tipos de prédio, "Feito" quer dizer que o tipo existe na cidade com nome, fachada e letreiro; interior e serviço são da Fase 3.
+
 | # | Item | Status |
 |---|---|---|
-| 2.1 | Bairros gerados por seed: centro comercial, residencial, vida noturna, industrial/armazéns, bairro nobre, cívico (delegacia, hospital, prefeitura) | Pendente |
-| 2.2 | Cada bairro com paleta de fachadas, densidade, altura e mistura de tipos próprias | Pendente |
-| 2.3 | Tabela única de tipos de prédio em `scripts/world/building_defs.gd`. Por tipo: nome, bairros onde aparece, quantidade mínima/máxima, aparência da fachada, letreiro, modelo de interior, NPCs que trabalham lá, horário de funcionamento e serviço oferecido | Pendente |
-| 2.4 | Lojas atuais (`armory`, `pharmacy`, `agent_store`, armazém rural) viram entradas da tabela, sem perder o que vendem | Pendente |
-| 2.5 | Nome próprio por prédio, gerado por seed (com humor), mostrado no letreiro e no HUD ao chegar perto da porta | Pendente |
-| 2.6 | Ruas e bairros com nome | Pendente |
-| 2.7 | NPCs ligados ao mundo: a profissão em `npc_identity.gd` aponta para um prédio real onde a pessoa trabalha | Pendente |
-| 2.8 | NPCs têm um prédio onde moram | Pendente |
-| 2.9 | Trabalho e moradia aparecem na conversa | Pendente |
-| 2.10 | Crimes consideram o bairro e o tipo de prédio próximo (assalto perto de banco, briga perto de bar), mantendo os perfis por região existentes | Pendente |
-| 2.11 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Pendente |
+| 2.1 | Bairros gerados por seed: centro comercial, residencial, vida noturna, industrial/armazéns, bairro nobre, cívico (delegacia, hospital, prefeitura) | Feito |
+| 2.2 | Cada bairro com paleta de fachadas, densidade, altura e mistura de tipos próprias | Feito |
+| 2.3 | Tabela única de tipos de prédio em `scripts/world/building_defs.gd`. Por tipo: nome, bairros onde aparece, quantidade mínima/máxima, aparência da fachada, letreiro, modelo de interior, NPCs que trabalham lá, horário de funcionamento e serviço oferecido | Feito |
+| 2.4 | Lojas atuais (`armory`, `pharmacy`, `agent_store`, armazém rural) viram entradas da tabela, sem perder o que vendem | Feito |
+| 2.5 | Nome próprio por prédio, gerado por seed (com humor), mostrado no letreiro e no HUD ao chegar perto da porta | Feito |
+| 2.6 | Ruas e bairros com nome | Feito |
+| 2.7 | NPCs ligados ao mundo: a profissão em `npc_identity.gd` aponta para um prédio real onde a pessoa trabalha | Feito |
+| 2.8 | NPCs têm um prédio onde moram | Feito |
+| 2.9 | Trabalho e moradia aparecem na conversa | Feito |
+| 2.10 | Crimes consideram o bairro e o tipo de prédio próximo (assalto perto de banco, briga perto de bar), mantendo os perfis por região existentes | Feito |
+| 2.11 | Fechamento da fase: testes, docs, capturas em `docs/img/`, FPS antes/depois | Feito |
 
 ### Tipos de prédio iniciais
 
 | Tipo | Status |
 |---|---|
-| Hotel | Pendente |
-| Restaurante | Pendente |
-| Lanchonete | Pendente |
-| Bar | Pendente |
-| Boate | Pendente |
-| Loja de equipamentos do agente (`agent_store`, já existe como loja) | Pendente |
-| Loja de armas (`armory`, já existe como loja) | Pendente |
-| Farmácia (`pharmacy`, já existe como loja) | Pendente |
-| Mercado | Pendente |
-| Banco | Pendente |
-| Delegacia | Pendente |
-| Hospital | Pendente |
-| Oficina | Pendente |
-| Posto de gasolina | Pendente |
-| Cinema | Pendente |
-| Academia | Pendente |
-| Escritório | Pendente |
-| Prédio residencial | Pendente |
-| Casa | Pendente |
-| Armazém | Pendente |
-| QG da agência disfarçado de negócio comum (piada de espionagem) | Pendente |
+| Hotel | Feito |
+| Restaurante | Feito |
+| Lanchonete | Feito |
+| Bar | Feito |
+| Boate | Feito |
+| Loja de equipamentos do agente (`agent_store`, já existe como loja) | Feito |
+| Loja de armas (`armory`, já existe como loja) | Feito |
+| Farmácia (`pharmacy`, já existe como loja) | Feito |
+| Mercado | Feito |
+| Banco | Feito |
+| Delegacia | Feito |
+| Hospital | Feito |
+| Oficina | Feito |
+| Posto de gasolina | Feito |
+| Cinema | Feito |
+| Academia | Feito |
+| Escritório | Feito |
+| Prédio residencial | Feito |
+| Casa | Feito |
+| Armazém | Feito |
+| QG da agência disfarçado de negócio comum (piada de espionagem) | Feito |
 
 ## Fase 3 — Interiores com finalidade
 
@@ -194,10 +196,10 @@ Detalhes do que foi feito: [redesign-fase-1.md](redesign-fase-1.md).
 
 | # | Teste | Fase | Status |
 |---|---|---|---|
-| V1 | Geração determinística: mesma seed gera os mesmos bairros, tipos e nomes | 2 | Pendente |
+| V1 | Geração determinística: mesma seed gera os mesmos bairros, tipos e nomes | 2 | Feito |
 | V2 | Geração determinística: mesma seed gera os mesmos interiores | 3 | Pendente |
-| V3 | Todo tipo obrigatório existe pelo menos uma vez na cidade | 2 | Pendente |
-| V4 | Todo prédio tem tipo e porta acessível pela calçada | 2 | Pendente |
+| V3 | Todo tipo obrigatório existe pelo menos uma vez na cidade | 2 | Feito |
+| V4 | Todo prédio tem tipo e porta acessível pela calçada | 2 | Feito |
 | V5 | Todo prédio tem interior válido (sem móvel bloqueando porta ou caminho) | 3 | Pendente |
 | V6 | Cada interação de interior funciona via ação de input e só com o jogador na zona | 3 | Pendente |
 | V7 | Relógio: avanço e fases do dia | 4 | Pendente |

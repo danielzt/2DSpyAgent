@@ -59,7 +59,7 @@ Carisma). Ver [armas-e-inventario.md](armas-e-inventario.md).
 
 | Região | Descrição | Status |
 |---|---|---|
-| Cidade | Grade 12x12 de quarteirões, ruas com calçadas, ~180 prédios variados (inclui 7 lojas), parques | **Feito** |
+| Cidade | Grade 12x12 de quarteirões, ruas com calçadas e 2 avenidas, 6 bairros, ~185 prédios de 22 tipos com nome próprio (inclui 7 lojas), parques | **Feito** |
 | Campo | Estrada de terra, fazendas (uma é loja), plantações, árvores | **Feito** (básico) |
 | Rios e lagos | Água atravessável só por barco/ponte | Planejado |
 | Litoral/portos | Docas, barcos maiores | Ideia |
@@ -104,6 +104,10 @@ com itens nas duas mãos, ficha do jogador (C) com XP e atributos. Ver
 **Feito (protótipo 06):** crimes que dependem da região (tipos, frequência e recompensas próprios em Cidade e Campo),
 avisos de crime em andamento, resolução com bônus; itens no chão, dinheiro e lojas. Ver
 [prototipo-06-cidade-lojas-crimes.md](prototipo-06-cidade-lojas-crimes.md).
+
+**Feito (Fase 2 do redesenho):** cidade com contexto. Bairros, tipos de prédio, nomes de prédios, ruas e bairros,
+NPCs com trabalho e moradia em prédios reais (citados na conversa) e crimes que dependem do bairro e do tipo de
+prédio próximo. Ver [redesign-fase-2.md](redesign-fase-2.md).
 
 **Planejado (direção "espião e polícia"):**
 
@@ -177,7 +181,7 @@ moral do agente.
 | 7 | Sistema de missões da agência | Planejado |
 | 8 | Chunks + campo + rios + barcos | Planejado |
 | 9 | Multiplayer online | Planejado |
-| 10 | Arte pixel art e áudio | Arte: em andamento (Fase 1 de 5 feita); áudio: planejado |
+| 10 | Arte pixel art e áudio | Arte: em andamento (Fases 1 e 2 de 5 feitas); áudio: planejado |
 
 ## 11. Questões em aberto
 

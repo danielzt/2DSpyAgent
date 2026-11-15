@@ -2,7 +2,7 @@
 
 > **Status:** D1 (anos 80) e D2 (1280x720, texel de 2 px) aprovadas; Fase 1 implementada
 > ([redesign-fase-1.md](redesign-fase-1.md)). D3 (manter os 21 tipos) e D6 (avenidas mais largas)
-> decididas para a Fase 2, que ainda não começou. D7 segue como proposta e precisa de resposta antes
+> decididas e a Fase 2 implementada ([redesign-fase-2.md](redesign-fase-2.md)). D7 segue como proposta e precisa de resposta antes
 > da Fase 3.
 > Lista de trabalho e status por item: [redesign-roteiro.md](redesign-roteiro.md).
 > Tudo que está marcado como **Decisão** pode ser trocado antes da Fase 1 sem retrabalho.

@@ -15,6 +15,7 @@
 | [redesign-roteiro.md](redesign-roteiro.md) | Roteiro do redesenho visual e do mundo com contexto, com status por item |
 | [redesign-visual.md](redesign-visual.md) | Design do redesenho (Fase 0): paleta, resolução, arte por código, bairros, tipos de prédio, interiores, dia e noite. Aprovado para a Fase 1 (época e resolução) |
 | [redesign-fase-1.md](redesign-fase-1.md) | Fase 1 do redesenho: fábrica de arte, chão em pedaços, prédios, mobiliário urbano, sprites, HUD, antes e depois, desempenho |
+| [redesign-fase-2.md](redesign-fase-2.md) | Fase 2 do redesenho: avenidas, bairros, tipos de prédio, nomes, NPCs com trabalho e moradia, crimes por lugar |
 | [roteiro-jogo.md](roteiro-jogo.md) | Roteiro do jogo completo (plano em discussão): etapas E1 a E12, com status por item e decisões em aberto |
 | [historia.md](historia.md) | História da campanha (proposta): 5 atos, personagens, progressão, percepção, finais, campanha em mapa procedural |
 | [armas-e-inventario.md](armas-e-inventario.md) | Armas, munição, barra de itens e redesenho dos menus (plano em discussão) |
