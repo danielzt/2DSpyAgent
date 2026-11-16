@@ -8,6 +8,7 @@ const InteriorLayout := preload("res://scripts/interior/interior_layout.gd")
 const FurnitureArt := preload("res://scripts/art/furniture_art.gd")
 const TileFactory := preload("res://scripts/art/tile_factory.gd")
 const Services := preload("res://scripts/interior/services.gd")
+const BuildingDefs := preload("res://scripts/world/building_defs.gd")
 const CharacterSprites := preload("res://scripts/art/character_sprites.gd")
 
 const IDS := 20
@@ -219,3 +220,209 @@ func test_hospital_plan() -> void:
 		assert_true(lying >= 3, "hospital %d: só %d pacientes deitados" % [id, lying])
 		for role in ["recepcionista", "médica", "enfermeiro", "auxiliar de enfermagem", "farmacêutico"]:
 			assert_true(staff_roles.has(role), "hospital %d sem %s" % [id, role])
+
+
+# --- Etapa 2: verificador comum ---
+
+## Confere tamanho, cômodos, itens, zonas e funcionários da planta de `type` em todos os ids.
+func _assert_plan(type: String, size_class: String, rooms: Array, kinds: Array, staff: Array, guests: Array) -> void:
+	assert_true(Plans.has(type), "%s sem planta" % type)
+	if not Plans.has(type):
+		return
+	for id in IDS:
+		var layout := InteriorLayout.new(id, type)
+		var label := "%s %d" % [type, id]
+		assert_eq(layout.size_class, size_class, label)
+		for name in rooms:
+			assert_true(_room_names(layout).has(name), "%s sem cômodo %s" % [label, name])
+		var found := _kinds(layout)
+		for kind in kinds:
+			assert_true(found.has(kind), "%s sem %s" % [label, kind])
+		for service in Services.for_type(type):
+			assert_false(layout.zone(service).is_empty(), "%s sem zona %s" % [label, service])
+		var roles := {}
+		for slot in layout.npc_slots:
+			roles[slot.role] = slot.staff
+			if slot.staff:
+				assert_true(BuildingDefs.staff_of(type).has(slot.role), "%s: %s não é funcionário do tipo" % [label, slot.role])
+		for role in staff:
+			assert_true(roles.get(role, false), "%s sem %s" % [label, role])
+		for role in guests:
+			assert_true(roles.has(role) and not roles[role], "%s sem %s" % [label, role])
+
+
+# --- bloco 1 ---
+
+func test_bank_plan() -> void:
+	_assert_plan("bank", "M", ["Hall", "Caixas", "Gerência", "Cofre"],
+		["teller", "vault", "rope", "column", "desk", "office_chair", "bench", "clock", "safe_wall", "cell_bars"],
+		["caixa", "gerente", "segurança"], ["cliente"])
+
+
+func test_hotel_plan() -> void:
+	_assert_plan("hotel", "G", ["Saguão", "Corredor", "Quarto 1", "Quarto 2", "Quarto 3"],
+		["counter", "key_rack", "bell", "sofa", "armchair", "luggage_cart", "elevator_door", "column", "double_bed",
+		"nightstand", "table_lamp", "wall_tv", "toilet", "cleaning_cart"],
+		["recepcionista", "concierge"], ["hóspede"])
+
+
+func test_restaurant_plan() -> void:
+	_assert_plan("restaurant", "M", ["Salão", "Cozinha", "Banheiro"],
+		["dining_table", "chair", "candle", "plate", "glass", "stove", "kitchen_counter", "fridge", "sink", "bottle_wall"],
+		["chef", "maître", "ajudante de cozinha"], ["cliente"])
+
+
+func test_diner_plan() -> void:
+	_assert_plan("diner", "P", ["Salão", "Cozinha"],
+		["booth", "counter", "bar_stool", "griddle", "milkshake", "jukebox", "menu_board", "neon"],
+		["atendente", "balconista"], ["cliente"])
+
+
+func test_club_plan() -> void:
+	_assert_plan("club", "G", ["Pista", "Bar", "VIP", "Camarote", "Banheiro"],
+		["dj_booth", "speaker", "counter", "bar_stool", "bottle_wall", "sofa", "rope", "neon"],
+		["DJ", "bartender", "segurança"], ["dançarino", "informante"])
+	var layout := InteriorLayout.new(2, "club")
+	var dancers := 0
+	for slot in layout.npc_slots:
+		if slot.act == "dance":
+			dancers += 1
+	assert_true(dancers >= 4, "pista com %d dançarinos" % dancers)
+
+
+# --- bloco 2: lojas ---
+
+func _assert_shop(type: String) -> void:
+	for id in 6:
+		var layout := InteriorLayout.new(id, type)
+		assert_true(layout.is_shop, type)
+		assert_eq(layout.npc_slots[0].position, layout.merchant_position(), "%s: vendedor atrás do balcão" % type)
+		assert_eq(layout.zone("shop").rect, layout.counter_zone())
+
+
+func test_armory_plan() -> void:
+	_assert_plan("armory", "P", ["Loja", "Estande"], ["counter", "gun_rack", "target", "display_case", "crates"],
+		["balconista"], ["cliente"])
+	_assert_shop("armory")
+
+
+func test_pharmacy_plan() -> void:
+	_assert_plan("pharmacy", "P", ["Loja", "Manipulação"], ["counter", "shelf", "cross_sign", "scale", "cabinet"],
+		["balconista"], ["cliente"])
+	_assert_shop("pharmacy")
+
+
+func test_agent_store_plan() -> void:
+	_assert_plan("agent_store", "P", ["Loja", "Depósito"], ["counter", "display_case", "mannequin", "wall_tv"],
+		["balconista"], ["cliente"])
+	_assert_shop("agent_store")
+
+
+func test_market_plan() -> void:
+	_assert_plan("market", "P", ["Loja", "Depósito"], ["checkout", "shelf", "freezer", "shopping_cart", "fruit_bowl"],
+		["caixa", "estoquista"], ["cliente"])
+	_assert_shop("market")
+
+
+func test_gas_station_plan() -> void:
+	_assert_plan("gas_station", "P", ["Loja", "Depósito"], ["counter", "drink_fridge", "coffee_machine", "shelf"],
+		["frentista"], ["cliente"])
+	_assert_shop("gas_station")
+
+
+func test_farm_store_plan() -> void:
+	_assert_plan("farm_store", "P", ["Loja", "Depósito"], ["counter", "feed_sacks", "barrel", "tool_rack", "scale"],
+		["balconista"], ["cliente"])
+	_assert_shop("farm_store")
+
+
+func test_shops_all_look_different() -> void:
+	var seen := {}
+	for type in ["armory", "pharmacy", "agent_store", "market", "gas_station", "farm_store"]:
+		var kinds := _kinds(InteriorLayout.new(1, type)).keys()
+		kinds.sort()
+		seen[str(kinds)] = type
+	assert_eq(seen.size(), 6, "cada loja com seu conjunto de móveis")
+
+
+# --- bloco 3 ---
+
+func test_workshop_plan() -> void:
+	_assert_plan("workshop", "M", ["Garagem", "Escritório"],
+		["car_lift", "workbench", "tires", "toolbox", "compressor", "barrel", "tool_rack", "oil_stain", "counter"],
+		["auxiliar de mecânica", "lanterneiro"], ["cliente"])
+	var lying := false
+	for slot in InteriorLayout.new(1, "workshop").npc_slots:
+		lying = lying or slot.act == "lie"
+	assert_true(lying, "mecânico deitado sob o carro")
+
+
+func test_gym_plan() -> void:
+	_assert_plan("gym", "M", ["Musculação", "Ringue", "Recepção", "Vestiário"],
+		["treadmill", "exercise_bike", "bench_press", "weights", "ring", "punching_bag", "locker", "shower", "turnstile", "mirror"],
+		["personal trainer", "recepcionista"], ["aluno"])
+	var exercising := 0
+	for slot in InteriorLayout.new(1, "gym").npc_slots:
+		if slot.act == "exercise":
+			exercising += 1
+	assert_true(exercising >= 3, "%d alunos se exercitando" % exercising)
+
+
+func test_cinema_plan() -> void:
+	_assert_plan("cinema", "G", ["Saguão", "Sala", "Projeção"],
+		["movie_screen", "seats", "popcorn", "counter", "projector", "poster", "rope"],
+		["lanterninha", "projecionista", "bilheteiro"], ["espectador"])
+
+
+func test_office_plan() -> void:
+	_assert_plan("office", "M", ["Recepção", "Baias", "Reunião", "Copa", "Diretoria"],
+		["desk", "office_chair", "computer", "whiteboard", "photocopier", "coffee_machine", "fridge", "sofa"],
+		["analista", "gerente", "recepcionista"], ["visitante"])
+
+
+func test_newspaper_plan() -> void:
+	_assert_plan("newspaper", "M", ["Redação", "Editor", "Laboratório", "Arquivo"],
+		["desk", "typewriter", "computer", "newspaper_stack", "photocopier", "notice_board", "sink", "shelf"],
+		["repórter", "colunista", "fotojornalista", "editor"], [])
+
+
+# --- bloco 4 ---
+
+func test_apartment_plan() -> void:
+	_assert_plan("apartment", "P", ["Sala", "Cozinha", "Quarto", "Banheiro", "Varanda"],
+		["sofa", "kitchen_counter", "bar_stool", "double_bed", "toilet", "plant", "wall_tv"], [], ["morador"])
+
+
+func test_farm_plan() -> void:
+	_assert_plan("farm", "P", ["Sala", "Cozinha", "Quarto"],
+		["fireplace", "table", "armchair", "coat_rack", "bed", "stove", "barrel"], ["ajudante de fazenda", "tratorista"], [])
+
+
+func test_warehouse_plan() -> void:
+	_assert_plan("warehouse", "G", ["Galpão", "Doca", "Escritório"],
+		["shelf", "crates", "pallet", "forklift", "roll_door", "desk"], ["estoquista", "conferente"], [])
+
+
+func test_hq_plan() -> void:
+	_assert_plan("hq", "G", ["Lavanderia", "Sala do QG"],
+		["washer", "washer_secret", "basket", "briefing_table", "wall_screen", "locker", "chest", "safe_wall", "computer"],
+		["atendente de lavanderia", "agente", "chefe"], ["cliente"])
+	var layout := InteriorLayout.new(1, "hq")
+	assert_ne(layout.secret_door, Rect2(), "passagem secreta")
+	assert_false(layout.hidden_rooms.is_empty())
+	assert_eq(layout.zone("secret").verb, "entrar no QG")
+	assert_false(layout.furniture.has(layout.secret_door), "a passagem não conta como móvel fixo")
+
+
+func test_people_sit_and_lie_only_on_furniture_that_is_there() -> void:
+	for type in Plans.types():
+		for id in 30:
+			var layout := InteriorLayout.new(id, type)
+			for slot in layout.npc_slots:
+				if not slot.act in ["sit", "lie"]:
+					continue
+				var under := false
+				for item in layout.items:
+					if item.solid and (item.rect as Rect2).grow(1.0).has_point(slot.position):
+						under = true
+				assert_true(under, "%s %d: %s %s no ar" % [type, id, slot.role, slot.act])

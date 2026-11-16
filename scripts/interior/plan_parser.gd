@@ -19,6 +19,8 @@ const SIZES := {"P": Vector2i(40, 23), "M": Vector2i(48, 27), "G": Vector2i(56, 
 ## Móveis onde alguém pode sentar ou deitar.
 const SEATS := ["chair", "office_chair", "stool", "bar_stool", "sofa", "armchair", "bench", "seats", "booth", "bunk"]
 const BEDS := ["bed", "double_bed", "hospital_bed", "bunk", "sofa", "car_lift"]
+## Aparelhos onde alguém se exercita (em cima deles).
+const EQUIPMENT := ["treadmill", "exercise_bike", "bench_press", "ring"]
 const FIXED := "#|-DE."
 const GRIDS := ["floor_grid", "object_grid", "detail_grid"]
 const DIRS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
@@ -74,6 +76,12 @@ static func validate(plan: Dictionary) -> Array[String]:
 		var entry: Dictionary = object_legend[piece.letter]
 		if entry.has("size") and (float(entry.size[0]) * CELL > piece.block.size.x + 0.01 or float(entry.size[1]) * CELL > piece.block.size.y + 0.01):
 			errors.append("object_grid linha %d coluna %d: peça '%s' maior que o bloco desenhado" % [piece.cell.y, piece.cell.x, piece.letter])
+	var shop_counters := 0
+	for piece in _pieces(plan.object_grid, object_legend, "item"):
+		if (object_legend[piece.letter] as Dictionary).get("shop_counter", false):
+			shop_counters += 1
+	if shop_counters > 1:
+		errors.append("object_grid: mais de um balcão de loja (shop_counter)")
 	for piece in _pieces(plan.floor_grid, floor_legend, "rug"):
 		if not piece.rectangular:
 			errors.append("floor_grid linha %d coluna %d: tapete '%s' não é retangular" % [piece.cell.y, piece.cell.x, piece.letter])
@@ -96,19 +104,62 @@ static func validate(plan: Dictionary) -> Array[String]:
 					errors.append("%s: sentado fora de um assento" % where)
 				elif act == "lie" and not BEDS.has(under):
 					errors.append("%s: deitado fora de uma cama" % where)
-				elif act != "sit" and act != "lie" and _solid_at(plan, x, y):
+				elif act == "exercise" and _solid_at(plan, x, y) and not EQUIPMENT.has(under):
+					errors.append("%s: exercício fora de um aparelho" % where)
+				elif act != "sit" and act != "lie" and act != "exercise" and _solid_at(plan, x, y):
 					errors.append("%s: pessoa dentro de algo sólido" % where)
 				if entry.has("route") and _route_points(plan, entry.route).is_empty():
 					errors.append("%s: rota '%s' sem pontos" % [where, entry.route])
 			elif entry.has("route") and _solid_at(plan, x, y):
 				errors.append("%s: ponto de ronda sobre algo sólido" % where)
+	if errors.is_empty():
+		errors.append_array(_blocked_routes(plan))
+	return errors
+
+
+## Raio da colisão de um NPC (px), usado para ver se a ronda passa livre entre os pontos.
+const NPC_RADIUS := 11.0
+
+
+## Rondas que atravessam algo sólido (inclusive do último ponto de volta ao primeiro). Usa a planta com
+## todos os itens opcionais presentes, para valer em qualquer sorteio.
+static func _blocked_routes(plan: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	var full := parse(plan, 0, true)
+	var solids: Array[Rect2] = []
+	for wall in full.walls:
+		solids.append((wall as Rect2).grow(NPC_RADIUS))
+	for it in full.items:
+		if it.solid and not it.get("secret", false):
+			solids.append((it.rect as Rect2).grow(NPC_RADIUS))
+	var w: float = full.size.x
+	for slot in full.npc_slots:
+		var route: Array = slot.route
+		for i in route.size():
+			var a: Vector2 = route[i]
+			var b: Vector2 = route[(i + 1) % route.size()]
+			var steps := maxi(int(a.distance_to(b) / 4.0), 1)
+			for k in steps + 1:
+				var p := a.lerp(b, float(k) / steps)
+				var hit := false
+				for r in solids:
+					if r.has_point(p):
+						hit = true
+						break
+				if hit:
+					var ga := Vector2i(int((w - a.x if full.mirrored else a.x) / CELL), int(a.y / CELL))
+					var gb := Vector2i(int((w - b.x if full.mirrored else b.x) / CELL), int(b.y / CELL))
+					errors.append("rota de %s atravessa algo sólido entre (coluna %d, linha %d) e (coluna %d, linha %d)"
+							% [slot.role, ga.x, ga.y, gb.x, gb.y])
+					break
 	return errors
 
 
 # --- leitura ---
 
 ## Lê a planta para o prédio `building_id`. Supõe uma planta válida (ver `validate`).
-static func parse(plan: Dictionary, building_id: int) -> Dictionary:
+## `all_optional` liga todos os itens e pessoas opcionais (usado na validação).
+static func parse(plan: Dictionary, building_id: int, all_optional := false) -> Dictionary:
 	var dims: Vector2i = SIZES[plan.size]
 	var size := Vector2(dims) * CELL
 	var rng := RandomNumberGenerator.new()
@@ -132,7 +183,8 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 	var result := {
 		"size": size, "size_class": plan.size, "mirrored": mirrored, "variant": variant,
 		"rooms": [], "floor_rects": [], "walls": [], "doors": [], "wall_faces": [], "items": [],
-		"npc_slots": [], "zones": [], "exit": Rect2(), "spawn": Vector2.ZERO,
+		"npc_slots": [], "zones": [], "exit": Rect2(), "spawn": Vector2.ZERO, "counter": Rect2(),
+		"secret_door": Rect2(), "hidden": [],
 	}
 
 	# pisos: runs horizontais da mesma letra
@@ -159,9 +211,11 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 			for c in comp.cells:
 				seen[c] = true
 			var entry: Dictionary = floor_legend[letter]
-			result.rooms.append({"name": entry.get("room", ""), "rect": _cells(comp.min.x, comp.min.y,
-					comp.max.x - comp.min.x + 1, comp.max.y - comp.min.y + 1), "floor": floor_of.call(letter),
+			var room_rect := _cells(comp.min.x, comp.min.y, comp.max.x - comp.min.x + 1, comp.max.y - comp.min.y + 1)
+			result.rooms.append({"name": entry.get("room", ""), "rect": room_rect, "floor": floor_of.call(letter),
 					"wall": wall_of.call(letter)})
+			if entry.get("hidden", false):
+				result.hidden.append(room_rect)   # cômodo escondido até a passagem abrir
 
 	# paredes cheias (runs horizontais), finas, portas e saída
 	for y in dims.y:
@@ -230,13 +284,19 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 	# móveis e itens de parede (ordem de leitura); os opcionais consomem a seed nessa ordem
 	for piece in _pieces(plan.object_grid, object_legend, "item"):
 		var entry: Dictionary = object_legend[piece.letter]
-		if not _roll(rng, entry):
+		if not _roll(rng, entry, all_optional):
 			continue
-		result.items.append({"kind": entry.item, "rect": _place(piece.block, entry), "solid": entry.get("solid", true),
+		var rect := _place(piece.block, entry)
+		result.items.append({"kind": entry.item, "rect": rect, "solid": entry.get("solid", true),
 				"layer": "floor", "tone": tone_over.get(entry.item, entry.get("tone", ""))})
+		if entry.get("shop_counter", false):
+			result.counter = rect
+		if entry.get("secret", false):
+			result.items[-1]["secret"] = true   # passagem secreta: sólida até abrir com E
+			result.secret_door = rect
 	for piece in _pieces(plan.object_grid, object_legend, "wall_item"):
 		var entry: Dictionary = object_legend[piece.letter]
-		if not _roll(rng, entry):
+		if not _roll(rng, entry, all_optional):
 			continue
 		var block: Rect2 = piece.block
 		var width: float = block.size.x
@@ -249,7 +309,7 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 	# camada de detalhe: itens de cima de móvel, zonas, pessoas
 	for piece in _pieces(plan.detail_grid, detail_legend, "on"):
 		var entry: Dictionary = detail_legend[piece.letter]
-		if not _roll(rng, entry):
+		if not _roll(rng, entry, all_optional):
 			continue
 		result.items.append({"kind": entry.on, "rect": _place(piece.block, entry), "solid": false, "layer": "on",
 				"tone": tone_over.get(entry.on, entry.get("tone", ""))})
@@ -262,15 +322,22 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 			if d == "." or not detail_legend[d].has("npc"):
 				continue
 			var entry: Dictionary = detail_legend[d]
-			if not _roll(rng, entry):
+			if not _roll(rng, entry, all_optional):
 				continue
 			var position := _center(x, y)
+			var act: String = entry.get("act", "post")
+			var on_item := false
+			for it in result.items:
+				if it.layer == "floor" and it.solid and (it.rect as Rect2).grow(1.0).has_point(position):
+					on_item = true
+			if (act == "sit" or act == "lie") and not on_item:
+				continue   # o assento ou a cama não saiu neste sorteio: a pessoa não aparece
 			var route: Array[Vector2] = []
 			if entry.has("route"):
 				route.append(position)
 				route.append_array(_route_points(plan, entry.route))
 			result.npc_slots.append({"role": entry.npc, "position": position, "staff": entry.get("staff", false),
-					"act": entry.get("act", "post"), "route": route, "facing": entry.get("facing", "down")})
+					"act": act, "route": route, "facing": entry.get("facing", "down"), "on_item": on_item})
 
 	if mirrored:
 		_mirror(result)
@@ -400,9 +467,12 @@ static func _place(block: Rect2, entry: Dictionary) -> Rect2:
 
 
 ## Sorteio dos opcionais: só consome a seed quando há `chance` menor que 1.
-static func _roll(rng: RandomNumberGenerator, entry: Dictionary) -> bool:
+static func _roll(rng: RandomNumberGenerator, entry: Dictionary, all_optional := false) -> bool:
 	var chance: float = entry.get("chance", 1.0)
-	return chance >= 1.0 or rng.randf() < chance
+	if chance >= 1.0:
+		return true
+	var hit := rng.randf() < chance   # consome a seed sempre, para o sorteio não mudar com all_optional
+	return hit or all_optional
 
 
 static func _mirror(result: Dictionary) -> void:
@@ -416,6 +486,13 @@ static func _mirror(result: Dictionary) -> void:
 		for i in list.size():
 			list[i] = flip.call(list[i])
 	result.exit = flip.call(result.exit)
+	if result.counter.size.x > 0.0:
+		result.counter = flip.call(result.counter)
+	if result.secret_door.size.x > 0.0:
+		result.secret_door = flip.call(result.secret_door)
+	var hidden: Array = result.hidden
+	for i in hidden.size():
+		hidden[i] = flip.call(hidden[i])
 	result.spawn = Vector2(w - result.spawn.x, result.spawn.y)
 	for slot in result.npc_slots:
 		slot.position = Vector2(w - slot.position.x, slot.position.y)

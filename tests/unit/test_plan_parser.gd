@@ -266,3 +266,100 @@ func test_legend_cannot_redefine_fixed_symbols() -> void:
 	var plan := fixture()
 	plan.object_legend["D"] = {"item": "desk"}
 	assert_true(_has_error(PlanParser.validate(plan), "símbolo fixo"))
+
+
+## Planta de loja: a fixture com um balcão de loja no meio da sala.
+static func shop_fixture() -> Dictionary:
+	var plan := fixture()
+	_stamp(plan.object_grid, 15, 12, "KKKK")
+	plan.object_legend["K"] = {"item": "counter", "shop_counter": true}
+	return plan
+
+
+func test_shop_counter_is_reported() -> void:
+	assert_eq(PlanParser.validate(shop_fixture()), [] as Array[String])
+	var parsed := PlanParser.parse(shop_fixture(), _unmirrored_id())
+	assert_eq(parsed.counter, Rect2(15 * 32, 12 * 32, 128, 32))
+	assert_eq(PlanParser.parse(fixture(), 1).counter, Rect2())
+
+
+func test_only_one_shop_counter() -> void:
+	var plan := shop_fixture()
+	_stamp(plan.object_grid, 15, 16, "LL")
+	plan.object_legend["L"] = {"item": "counter", "shop_counter": true}
+	assert_true(_has_error(PlanParser.validate(plan), "balcão de loja"))
+
+
+func test_exercise_happens_on_equipment_or_free_floor() -> void:
+	var plan := fixture()
+	_stamp(plan.object_grid, 5, 15, "Q")
+	plan.object_legend["Q"] = {"item": "treadmill"}
+	_stamp(plan.detail_grid, 5, 15, "4")
+	plan.detail_legend["4"] = {"npc": "aluno", "act": "exercise"}
+	assert_eq(PlanParser.validate(plan), [] as Array[String], "na esteira")
+	_stamp(plan.detail_grid, 11, 3, "4")
+	assert_true(_has_error(PlanParser.validate(plan), "aparelho"), "em cima do sofá não")
+
+
+func test_secret_door_and_hidden_rooms() -> void:
+	var plan := fixture()
+	for y in range(1, 6):
+		_stamp(plan.floor_grid, 30, y, "hhhhhhhhh")
+	plan.floor_legend["h"] = {"room": "Sala secreta", "floor": "floor/metal", "wall": "metal_lights", "hidden": true}
+	_stamp(plan.object_grid, 29, 1, "|")
+	_stamp(plan.object_grid, 29, 2, "|")
+	_stamp(plan.object_grid, 29, 3, "W")
+	_stamp(plan.object_grid, 29, 4, "|")
+	_stamp(plan.object_grid, 29, 5, "|")
+	_stamp(plan.object_grid, 29, 6, "-")
+	for x in range(30, 39):
+		_stamp(plan.object_grid, x, 6, "-")
+	plan.object_legend["W"] = {"item": "washer_secret", "secret": true}
+	assert_eq(PlanParser.validate(plan), [] as Array[String])
+	var parsed := PlanParser.parse(plan, _unmirrored_id())
+	assert_eq(parsed.secret_door, Rect2(29 * 32, 3 * 32, 32, 32))
+	assert_eq(parsed.hidden.size(), 1)
+	assert_true((parsed.hidden[0] as Rect2).has_point(Vector2(31 * 32, 2 * 32)))
+	var washer: Dictionary = {}
+	for it in parsed.items:
+		if it.kind == "washer_secret":
+			washer = it
+	assert_true(washer.get("secret", false))
+
+
+func test_route_through_furniture_is_an_error() -> void:
+	var plan := fixture()
+	_stamp(plan.object_grid, 23, 10, "t")   # mesa no meio do caminho da enfermeira
+	assert_true(_has_error(PlanParser.validate(plan), "atravessa"), str(PlanParser.validate(plan)))
+	assert_false(_has_error(PlanParser.validate(fixture()), "atravessa"), "a rota da fixture está livre")
+
+
+func test_seated_npc_needs_its_seat_to_be_there() -> void:
+	var plan := fixture()
+	plan.object_legend["s"] = {"item": "sofa", "size": [3, 1], "chance": 0.5}
+	var empty := 0
+	for id in 40:
+		var parsed := PlanParser.parse(plan, id)
+		var sofas := _items(parsed, "sofa").size()
+		for slot in parsed.npc_slots:
+			if slot.act == "sit":
+				assert_eq(sofas, 1, "id %d: sentado sem sofá" % id)
+		if sofas == 0:
+			empty += 1
+	assert_gt(float(empty), 0.0, "o sofá opcional às vezes não aparece")
+
+
+func test_slot_knows_whether_it_is_on_furniture() -> void:
+	var plan := fixture()
+	_stamp(plan.object_grid, 5, 15, "Q")
+	plan.object_legend["Q"] = {"item": "treadmill"}
+	_stamp(plan.detail_grid, 5, 15, "4")
+	_stamp(plan.detail_grid, 8, 15, "4")
+	plan.detail_legend["4"] = {"npc": "aluno", "act": "exercise"}
+	var parsed := PlanParser.parse(plan, _unmirrored_id())
+	var flags := {}
+	for slot in parsed.npc_slots:
+		if slot.role == "aluno":
+			flags[slot.position.x] = slot.on_item
+	assert_eq(flags[5 * 32 + 16.0], true, "na esteira")
+	assert_eq(flags[8 * 32 + 16.0], false, "no chão")

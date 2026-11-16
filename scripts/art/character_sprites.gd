@@ -18,7 +18,7 @@ const ORIGIN := Vector2i(2, 1)
 const PIVOT := Vector2i(8, 11)
 const DIRECTIONS := ["down", "up", "right", "left"]
 const FRAMES := 3
-const POSES := ["stand", "sit", "lie", "work"]
+const POSES := ["stand", "sit", "lie", "work", "exercise", "dance"]
 
 const FRONT := [
 	"....kkkk....",
@@ -287,6 +287,29 @@ static func rows_for(look: Dictionary, direction: String, frame: int, pose := "s
 			for i in range(12, 15):
 				rows[i] = "kwwwwwwwwwwk"
 			rows[15] = "kkkkkkkkkkkk"
+		"exercise":
+			# braços sobem e descem (peso, esteira)
+			if frame == 2:
+				rows[7] = "f.k111111k.f"
+				rows[8] = "fk11111111kf"
+				rows[9] = ".k11111111k."
+				rows[10] = ".k11111111k."
+			else:
+				rows[9] = "kf11111111fk"
+				rows[10] = "kf11111111fk"
+				rows[11] = "fk11111111kf"
+		"dance":
+			# corpo e braços para um lado e para o outro
+			if frame == 2:
+				rows[7] = "...k111111kf"
+				rows[8] = "..k11111111f"
+				rows[9] = "..k11111111k"
+				rows[12] = "...k333333k."
+			else:
+				rows[7] = "fk111111k..."
+				rows[8] = "f11111111k.."
+				rows[9] = "k11111111k.."
+				rows[12] = ".k333333k..."
 		"work":
 			var second := frame == 2
 			if direction == "down":

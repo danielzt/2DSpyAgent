@@ -84,11 +84,12 @@ uma porta de saída. Ao sair, reaparece na calçada, em frente à porta por onde
 Entrar e sair exige apertar **E** diante da porta (aparece a instrução no canto da tela). Estado atual: todos os prédios (cidade e fazendas) têm interior, gerado por seed do id do prédio
 (ver [prototipo-02-interiores.md](prototipo-02-interiores.md)).
 
-**Fase 7 (em andamento):** cada tipo ganha uma **planta autoral** em mapa de texto, única e característica, com piso e
-paredes do lugar, móveis na escala do personagem e NPCs de uniforme que fazem algo (atendem, fazem ronda, sentam,
-deitam, trabalham). Prontas: casa, casa do agente, bar, delegacia e hospital. Ver [redesign-fase-7.md](redesign-fase-7.md).
+**Fase 7 (feito):** cada um dos 25 interiores tem uma **planta autoral** em mapa de texto, única e característica,
+com piso e paredes do lugar, móveis na escala do personagem e NPCs de uniforme que fazem algo (atendem, fazem ronda,
+sentam, deitam, trabalham, dançam, se exercitam). No QG, a passagem secreta da lavanderia abre com E. Ver
+[redesign-fase-7.md](redesign-fase-7.md).
 
-Planejado: as outras plantas, falas por papel, itens, pistas, cofres, andares/escadas.
+Planejado: falas por papel, itens, pistas, cofres, andares/escadas.
 
 ## 5. Veículos
 

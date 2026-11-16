@@ -12,9 +12,10 @@ const MAIN_SCENE := "res://scenes/main.tscn"
 const SHOT_SIZE := Vector2i(1280, 720)
 const SETTLE_FRAMES := 40
 const MEASURE_SECONDS := 4.0
-## Um tipo de prédio por modelo de interior.
-const INTERIOR_TYPES := ["armory", "hotel", "restaurant", "bar", "club", "bank", "police", "hospital",
-	"workshop", "cinema", "gym", "office", "house", "warehouse", "hq", "agent_home"]
+## Todos os tipos com planta de interior (Fase 7).
+const INTERIOR_TYPES := ["hq", "police", "hospital", "bank", "hotel", "restaurant", "diner", "bar", "club",
+	"agent_store", "armory", "pharmacy", "market", "workshop", "gas_station", "cinema", "gym", "newspaper", "office",
+	"apartment", "house", "warehouse", "farm", "farm_store", "agent_home"]
 
 
 func _initialize() -> void:
@@ -116,9 +117,7 @@ func _run() -> void:
 			await process_frame
 		var inside: Node = current_scene
 		var visitor: Node2D = get_nodes_in_group("players")[0]
-		var spot: Vector2 = inside.layout.size / 2.0
-		if not inside.layout.planned and not inside.layout.zones.is_empty():
-			spot = (inside.layout.zones[0].rect as Rect2).get_center()
+		var spot: Vector2 = inside.layout.size / 2.0   # o centro da planta
 		for i in SETTLE_FRAMES:
 			visitor.global_position = spot
 			(visitor.get_node("Camera2D") as Camera2D).reset_smoothing()

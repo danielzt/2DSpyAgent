@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-16
+
+- Fase 7, Etapa 2: plantas próprias para os 20 tipos que faltavam (banco, hotel, restaurante, lanchonete, boate,
+  as 6 lojas, oficina, academia, cinema, escritório, redação, apartamento, casa de fazenda, armazém e QG);
+  construtor antigo de interiores removido
+- Lojas com balcão, vendedor e zona de compra vindos da planta; dançarinos na boate e alunos se exercitando
+- QG: a passagem secreta da lavanderia só abre com E e a sala fica escura até lá
+- 8 pisos, 8 paredes e cerca de 35 móveis e itens novos; novos funcionários (garçom, camareira, bilheteiro, editor...)
+- Rondas validadas para não atravessar móveis; ninguém senta no ar; quem se exercita no chão ocupa espaço
+- 933 testes. Detalhes: [redesign-fase-7.md](redesign-fase-7.md)
+
 ## 2026-11-15 (6)
 
 - Fase 7, Etapa 1 (interiores caprichados): plantas autorais em mapa de texto (`PlanParser`, `Plans`) do tamanho da

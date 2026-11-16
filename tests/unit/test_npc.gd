@@ -282,3 +282,25 @@ func test_post_npc_stays_put() -> void:
 	await wait_physics_frames(300)
 	assert_eq(npc.global_position, Vector2(300, 300))
 	assert_eq(npc.pose(), "stand")
+
+
+func test_dancing_and_exercising_npcs_stay_and_animate() -> void:
+	for act in ["dance", "exercise"]:
+		var spot := Vector2(400, 400) if act == "dance" else Vector2(900, 400)
+		var npc := _worker(spot, act)
+		await wait_physics_frames(300)
+		assert_eq(npc.pose(), act)
+		assert_eq(npc.global_position, spot)
+		# quem dança ocupa espaço; quem se exercita está em cima do aparelho (sem colisão)
+		assert_eq(_shape_disabled(npc), act == "exercise", act)
+
+
+func test_exercising_on_the_floor_keeps_collision() -> void:
+	var npc := NPC_SCENE.instantiate()
+	npc.ai_seed = 7
+	npc.activity = "exercise"
+	npc.on_furniture = false
+	npc.stationary = true
+	_add(npc, Vector2(600, 600))
+	await wait_physics_frames(5)
+	assert_false(_shape_disabled(npc), "no chão ocupa espaço")

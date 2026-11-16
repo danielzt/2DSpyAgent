@@ -20,39 +20,37 @@ func _signature(layout) -> Array:
 
 # --- tamanho ---
 
-func test_interior_is_much_bigger_than_building() -> void:
-	# Proporção interna diferente da externa (como em Retro City).
+func test_interior_is_bigger_than_the_building() -> void:
+	# Proporção interna diferente da externa (como em Retro City), mas do tamanho da tela ou pouco maior.
 	var building_size: float = CityLayout.BLOCK - CityLayout.ROAD
-	for class_id in InteriorLayout.SIZE_ORDER:
-		assert_gt(InteriorLayout.SIZES[class_id].x, building_size * 3.0)
-	assert_gt(InteriorLayout.new(1, "hotel").size.x, building_size * 4.0)
+	for type in BuildingDefs.ORDER:
+		var size: Vector2 = InteriorLayout.new(1, type).size
+		assert_gt(size.x, building_size * 3.0, type)
+		assert_true(size.x <= 1792.0 and size.y <= 1024.0, "%s grande demais: %s" % [type, size])
 
 
-func test_size_follows_type_and_facade_width() -> void:
+func test_size_comes_from_the_plan_not_the_facade() -> void:
 	assert_eq(InteriorLayout.size_class_for("armory"), "P")
 	assert_eq(InteriorLayout.size_class_for("bar"), "M")
 	assert_eq(InteriorLayout.size_class_for("hotel"), "G")
-	assert_eq(InteriorLayout.size_class_for("restaurant"), "M")
-	assert_eq(InteriorLayout.size_class_for("diner"), "P", "lanchonete usa a planta do restaurante, menor")
-	# fachada estreita desce um degrau; larga sobe um
-	assert_eq(InteriorLayout.size_class_for("restaurant", 150.0), "P")
-	assert_eq(InteriorLayout.size_class_for("restaurant", 300.0), "G")
-	assert_eq(InteriorLayout.size_class_for("bar", 150.0), "M", "as plantas não mudam com a fachada")
-	assert_eq(InteriorLayout.size_class_for("bar", 300.0), "M")
-	assert_eq(InteriorLayout.size_class_for("house", 150.0), "P", "não desce abaixo do menor")
-	assert_eq(InteriorLayout.size_class_for("hotel", 300.0), "G", "não sobe acima do maior")
-	assert_eq(InteriorLayout.new(3, "restaurant", 300.0).size, InteriorLayout.SIZES["G"])
+	assert_eq(InteriorLayout.size_class_for("diner"), "P")
+	for facade in [150.0, 240.0, 320.0]:
+		assert_eq(InteriorLayout.size_class_for("office", facade), "M")
+		assert_eq(InteriorLayout.new(3, "office", facade).size, Vector2(1536, 864))
 
 
-func test_every_building_type_has_a_template() -> void:
-	for type in BuildingDefs.ORDER:
-		assert_true(InteriorLayout.TEMPLATES.has(type), type)
-	for type in InteriorLayout.TEMPLATES:
-		var template: String = InteriorLayout.TEMPLATES[type]
-		assert_true(InteriorLayout.BASE_SIZE.has(template), template)
-		assert_true(TileFactory.has_tile(InteriorLayout.FLOORS[template]), template)
-	assert_eq(InteriorLayout.BASE_SIZE.size(), 16, "15 modelos de interior + a casa do agente")
-	assert_eq(InteriorLayout.template_of("castelo"), InteriorLayout.DEFAULT_TEMPLATE)
+func test_every_building_type_has_a_plan() -> void:
+	for type in BuildingDefs.ORDER + ["agent_home"]:
+		assert_true(InteriorLayout.is_planned(type), type)
+		assert_eq(InteriorLayout.new(1, type).template, type)
+	assert_eq(Plans.types().size(), 25, "24 tipos de prédio + a casa do agente")
+
+
+func test_unknown_type_uses_the_house_plan() -> void:
+	var layout := InteriorLayout.new(2, "castelo")
+	assert_eq(layout.template, "house")
+	assert_eq(layout.size_class, "P")
+	_check(layout, "castelo")
 
 
 # --- determinismo (V2) ---
@@ -110,7 +108,7 @@ func _check(layout, label: String) -> void:
 			assert_false(layout.furniture[i].intersects(wall), "%s: móvel dentro de parede" % label)
 	for slot in layout.npc_slots:
 		assert_true(room.grow(-12.0).has_point(slot.position), "%s: vaga de %s fora da sala" % [label, slot.role])
-		if slot.get("act", "post") in ["sit", "lie"]:
+		if slot.get("act", "post") in ["sit", "lie", "exercise"]:
 			continue  # sentado ou deitado fica sobre o móvel por definição
 		for solid in solids:
 			assert_false(solid.grow(10.0).has_point(slot.position), "%s: vaga de %s dentro de um sólido" % [label, slot.role])
@@ -124,13 +122,6 @@ func test_every_type_gives_a_valid_interior() -> void:
 	for type in BuildingDefs.ORDER:
 		for id in IDS:
 			_check(InteriorLayout.new(id, type), "%s %d" % [type, id])
-
-
-func test_interiors_stay_valid_in_every_size() -> void:
-	for type in BuildingDefs.ORDER:
-		for width in [150.0, 300.0]:
-			for id in 4:
-				_check(InteriorLayout.new(id, type, width), "%s %d (fachada %d)" % [type, id, int(width)])
 
 
 func test_blocked_path_is_detected() -> void:
@@ -165,11 +156,11 @@ func test_rooms_and_inner_walls() -> void:
 
 
 func test_recognizable_furniture_by_type() -> void:
-	var expected := {"hotel": ["bed", "counter", "sofa"], "restaurant": ["table", "stove"], "bar": ["counter", "bar_stool", "pool_table"],
-		"armory": ["shelf", "counter"], "police": ["cell_bars", "bunk", "desk"], "hospital": ["hospital_bed", "cabinet"],
+	var expected := {"hotel": ["double_bed", "counter", "sofa"], "restaurant": ["dining_table", "stove"], "bar": ["counter", "bar_stool", "pool_table"],
+		"armory": ["gun_rack", "counter"], "police": ["cell_bars", "bunk", "desk"], "hospital": ["hospital_bed", "cabinet"],
 		"bank": ["vault", "counter"], "cinema": ["seats", "movie_screen"], "gym": ["ring", "treadmill", "weights"],
 		"workshop": ["car_lift", "workbench", "tires"], "club": ["dj_booth", "speaker"], "house": ["bed", "sofa", "stove", "tv"],
-		"warehouse": ["forklift"], "hq": ["washer", "washer_secret", "briefing_table", "wall_screen"], "office": ["desk", "cabinet"]}
+		"warehouse": ["forklift"], "hq": ["washer", "washer_secret", "briefing_table", "wall_screen"], "office": ["desk", "photocopier"]}
 	for type in expected:
 		var kinds := {}
 		for item in InteriorLayout.new(6, type).items:
@@ -178,16 +169,14 @@ func test_recognizable_furniture_by_type() -> void:
 			assert_true(kinds.has(kind), "%s sem %s" % [type, kind])
 
 
-func test_hotel_rooms_vary_with_the_seed() -> void:
-	var beds := {}
+func test_hotel_has_three_furnished_rooms() -> void:
+	# planta do hotel (Fase 7): três quartos fixos, cada um com cama de casal
 	for id in 20:
-		var count := 0
+		var beds := 0
 		for item in InteriorLayout.new(id, "hotel").items:
-			if item.kind == "bed":
-				count += 1
-		beds[count] = true
-		assert_true(count >= 4 and count <= 6, "hotel com %d camas" % count)
-	assert_gt(beds.size(), 1.0)
+			if item.kind == "double_bed":
+				beds += 1
+		assert_eq(beds, 3, "hotel %d" % id)
 
 
 func test_every_service_has_a_zone() -> void:
@@ -246,7 +235,7 @@ func test_guests_vary_and_have_roles() -> void:
 				guests += 1
 				spots.append(slot.position)
 		counts[str(spots)] = true  # o total é completado até o mínimo; o que varia são os lugares
-		assert_true(guests >= 2 and guests <= InteriorLayout.MIN_PEOPLE["M"], "bar com %d clientes" % guests)
+		assert_true(guests >= 2 and guests <= 8, "bar com %d clientes" % guests)
 	assert_gt(counts.size(), 1.0)
 	var residents := 0
 	for id in 30:
@@ -295,7 +284,7 @@ func test_used_furniture_renders_at_its_real_size() -> void:
 
 # --- plantas (mapa de texto) ---
 
-func test_planned_type_uses_the_plan() -> void:
+func test_injected_plan_is_used() -> void:
 	Plans.override("cinema", ParserTest.fixture())
 	var layout := InteriorLayout.new(3, "cinema")
 	assert_true(layout.planned)
@@ -306,9 +295,9 @@ func test_planned_type_uses_the_plan() -> void:
 	assert_true(layout.clear_zone().has_point(layout.spawn_point()))
 	assert_gt(float(layout.wall_faces.size()), 0.0)
 	assert_gt(float(layout.floor_rects.size()), 0.0)
-	_check(layout, "bar planejado")
+	_check(layout, "planta injetada")
 	Plans.clear_overrides()
-	assert_false(InteriorLayout.new(3, "cinema").planned)
+	assert_eq(InteriorLayout.new(3, "cinema").size, Vector2(1792, 1024), "volta para a planta do cinema")
 
 
 func test_planned_zones_get_the_service_verb() -> void:
@@ -318,21 +307,18 @@ func test_planned_zones_get_the_service_verb() -> void:
 	Plans.clear_overrides()
 
 
-func test_legacy_types_keep_working() -> void:
-	for type in ["armory", "hotel", "cinema"]:
-		var layout := InteriorLayout.new(2, type)
-		assert_false(layout.planned, type)
-		assert_eq(layout.items[0].layer, "floor")
-		assert_eq(layout.npc_slots[0].act, "post")
-		_check(layout, type)
-
-
 # --- móveis na escala do personagem (texels = px / 2) ---
 
 const NEW_FURNITURE := {"armchair": [24, 24], "double_bed": [40, 40], "chair": [16, 16], "office_chair": [16, 16],
 	"floor_lamp": [16, 16], "fireplace": [48, 16], "record_player": [24, 16], "dresser": [40, 16],
 	"round_table": [32, 32], "bar_stool": [12, 12], "beer_taps": [32, 12], "interrogation_table": [48, 32],
-	"flag": [16, 16], "coffee_machine": [16, 16], "kitchen_counter": [32, 16]}
+	"flag": [16, 16], "coffee_machine": [16, 16], "kitchen_counter": [32, 16],
+	"teller": [48, 16], "column": [16, 16], "luggage_cart": [24, 16], "dining_table": [32, 32], "booth": [32, 24],
+	"griddle": [32, 16], "milkshake": [16, 16], "dance_floor": [64, 48], "cleaning_cart": [24, 16],
+	"target": [16, 16], "display_case": [48, 16], "freezer": [48, 24], "checkout": [32, 16], "shopping_cart": [16, 12],
+	"feed_sacks": [32, 24], "barrel": [16, 16], "mannequin": [16, 16], "scale": [16, 16], "drink_fridge": [32, 16],
+	"compressor": [16, 16], "punching_bag": [16, 16], "bench_press": [32, 16], "exercise_bike": [16, 24],
+	"shower": [16, 16], "turnstile": [16, 16], "newspaper_stack": [16, 16], "photocopier": [32, 16], "projector": [24, 16]}
 
 
 func test_new_kinds_have_art_at_real_scale() -> void:
@@ -361,7 +347,34 @@ func test_tone_changes_the_art() -> void:
 
 
 func test_wall_and_on_kinds_are_listed() -> void:
-	assert_eq(FurnitureArt.WALL_KINDS.size(), 17)
-	assert_eq(FurnitureArt.ON_KINDS.size(), 15)
+	assert_eq(FurnitureArt.WALL_KINDS.size(), 26)
+	assert_true(FurnitureArt.WALL_KINDS.has("roll_door"))
+	assert_true(FurnitureArt.WALL_KINDS.has("whiteboard"))
+	assert_true(FurnitureArt.ON_KINDS.has("typewriter"))
+	for kind in ["gun_rack", "tool_rack", "cross_sign"]:
+		assert_true(FurnitureArt.WALL_KINDS.has(kind), kind)
+	assert_eq(FurnitureArt.ON_KINDS.size(), 19)
+	for kind in ["neon", "key_rack", "elevator_door", "menu_board"]:
+		assert_true(FurnitureArt.WALL_KINDS.has(kind), kind)
+	for kind in ["candle", "bell", "cash_register"]:
+		assert_true(FurnitureArt.ON_KINDS.has(kind), kind)
 	for kind in FurnitureArt.WALL_KINDS + FurnitureArt.ON_KINDS:
 		assert_true(FurnitureArt.has_kind(kind), kind)
+
+
+func test_planned_shop_keeps_counter_merchant_and_buy_zone() -> void:
+	Plans.override("armory", ParserTest.shop_fixture())
+	for id in 6:
+		var layout := InteriorLayout.new(id, "armory")
+		assert_true(layout.planned and layout.is_shop)
+		var zone: Rect2 = layout.counter_zone()
+		assert_almost_eq(zone.position.y, layout.counter.end.y, 0.001)
+		assert_eq(layout.zone("shop").rect, zone)
+		assert_true(layout.furniture.has(layout.counter))
+		assert_eq(layout.npc_slots[0].position, layout.merchant_position(), "o vendedor é a primeira vaga")
+		assert_true(layout.npc_slots[0].staff)
+		assert_eq(layout.npc_slots[0].role, BuildingDefs.staff_of("armory")[0])
+		for r in layout.furniture:
+			assert_false(r.intersects(zone), "móvel na zona de compra")
+		_check(layout, "loja planejada %d" % id)
+	Plans.clear_overrides()

@@ -173,6 +173,251 @@ static func build(c: RefCounted, kind: String, w: int, h: int, t: Array[Color]) 
 				c.vline(x, h / 3 + 1, h - h / 3 - 2, t[0])
 				c.px(x - 2, h * 2 / 3, _c("amber"))
 			c.frame(0, 0, w, h, _c("ink"))
+		"teller":
+			# guichê: balcão de madeira com vidro em cima e divisórias
+			_box(c, 0, h / 3, w, h - h / 3, t)
+			c.rect(1, 0, w - 2, h / 3, _c("ice"))
+			c.hline(1, 0, w - 2, _c("white"))
+			for x in range(w / 3, w - 1, w / 3):
+				c.vline(x, 0, h, _c("slate"))
+			c.frame(0, 0, w, h, _c("ink"))
+		"column":
+			c.ellipse(0, 0, w, h, t[0])
+			c.ellipse(1, 1, w - 2, h - 2, t[1])
+			c.ellipse(2, 2, w / 2, h / 2, t[2])
+			c.outline(ink)
+		"luggage_cart":
+			c.rect(1, h - 3, w - 2, 2, t[0])
+			c.rect(1, 1, 2, h - 2, t[1])
+			c.rect(w - 3, 1, 2, h - 2, t[1])
+			c.rect(4, 3, w / 2 - 3, h - 7, _c("brown"))
+			c.rect(w / 2 + 1, 5, w / 2 - 5, h - 9, _c("wine"))
+			c.outline(ink)
+		"dining_table":
+			# mesa com toalha branca e barra
+			c.rect(0, 0, w, h, _c("light"))
+			c.rect(1, 1, w - 2, h - 2, _c("white"))
+			c.frame(2, 2, w - 4, h - 4, _c("wine"))
+			c.outline(ink)
+		"booth":
+			# cabine de lanchonete: banco estofado em U visto de cima
+			c.rect(0, 0, w, h, t[1])
+			c.rect(0, 0, w, 3, t[0])
+			c.rect(3, 4, w - 6, h - 5, _c("cream"))
+			c.rect(4, 5, w - 8, h - 7, _c("white"))
+			c.frame(0, 0, w, h, ink)
+		"griddle":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 4, h - 5, _c("shadow"))
+			c.rect(4, 4, 4, 3, _c("brown"))
+			c.rect(w / 2, 4, 4, 3, _c("brown"))
+			c.px(w - 4, h - 3, _c("orange"))
+		"milkshake":
+			_box(c, 0, 0, w, h, t)
+			c.rect(w / 2 - 2, 2, 4, h / 2, _c("silver") if Palette.has_color("silver") else _c("light"))
+			c.ellipse(w / 2 - 3, h - 7, 6, 5, _c("cream"))
+		"dance_floor":
+			var lights := ["magenta", "purple", "neon_cyan", "blue", "neon_green"]
+			c.fill(_c("shadow"))
+			for y in range(0, h, 8):
+				for x in range(0, w, 8):
+					c.rect(x + 1, y + 1, 6, 6, _c(lights[((x / 8) * 3 + (y / 8) * 5) % lights.size()]))
+			c.frame(0, 0, w, h, ink)
+		"cleaning_cart":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w / 2 - 2, h - 5, _c("white"))
+			c.rect(w / 2 + 1, 2, w / 2 - 3, h / 2 - 1, _c("sky"))
+			c.px(w - 4, h - 4, _c("amber"))
+		"neon":
+			c.fill(_c("shadow"))
+			c.frame(0, 0, w, h, ink)
+			for x in range(2, w - 2):
+				c.px(x, h / 2 + (1 if (x / 3) % 2 == 0 else -1), t[1])
+			c.hline(2, h - 3, w - 4, _c("neon_cyan"))
+		"key_rack":
+			c.fill(t[1])
+			c.frame(0, 0, w, h, ink)
+			for x in range(2, w - 2, 3):
+				for y in range(2, h - 2, 4):
+					c.px(x, y, _c("amber"))
+		"elevator_door":
+			c.fill(t[1])
+			c.vline(w / 2, 1, h - 1, _c("slate"))
+			c.rect(w / 2 - 2, 1, 4, 2, _c("amber"))
+			c.frame(0, 0, w, h, ink)
+		"menu_board":
+			c.fill(t[1])
+			c.frame(0, 0, w, h, _c("brown"))
+			for y in range(2, h - 2, 3):
+				c.hline(2, y, w / 2, _c("white"))
+				c.hline(w - 6, y, 3, _c("amber"))
+		"candle":
+			c.ellipse(0, 0, w, h, _c("cream"))
+			c.ellipse(w / 3, h / 3, maxi(w / 3, 2), maxi(h / 3, 2), t[1])
+			c.px(w / 2, h / 2, _c("orange"))
+		"bell":
+			c.ellipse(0, 0, w, h, t[0])
+			c.ellipse(1, 1, w - 2, h - 2, t[1])
+			c.px(w / 2 - 1, h / 2 - 1, _c("cream"))
+		"cash_register":
+			c.rect(0, 0, w, h, t[1])
+			c.rect(1, 1, w - 2, h / 3, _c("ink"))
+			c.px(2, 2, _c("neon_green"))
+			for y in range(h / 2, h - 1, 2):
+				c.hline(1, y, w - 2, _c("light"))
+			c.frame(0, 0, w, h, ink)
+		"target":
+			# alvo de papel no suporte
+			c.rect(w / 2 - 1, h - 3, 2, 3, _c("slate"))
+			c.rect(1, 0, w - 2, h - 3, _c("white"))
+			c.ellipse(2, 1, w - 4, h - 5, _c("ink"))
+			c.ellipse(4, 3, w - 8, h - 9, _c("white"))
+			c.px(w / 2, (h - 3) / 2, _c("red"))
+			c.frame(1, 0, w - 2, h - 3, _c("slate"))
+		"display_case":
+			# vitrine de vidro com produtos dentro
+			_box(c, 0, 0, w, h, Palette.tone("brown"))
+			c.rect(2, 2, w - 4, h - 4, t[1])
+			var colors := ["slate", "amber", "red", "navy", "light"]
+			for x in range(3, w - 4, 5):
+				c.rect(x, h / 2 - 1, 3, 2, _c(colors[(x / 5) % colors.size()]))
+			c.hline(2, 2, w - 4, _c("white"))
+		"freezer":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 4, h - 5, _c("ice"))
+			for x in range(4, w - 4, 6):
+				c.rect(x, 4, 4, h / 3, _c("sky"))
+				c.rect(x, h / 2, 4, h / 4, _c("light"))
+			c.hline(2, 2, w - 4, _c("white"))
+		"checkout":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w / 2, h - 5, _c("ink"))
+			c.rect(w - 9, 2, 7, 5, _c("slate"))
+			c.px(w - 7, 3, _c("neon_green"))
+		"shopping_cart":
+			c.rect(1, 1, w - 2, h - 4, t[1])
+			for x in range(2, w - 2, 2):
+				c.vline(x, 2, h - 6, t[0])
+			c.px(2, h - 2, _c("ink"))
+			c.px(w - 3, h - 2, _c("ink"))
+			c.outline(_c("ink"))
+		"feed_sacks":
+			for i in 3:
+				var sx := (i % 2) * (w / 2) + 1
+				var sy := (i / 2) * (h / 2) + 1
+				c.rect(sx, sy, w / 2 - 2, h / 2 - 2, t[1])
+				c.hline(sx + 1, sy + 1, w / 2 - 4, t[2])
+				c.hline(sx + 2, sy + h / 4, w / 2 - 6, _c("green"))
+			c.rect(w / 2 + 1, h / 2 + 1, w / 2 - 2, h / 2 - 2, t[0])
+			c.outline(_c("ink"))
+		"barrel":
+			c.ellipse(0, 0, w, h, t[0])
+			c.ellipse(1, 1, w - 2, h - 2, t[1])
+			c.ellipse(3, 3, w - 6, h - 6, t[2])
+			c.ellipse(w / 2 - 1, h / 2 - 1, 2, 2, t[0])
+			c.outline(_c("ink"))
+		"mannequin":
+			c.ellipse(1, 2, w - 2, h - 3, t[1])
+			c.ellipse(w / 2 - 3, 0, 6, 6, _c("light"))
+			c.rect(w / 2 - 1, 6, 2, 4, _c("white"))
+			c.px(w / 2, 7, _c("red"))
+			c.outline(_c("ink"))
+		"scale":
+			c.rect(1, h / 2, w - 2, h / 2 - 1, t[1])
+			c.ellipse(2, 0, w - 4, h / 2 + 2, t[2])
+			c.vline(w / 2, 2, h / 3, _c("red"))
+			c.outline(_c("ink"))
+		"drink_fridge":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 4, h - 5, _c("ink"))
+			var drinks := ["red", "amber", "lime", "sky", "orange"]
+			for x in range(3, w - 3, 3):
+				c.rect(x, 3, 2, h / 2 - 3, _c(drinks[x % drinks.size()]))
+				c.rect(x, h / 2 + 1, 2, h / 2 - 5, _c(drinks[(x + 2) % drinks.size()]))
+		"gun_rack":
+			c.fill(t[1])
+			c.frame(0, 0, w, h, _c("ink"))
+			for x in range(2, w - 2, 3):
+				c.vline(x, 2, h - 4, _c("ink"))
+				c.px(x, 2, _c("slate"))
+		"tool_rack":
+			c.fill(_c("sand"))
+			c.frame(0, 0, w, h, _c("brown_dark"))
+			for x in range(2, w - 2, 4):
+				c.vline(x, 2, h - 5, _c("brown"))
+				c.rect(x - 1, h - 4, 3, 2, _c("slate"))
+		"cross_sign":
+			c.fill(_c("white"))
+			c.frame(0, 0, w, h, _c("ink"))
+			c.rect(w / 2 - 1, 2, 3, h - 4, t[1])
+			c.rect(w / 2 - 4, h / 2 - 1, 9, 3, t[1])
+		"compressor":
+			c.ellipse(0, h / 4, w, h - h / 4, t[0])
+			c.ellipse(1, h / 4 + 1, w - 2, h - h / 4 - 2, t[1])
+			c.rect(w / 2 - 2, 0, 4, h / 3, _c("slate"))
+			c.px(w / 2, h / 2 + 1, _c("white"))
+			c.outline(_c("ink"))
+		"punching_bag":
+			c.ellipse(1, 1, w - 2, h - 2, t[0])
+			c.ellipse(2, 2, w - 4, h - 4, t[1])
+			c.ellipse(w / 3, h / 3, w / 3, h / 3, t[2])
+			c.outline(_c("ink"))
+		"bench_press":
+			c.rect(w / 4, h / 3, w / 2, h / 3, t[1])
+			c.rect(0, h / 2 - 1, w, 2, _c("gray"))
+			c.rect(0, 1, 3, h - 2, _c("ink"))
+			c.rect(w - 3, 1, 3, h - 2, _c("ink"))
+			c.outline(_c("ink"))
+		"exercise_bike":
+			c.rect(w / 2 - 1, 2, 2, h - 4, t[1])
+			c.ellipse(1, h - w + 1, w - 2, w - 2, _c("slate"))
+			c.rect(1, 1, w - 2, 3, _c("ink"))
+			c.rect(w / 2 - 2, h / 2, 4, 3, _c("red"))
+			c.outline(_c("ink"))
+		"shower":
+			c.rect(0, 0, w, h, _c("white"))
+			c.ellipse(w / 2 - 3, 1, 6, 4, t[1])
+			for y in range(6, h - 1, 3):
+				c.px(w / 2 - 2 + (y % 4), y, _c("sky"))
+			c.frame(0, 0, w, h, _c("ink"))
+		"turnstile":
+			c.rect(0, h / 3, w, h / 3, t[1])
+			c.rect(w / 2 - 1, 0, 2, h, _c("slate"))
+			c.px(2, h / 2, _c("neon_green"))
+			c.outline(_c("ink"))
+		"newspaper_stack":
+			c.rect(1, 1, w - 2, h - 2, _c("white"))
+			for y in range(2, h - 2, 2):
+				c.hline(2, y, w - 4, _c("light"))
+			c.rect(2, 2, w / 2, 3, _c("ink"))
+			c.frame(0, 0, w, h, _c("gray"))
+		"photocopier":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 6, h / 2, _c("slate"))
+			c.rect(w - 4, 2, 2, 2, _c("neon_green"))
+			c.hline(2, h - 4, w - 4, _c("white"))
+		"projector":
+			_box(c, 0, 0, w, h, t)
+			c.ellipse(w - 7, h / 2 - 3, 6, 6, _c("slate"))
+			c.px(w - 4, h / 2, _c("cream"))
+		"roll_door":
+			c.fill(t[1])
+			for y in range(1, h - 1, 2):
+				c.hline(1, y, w - 2, t[0])
+			c.rect(w / 2 - 2, h - 3, 4, 2, _c("amber"))
+			c.frame(0, 0, w, h, _c("ink"))
+		"whiteboard":
+			c.fill(_c("white"))
+			c.frame(0, 0, w, h, _c("slate"))
+			c.hline(2, 3, w / 2, _c("blue"))
+			c.hline(2, 5, w / 3, _c("red"))
+			c.hline(w / 2, 7, w / 3, _c("green"))
+		"typewriter":
+			c.rect(0, h / 3, w, h - h / 3, t[1])
+			c.rect(1, 0, w - 2, h / 3, _c("white"))
+			for x in range(1, w - 1, 2):
+				c.px(x, h - 2, _c("ink"))
+			c.outline(_c("ink"))
 		"coffee_machine":
 			_box(c, 0, 0, w, h, t)
 			c.rect(3, 3, w - 6, h / 3, ink)

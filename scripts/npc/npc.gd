@@ -95,6 +95,8 @@ var activity := ""
 ## Pontos da ronda (o primeiro é o posto); `facing` é para onde olha parado.
 var route := PackedVector2Array()
 var facing := "down"
+## Em cima de um móvel (assento, cama, aparelho): aí a pessoa não tem colisão.
+var on_furniture := true
 var _route_index := 1
 var _pause_timer := 0.0
 var _patrol_blocked := 0.0
@@ -120,7 +122,7 @@ func _ready() -> void:
 	if activity != "":
 		_sprite_direction = "down" if activity == "lie" else facing
 		_look_timer = rng.randf_range(LOOK_AROUND.x, LOOK_AROUND.y)
-		if activity == "sit" or activity == "lie":
+		if activity in ["sit", "lie"] or (activity == "exercise" and on_furniture):
 			(get_node("CollisionShape2D") as CollisionShape2D).disabled = true
 	_sprite = SpriteFactory.make_sprite(null, Vector2(CharacterSprites.PIVOT))
 	add_child(_sprite)
@@ -401,7 +403,7 @@ func _stand_up() -> void:
 
 ## Pose atual do sprite: "stand", "sit", "lie" ou "work".
 func pose() -> String:
-	if activity == "sit" or activity == "lie" or activity == "work":
+	if activity in ["sit", "lie", "work", "exercise", "dance"]:
 		return activity
 	return "stand"
 
@@ -425,7 +427,7 @@ func _update_sprite(delta: float) -> void:
 		_anim_time += delta
 		_sprite_direction = CharacterSprites.direction_of(velocity)
 		frame = 1 + int(_anim_time / WALK_FRAME_TIME) % 2
-	elif current_pose == "work":
+	elif current_pose in ["work", "exercise", "dance"]:
 		_anim_time += delta
 		frame = 1 + int(_anim_time / WORK_FRAME_TIME) % 2
 	else:
