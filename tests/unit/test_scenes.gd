@@ -475,7 +475,7 @@ func test_planned_interior_npcs_get_activity_and_building_uniform() -> void:
 
 
 func test_legacy_interior_still_builds() -> void:
-	GameState.set_inside(2, Vector2(100, 100), "armory", "armory", "Armaria Teste", 240.0)
+	GameState.set_inside(2, Vector2(100, 100), "", "gym", "Academia Teste", 240.0)
 	var interior := INTERIOR_SCENE.instantiate()
 	tree.root.add_child(interior)
 	await wait_physics_frames(3)

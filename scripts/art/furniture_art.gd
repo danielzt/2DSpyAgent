@@ -44,11 +44,16 @@ const MATERIALS := {
 	"griddle": "silver", "milkshake": "pink", "dance_floor": "purple", "cleaning_cart": "silver",
 	"neon": "pink", "key_rack": "ramp:wood", "elevator_door": "silver", "menu_board": "black",
 	"candle": "yellow", "bell": "yellow", "cash_register": "gray",
+	# Etapa 2: lojas
+	"target": "snow", "display_case": "ice", "freezer": "snow", "checkout": "gray", "shopping_cart": "silver",
+	"feed_sacks": "sand", "barrel": "brown", "mannequin": "black", "scale": "silver", "drink_fridge": "red",
+	"gun_rack": "ramp:wood", "tool_rack": "ramp:wood", "cross_sign": "green",
 }
 ## Itens presos na face da parede (sem colisão) e itens que ficam em cima de móveis.
 const WALL_KINDS := ["window", "painting", "clock", "extinguisher", "poster", "notice_board", "wall_tv",
 	"wall_shelf", "mirror", "exit_sign", "wall_lamp", "diploma", "wanted_board", "dartboard", "bottle_wall",
-	"case_wall", "safe_wall", "neon", "key_rack", "elevator_door", "menu_board"]
+	"case_wall", "safe_wall", "neon", "key_rack", "elevator_door", "menu_board",
+	"gun_rack", "tool_rack", "cross_sign"]
 const ON_KINDS := ["plate", "glass", "bottle", "papers", "phone", "book", "table_lamp", "fruit_bowl",
 	"coffee_pot", "mug", "ashtray", "flowers", "stethoscope_tray", "pool_cue", "cat", "candle", "bell", "cash_register"]
 

@@ -166,7 +166,7 @@ func test_rooms_and_inner_walls() -> void:
 
 func test_recognizable_furniture_by_type() -> void:
 	var expected := {"hotel": ["double_bed", "counter", "sofa"], "restaurant": ["dining_table", "stove"], "bar": ["counter", "bar_stool", "pool_table"],
-		"armory": ["shelf", "counter"], "police": ["cell_bars", "bunk", "desk"], "hospital": ["hospital_bed", "cabinet"],
+		"armory": ["gun_rack", "counter"], "police": ["cell_bars", "bunk", "desk"], "hospital": ["hospital_bed", "cabinet"],
 		"bank": ["vault", "counter"], "cinema": ["seats", "movie_screen"], "gym": ["ring", "treadmill", "weights"],
 		"workshop": ["car_lift", "workbench", "tires"], "club": ["dj_booth", "speaker"], "house": ["bed", "sofa", "stove", "tv"],
 		"warehouse": ["forklift"], "hq": ["washer", "washer_secret", "briefing_table", "wall_screen"], "office": ["desk", "cabinet"]}
@@ -317,7 +317,7 @@ func test_planned_zones_get_the_service_verb() -> void:
 
 
 func test_legacy_types_keep_working() -> void:
-	for type in ["armory", "gym", "cinema"]:
+	for type in ["office", "gym", "cinema"]:
 		var layout := InteriorLayout.new(2, type)
 		assert_false(layout.planned, type)
 		assert_eq(layout.items[0].layer, "floor")
@@ -332,7 +332,9 @@ const NEW_FURNITURE := {"armchair": [24, 24], "double_bed": [40, 40], "chair": [
 	"round_table": [32, 32], "bar_stool": [12, 12], "beer_taps": [32, 12], "interrogation_table": [48, 32],
 	"flag": [16, 16], "coffee_machine": [16, 16], "kitchen_counter": [32, 16],
 	"teller": [48, 16], "column": [16, 16], "luggage_cart": [24, 16], "dining_table": [32, 32], "booth": [32, 24],
-	"griddle": [32, 16], "milkshake": [16, 16], "dance_floor": [64, 48], "cleaning_cart": [24, 16]}
+	"griddle": [32, 16], "milkshake": [16, 16], "dance_floor": [64, 48], "cleaning_cart": [24, 16],
+	"target": [16, 16], "display_case": [48, 16], "freezer": [48, 24], "checkout": [32, 16], "shopping_cart": [16, 12],
+	"feed_sacks": [32, 24], "barrel": [16, 16], "mannequin": [16, 16], "scale": [16, 16], "drink_fridge": [32, 16]}
 
 
 func test_new_kinds_have_art_at_real_scale() -> void:
@@ -361,7 +363,9 @@ func test_tone_changes_the_art() -> void:
 
 
 func test_wall_and_on_kinds_are_listed() -> void:
-	assert_eq(FurnitureArt.WALL_KINDS.size(), 21)
+	assert_eq(FurnitureArt.WALL_KINDS.size(), 24)
+	for kind in ["gun_rack", "tool_rack", "cross_sign"]:
+		assert_true(FurnitureArt.WALL_KINDS.has(kind), kind)
 	assert_eq(FurnitureArt.ON_KINDS.size(), 18)
 	for kind in ["neon", "key_rack", "elevator_door", "menu_board"]:
 		assert_true(FurnitureArt.WALL_KINDS.has(kind), kind)

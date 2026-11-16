@@ -288,3 +288,58 @@ func test_club_plan() -> void:
 		if slot.act == "dance":
 			dancers += 1
 	assert_true(dancers >= 4, "pista com %d dançarinos" % dancers)
+
+
+# --- bloco 2: lojas ---
+
+func _assert_shop(type: String) -> void:
+	for id in 6:
+		var layout := InteriorLayout.new(id, type)
+		assert_true(layout.is_shop, type)
+		assert_eq(layout.npc_slots[0].position, layout.merchant_position(), "%s: vendedor atrás do balcão" % type)
+		assert_eq(layout.zone("shop").rect, layout.counter_zone())
+
+
+func test_armory_plan() -> void:
+	_assert_plan("armory", "P", ["Loja", "Estande"], ["counter", "gun_rack", "target", "display_case", "crates"],
+		["balconista"], ["cliente"])
+	_assert_shop("armory")
+
+
+func test_pharmacy_plan() -> void:
+	_assert_plan("pharmacy", "P", ["Loja", "Manipulação"], ["counter", "shelf", "cross_sign", "scale", "cabinet"],
+		["balconista"], ["cliente"])
+	_assert_shop("pharmacy")
+
+
+func test_agent_store_plan() -> void:
+	_assert_plan("agent_store", "P", ["Loja", "Depósito"], ["counter", "display_case", "mannequin", "wall_tv"],
+		["balconista"], ["cliente"])
+	_assert_shop("agent_store")
+
+
+func test_market_plan() -> void:
+	_assert_plan("market", "P", ["Loja", "Depósito"], ["checkout", "shelf", "freezer", "shopping_cart", "fruit_bowl"],
+		["caixa", "estoquista"], ["cliente"])
+	_assert_shop("market")
+
+
+func test_gas_station_plan() -> void:
+	_assert_plan("gas_station", "P", ["Loja", "Depósito"], ["counter", "drink_fridge", "coffee_machine", "shelf"],
+		["frentista"], ["cliente"])
+	_assert_shop("gas_station")
+
+
+func test_farm_store_plan() -> void:
+	_assert_plan("farm_store", "P", ["Loja", "Depósito"], ["counter", "feed_sacks", "barrel", "tool_rack", "scale"],
+		["balconista"], ["cliente"])
+	_assert_shop("farm_store")
+
+
+func test_shops_all_look_different() -> void:
+	var seen := {}
+	for type in ["armory", "pharmacy", "agent_store", "market", "gas_station", "farm_store"]:
+		var kinds := _kinds(InteriorLayout.new(1, type)).keys()
+		kinds.sort()
+		seen[str(kinds)] = type
+	assert_eq(seen.size(), 6, "cada loja com seu conjunto de móveis")

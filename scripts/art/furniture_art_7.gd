@@ -266,6 +266,91 @@ static func build(c: RefCounted, kind: String, w: int, h: int, t: Array[Color]) 
 			for y in range(h / 2, h - 1, 2):
 				c.hline(1, y, w - 2, _c("light"))
 			c.frame(0, 0, w, h, ink)
+		"target":
+			# alvo de papel no suporte
+			c.rect(w / 2 - 1, h - 3, 2, 3, _c("slate"))
+			c.rect(1, 0, w - 2, h - 3, _c("white"))
+			c.ellipse(2, 1, w - 4, h - 5, _c("ink"))
+			c.ellipse(4, 3, w - 8, h - 9, _c("white"))
+			c.px(w / 2, (h - 3) / 2, _c("red"))
+			c.frame(1, 0, w - 2, h - 3, _c("slate"))
+		"display_case":
+			# vitrine de vidro com produtos dentro
+			_box(c, 0, 0, w, h, Palette.tone("brown"))
+			c.rect(2, 2, w - 4, h - 4, t[1])
+			var colors := ["slate", "amber", "red", "navy", "light"]
+			for x in range(3, w - 4, 5):
+				c.rect(x, h / 2 - 1, 3, 2, _c(colors[(x / 5) % colors.size()]))
+			c.hline(2, 2, w - 4, _c("white"))
+		"freezer":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 4, h - 5, _c("ice"))
+			for x in range(4, w - 4, 6):
+				c.rect(x, 4, 4, h / 3, _c("sky"))
+				c.rect(x, h / 2, 4, h / 4, _c("light"))
+			c.hline(2, 2, w - 4, _c("white"))
+		"checkout":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w / 2, h - 5, _c("ink"))
+			c.rect(w - 9, 2, 7, 5, _c("slate"))
+			c.px(w - 7, 3, _c("neon_green"))
+		"shopping_cart":
+			c.rect(1, 1, w - 2, h - 4, t[1])
+			for x in range(2, w - 2, 2):
+				c.vline(x, 2, h - 6, t[0])
+			c.px(2, h - 2, _c("ink"))
+			c.px(w - 3, h - 2, _c("ink"))
+			c.outline(_c("ink"))
+		"feed_sacks":
+			for i in 3:
+				var sx := (i % 2) * (w / 2) + 1
+				var sy := (i / 2) * (h / 2) + 1
+				c.rect(sx, sy, w / 2 - 2, h / 2 - 2, t[1])
+				c.hline(sx + 1, sy + 1, w / 2 - 4, t[2])
+				c.hline(sx + 2, sy + h / 4, w / 2 - 6, _c("green"))
+			c.rect(w / 2 + 1, h / 2 + 1, w / 2 - 2, h / 2 - 2, t[0])
+			c.outline(_c("ink"))
+		"barrel":
+			c.ellipse(0, 0, w, h, t[0])
+			c.ellipse(1, 1, w - 2, h - 2, t[1])
+			c.ellipse(3, 3, w - 6, h - 6, t[2])
+			c.ellipse(w / 2 - 1, h / 2 - 1, 2, 2, t[0])
+			c.outline(_c("ink"))
+		"mannequin":
+			c.ellipse(1, 2, w - 2, h - 3, t[1])
+			c.ellipse(w / 2 - 3, 0, 6, 6, _c("light"))
+			c.rect(w / 2 - 1, 6, 2, 4, _c("white"))
+			c.px(w / 2, 7, _c("red"))
+			c.outline(_c("ink"))
+		"scale":
+			c.rect(1, h / 2, w - 2, h / 2 - 1, t[1])
+			c.ellipse(2, 0, w - 4, h / 2 + 2, t[2])
+			c.vline(w / 2, 2, h / 3, _c("red"))
+			c.outline(_c("ink"))
+		"drink_fridge":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 4, h - 5, _c("ink"))
+			var drinks := ["red", "amber", "lime", "sky", "orange"]
+			for x in range(3, w - 3, 3):
+				c.rect(x, 3, 2, h / 2 - 3, _c(drinks[x % drinks.size()]))
+				c.rect(x, h / 2 + 1, 2, h / 2 - 5, _c(drinks[(x + 2) % drinks.size()]))
+		"gun_rack":
+			c.fill(t[1])
+			c.frame(0, 0, w, h, _c("ink"))
+			for x in range(2, w - 2, 3):
+				c.vline(x, 2, h - 4, _c("ink"))
+				c.px(x, 2, _c("slate"))
+		"tool_rack":
+			c.fill(_c("sand"))
+			c.frame(0, 0, w, h, _c("brown_dark"))
+			for x in range(2, w - 2, 4):
+				c.vline(x, 2, h - 5, _c("brown"))
+				c.rect(x - 1, h - 4, 3, 2, _c("slate"))
+		"cross_sign":
+			c.fill(_c("white"))
+			c.frame(0, 0, w, h, _c("ink"))
+			c.rect(w / 2 - 1, 2, 3, h - 4, t[1])
+			c.rect(w / 2 - 4, h / 2 - 1, 9, 3, t[1])
 		"coffee_machine":
 			_box(c, 0, 0, w, h, t)
 			c.rect(3, 3, w - 6, h / 3, ink)
