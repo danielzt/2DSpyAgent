@@ -451,7 +451,6 @@ func test_planned_interior_draws_faces_wall_items_and_on_items() -> void:
 		assert_eq(face.get_child_count(), 0)
 	assert_eq(tree.get_nodes_in_group("wall_items").size(), 1, "a janela")
 	assert_eq(tree.get_nodes_in_group("on_items").size(), 1, "o prato")
-	assert_eq(interior.window_rects().size(), 0, "janelas do modelo antigo não entram nas plantas")
 	Plans.clear_overrides()
 	await _cleanup(interior)
 
@@ -474,12 +473,39 @@ func test_planned_interior_npcs_get_activity_and_building_uniform() -> void:
 	await _cleanup(interior)
 
 
-func test_legacy_interior_still_builds() -> void:
-	GameState.set_inside(2, Vector2(100, 100), "", "gym", "Academia Teste", 240.0)
+func test_unknown_type_builds_with_the_house_plan() -> void:
+	GameState.set_inside(2, Vector2(100, 100), "", "castelo", "Castelo Teste", 240.0)
 	var interior := INTERIOR_SCENE.instantiate()
 	tree.root.add_child(interior)
 	await wait_physics_frames(3)
-	assert_false(interior.layout.planned)
+	assert_eq(interior.layout.template, "house")
 	assert_eq(tree.get_nodes_in_group("exit_doors").size(), 1)
-	assert_eq(tree.get_nodes_in_group("wall_faces").size(), 0)
+	assert_gt(float(tree.get_nodes_in_group("wall_faces").size()), 0.0)
 	await _cleanup(interior)
+
+
+func test_hq_secret_passage_opens_only_with_interact() -> void:
+	GameState.set_inside(3, Vector2(100, 100), "", "hq", "QG Teste", 240.0)
+	var interior := INTERIOR_SCENE.instantiate()
+	tree.root.add_child(interior)
+	await wait_physics_frames(3)
+	assert_gt(float(tree.get_nodes_in_group("secret_shadow").size()), 0.0, "sala escondida coberta")
+	var door: StaticBody2D = interior.secret_body
+	assert_false((door.get_child(0) as CollisionShape2D).disabled, "passagem fechada")
+	var player = tree.get_nodes_in_group("players")[0]
+	player.global_position = (interior.layout.zone("secret").rect as Rect2).get_center()
+	await wait_physics_frames(3)
+	assert_true(player.current_prompt().contains("entrar no QG"), player.current_prompt())
+	assert_gt(float(tree.get_nodes_in_group("secret_shadow").size()), 0.0, "tocar não abre")
+	Input.action_press("p1_interact")
+	await wait_physics_frames(2)
+	Input.action_release("p1_interact")
+	await wait_physics_frames(2)
+	assert_eq(tree.get_nodes_in_group("secret_shadow").size(), 0, "aberta: a sala aparece")
+	assert_true((door.get_child(0) as CollisionShape2D).disabled, "passagem aberta")
+	await _cleanup(interior)
+	var again := INTERIOR_SCENE.instantiate()
+	tree.root.add_child(again)
+	await wait_physics_frames(3)
+	assert_gt(float(tree.get_nodes_in_group("secret_shadow").size()), 0.0, "ao voltar, começa fechada")
+	await _cleanup(again)

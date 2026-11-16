@@ -442,13 +442,13 @@ func test_interior_npcs_stay_in_place() -> void:
 		assert_almost_eq((npc.global_position as Vector2).distance_to(before[npc]), 0.0, 2.0)
 
 
-func test_interior_size_follows_the_facade() -> void:
-	GameState.set_inside(4, Vector2.ZERO, "", "office", "Escritório", 300.0)
+func test_camera_covers_the_whole_interior() -> void:
+	GameState.set_inside(4, Vector2.ZERO, "", "hotel", "Hotel", 300.0)
 	var interior := INTERIOR_SCENE.instantiate()
 	tree.root.add_child(interior)
 	nodes.append(interior)
 	await wait_frames(2)
-	assert_eq(interior.layout.size_class, "G")
+	assert_eq(interior.layout.size_class, "G", "a fachada larga não muda a planta")
 	assert_eq(_player().get_node("Camera2D").limit_right, int(interior.layout.size.x))
 
 
@@ -460,13 +460,7 @@ func test_windows_show_the_sky_of_the_hour() -> void:
 			windows += 1
 	assert_gt(float(windows), 0.0, "a planta da casa tem janelas")
 	assert_eq(planned._window_skies.size(), windows, "cada janela da planta mostra o céu")
-	planned.queue_free()
-	await wait_frames(3)
-	var interior := await _interior("office")
-	assert_gt(interior.window_rects().size(), 0.0)
-	for rect in interior.window_rects():
-		for solid in interior.layout.solids():
-			assert_false((solid as Rect2).intersects(rect), "janela atrás de móvel")
+	var interior: Node = planned
 	var noon: Color = interior.sky_color(12.0)
 	var midnight: Color = interior.sky_color(0.0)
 	assert_gt(noon.get_luminance(), midnight.get_luminance() + 0.1)

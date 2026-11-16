@@ -120,7 +120,7 @@ func _ready() -> void:
 	if activity != "":
 		_sprite_direction = "down" if activity == "lie" else facing
 		_look_timer = rng.randf_range(LOOK_AROUND.x, LOOK_AROUND.y)
-		if activity == "sit" or activity == "lie":
+		if activity in ["sit", "lie", "exercise"]:
 			(get_node("CollisionShape2D") as CollisionShape2D).disabled = true
 	_sprite = SpriteFactory.make_sprite(null, Vector2(CharacterSprites.PIVOT))
 	add_child(_sprite)

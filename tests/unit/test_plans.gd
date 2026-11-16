@@ -343,3 +343,72 @@ func test_shops_all_look_different() -> void:
 		kinds.sort()
 		seen[str(kinds)] = type
 	assert_eq(seen.size(), 6, "cada loja com seu conjunto de móveis")
+
+
+# --- bloco 3 ---
+
+func test_workshop_plan() -> void:
+	_assert_plan("workshop", "M", ["Garagem", "Escritório"],
+		["car_lift", "workbench", "tires", "toolbox", "compressor", "barrel", "tool_rack", "oil_stain", "counter"],
+		["auxiliar de mecânica", "lanterneiro"], ["cliente"])
+	var lying := false
+	for slot in InteriorLayout.new(1, "workshop").npc_slots:
+		lying = lying or slot.act == "lie"
+	assert_true(lying, "mecânico deitado sob o carro")
+
+
+func test_gym_plan() -> void:
+	_assert_plan("gym", "M", ["Musculação", "Ringue", "Recepção", "Vestiário"],
+		["treadmill", "exercise_bike", "bench_press", "weights", "ring", "punching_bag", "locker", "shower", "turnstile", "mirror"],
+		["personal trainer", "recepcionista"], ["aluno"])
+	var exercising := 0
+	for slot in InteriorLayout.new(1, "gym").npc_slots:
+		if slot.act == "exercise":
+			exercising += 1
+	assert_true(exercising >= 3, "%d alunos se exercitando" % exercising)
+
+
+func test_cinema_plan() -> void:
+	_assert_plan("cinema", "G", ["Saguão", "Sala", "Projeção"],
+		["movie_screen", "seats", "popcorn", "counter", "projector", "poster", "rope"],
+		["lanterninha", "projecionista", "bilheteiro"], ["espectador"])
+
+
+func test_office_plan() -> void:
+	_assert_plan("office", "M", ["Recepção", "Baias", "Reunião", "Copa", "Diretoria"],
+		["desk", "office_chair", "computer", "whiteboard", "photocopier", "coffee_machine", "fridge", "sofa"],
+		["analista", "gerente", "recepcionista"], ["visitante"])
+
+
+func test_newspaper_plan() -> void:
+	_assert_plan("newspaper", "M", ["Redação", "Editor", "Laboratório", "Arquivo"],
+		["desk", "typewriter", "computer", "newspaper_stack", "photocopier", "notice_board", "sink", "shelf"],
+		["repórter", "colunista", "fotojornalista", "editor"], [])
+
+
+# --- bloco 4 ---
+
+func test_apartment_plan() -> void:
+	_assert_plan("apartment", "P", ["Sala", "Cozinha", "Quarto", "Banheiro", "Varanda"],
+		["sofa", "kitchen_counter", "bar_stool", "double_bed", "toilet", "plant", "wall_tv"], [], ["morador"])
+
+
+func test_farm_plan() -> void:
+	_assert_plan("farm", "P", ["Sala", "Cozinha", "Quarto"],
+		["fireplace", "table", "armchair", "coat_rack", "bed", "stove", "barrel"], ["ajudante de fazenda", "tratorista"], [])
+
+
+func test_warehouse_plan() -> void:
+	_assert_plan("warehouse", "G", ["Galpão", "Doca", "Escritório"],
+		["shelf", "crates", "pallet", "forklift", "roll_door", "desk"], ["estoquista", "conferente"], [])
+
+
+func test_hq_plan() -> void:
+	_assert_plan("hq", "G", ["Lavanderia", "Sala do QG"],
+		["washer", "washer_secret", "basket", "briefing_table", "wall_screen", "locker", "chest", "safe_wall", "computer"],
+		["atendente de lavanderia", "agente", "chefe"], ["cliente"])
+	var layout := InteriorLayout.new(1, "hq")
+	assert_ne(layout.secret_door, Rect2(), "passagem secreta")
+	assert_false(layout.hidden_rooms.is_empty())
+	assert_eq(layout.zone("secret").verb, "entrar no QG")
+	assert_false(layout.furniture.has(layout.secret_door), "a passagem não conta como móvel fixo")

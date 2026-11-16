@@ -1,4 +1,4 @@
-# Fase 7 — Interiores caprichados (Etapa 1: motor e 5 plantas de referência)
+# Fase 7 — Interiores caprichados (Etapas 1 e 2: todos os 25 interiores em planta)
 
 > Design: [superpowers/specs/2026-11-15-interiores-caprichados-design.md](superpowers/specs/2026-11-15-interiores-caprichados-design.md).
 > Plano: [superpowers/plans/2026-11-15-interiores-caprichados-etapa-1.md](superpowers/plans/2026-11-15-interiores-caprichados-etapa-1.md).
@@ -13,13 +13,19 @@ paredes com cara do lugar e gente que faz alguma coisa.
 
 ## Capturas
 
+Há uma captura de cada um dos 25 interiores em `docs/img/fase7-interior-<tipo>.png`. Algumas:
+
 | Casa | Casa do agente | Bar |
 |---|---|---|
 | ![casa](img/fase7-interior-house.png) | ![agente](img/fase7-interior-agent_home.png) | ![bar](img/fase7-interior-bar.png) |
 
-| Delegacia | Hospital |
-|---|---|
-| ![delegacia](img/fase7-interior-police.png) | ![hospital](img/fase7-interior-hospital.png) |
+| Delegacia | Hospital | Banco |
+|---|---|---|
+| ![delegacia](img/fase7-interior-police.png) | ![hospital](img/fase7-interior-hospital.png) | ![banco](img/fase7-interior-bank.png) |
+
+| Boate | Mercado | QG (lavanderia) |
+|---|---|---|
+| ![boate](img/fase7-interior-club.png) | ![mercado](img/fase7-interior-market.png) | ![qg](img/fase7-interior-hq.png) |
 
 ## O que entrou
 
@@ -125,7 +131,54 @@ conteúdo de cada uma). Acréscimos em `test_interior_layout`, `test_sprites`, `
 
 `tools/probe.gd -- <prefixo> [hora] so-interiores [tipo,tipo]` captura só os interiores pedidos (centro da planta).
 
-## O que fica para as Etapas 2 e 3
+## Etapa 2: as outras 20 plantas
 
-As outras 20 plantas (com a passagem secreta do QG por E), atividades `exercise` e `dance`, pisos e paredes que
-faltam, falas por papel na conversa e a remoção do construtor antigo.
+> Plano: [superpowers/plans/2026-11-16-interiores-caprichados-etapa-2.md](superpowers/plans/2026-11-16-interiores-caprichados-etapa-2.md).
+
+Todos os 24 tipos de prédio e a casa do agente têm planta própria; o **construtor antigo foi removido** do
+`interior_layout.gd` (tipo sem planta usa a planta da casa).
+
+| Bloco | Plantas |
+|---|---|
+| 1 | Banco (guichês com vidro, fila, cofre atrás da grade), hotel (saguão, corredor, 3 quartos), restaurante (mesas com toalha e vela, cozinha aberta), lanchonete (balcão com banquetas, cabines, chapa), boate (pista com dançarinos, DJ, bar, VIP, camarote do informante) |
+| 2 | Armaria (balcão de vidro, estande de tiro), farmácia (gôndolas brancas, manipulação), loja do agente (vitrines de gadgets, manequins), mercado (corredores, freezers, caixas com esteira), posto (conveniência), armazém rural (sacos de ração, ferramentas) |
+| 3 | Oficina (baias com elevador, mecânico sob o carro), academia (esteiras, bicicletas, supinos, ringue, vestiário), cinema (sala com poltronas, bomboniere, projeção), escritório (baias, reunião, copa, diretoria), redação (ilhas com máquinas de escrever, laboratório de foto, arquivo) |
+| 4 | Apartamento (cozinha americana, varanda), casa de fazenda (fogão a lenha, mesa comprida), armazém (estantes altas, empilhadeira, doca), QG (lavanderia com a passagem secreta) |
+
+O que entrou no motor:
+
+- **Lojas planejadas**: o balcão com `"shop_counter": true` define o balcão da loja; o vendedor vira a primeira vaga
+  (atrás do balcão) e a zona de compra fica logo à frente, como no modelo antigo.
+- **Poses e atividades** `exercise` (em cima de esteira, bicicleta, supino ou ringue; sem colisão) e `dance` (na pista).
+- **Passagem secreta do QG**: a máquina de lavar com `"secret": true` bloqueia até o jogador apertar E na zona
+  `secret` ("entrar no QG"); os cômodos com `"hidden": true` ficam cobertos por sombra até lá. Ao voltar, começa fechada.
+- 8 pisos (borracha, carpetes roxo, cinza e estampado, concreto manchado, chapa, tábua rústica, ladrilho bege) e 8
+  paredes (creme com faixa vermelha, preta com neon, veludo, chapa ondulada, celeiro, bloco de concreto, painel
+  metálico com luzes, reboco verde); cerca de 35 móveis e itens novos (guichê, coluna, carrinhos, cabine, chapa,
+  pista, alvo, vitrine, freezer, caixa com esteira, sacos de ração, barril, manequim, balança, geladeira de bebidas,
+  compressor, saco de pancada, supino, bicicleta, chuveiro, catraca, jornais, copiadora, projetor, quadro branco,
+  portão de enrolar, neon, chaveiro, elevador, cardápio, armário de armas, painel de ferramentas, cruz da farmácia,
+  vela, sineta, caixa registradora, máquina de escrever).
+- Funcionários novos nos tipos (para as plantas): garçom (restaurante), camareira (hotel), bilheteiro e atendente
+  (cinema), editor (redação), recepcionista (escritório), agente e chefe (QG).
+
+Testes da Etapa 2: `test_plans.gd` ganhou o verificador `_assert_plan` (cômodos, itens, zonas de serviço,
+funcionários e clientes de cada tipo) e os testes de cada planta; `test_plan_parser` cobre balcão de loja,
+exercício em aparelho e passagem secreta; `test_scenes` cobre a passagem do QG (só abre com E, sombra, volta fechada)
+e o tipo desconhecido; `test_npc` cobre dança e exercício.
+
+| Teste removido ou reescrito na Etapa 2 | Motivo |
+|---|---|
+| `test_interior_is_much_bigger_than_building` → `test_interior_is_bigger_than_the_building` | Interiores agora são do tamanho da tela ou pouco maiores (ainda mais de 3x a fachada) |
+| `test_size_follows_type_and_facade_width` → `test_size_comes_from_the_plan_not_the_facade` | A fachada não muda mais o tamanho |
+| `test_every_building_type_has_a_template` → `test_every_building_type_has_a_plan` | Não há mais modelos; todo tipo tem planta |
+| `test_interiors_stay_valid_in_every_size`, `test_legacy_types_keep_working`, `test_legacy_interior_still_builds` | Só faziam sentido com o construtor antigo; viraram `test_unknown_type_uses_the_house_plan` (layout e cena) |
+| `test_every_interior_has_the_minimum_amount_of_people` | A gente de cada planta é definida nela e testada em `test_plans` |
+| `test_hotel_rooms_vary_with_the_seed` → `test_hotel_has_three_furnished_rooms` | O hotel tem três quartos fixos |
+| `test_interior_size_follows_the_facade` → `test_camera_covers_the_whole_interior` | A fachada não muda o tamanho |
+| `test_windows_show_the_sky_of_the_hour` | As janelas são sempre itens de parede com o céu atrás |
+
+## O que fica para depois
+
+Falas por papel na conversa (spec §9.1), turnos por hora do dia e capricho extra nas plantas maiores (academia,
+hotel e hospital ainda têm áreas mais abertas).

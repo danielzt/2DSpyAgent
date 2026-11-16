@@ -21,6 +21,15 @@ const PLANS := {
 	"market": preload("res://scripts/interior/plans/market.gd"),
 	"gas_station": preload("res://scripts/interior/plans/gas_station.gd"),
 	"farm_store": preload("res://scripts/interior/plans/farm_store.gd"),
+	"workshop": preload("res://scripts/interior/plans/workshop.gd"),
+	"gym": preload("res://scripts/interior/plans/gym.gd"),
+	"cinema": preload("res://scripts/interior/plans/cinema.gd"),
+	"office": preload("res://scripts/interior/plans/office.gd"),
+	"newspaper": preload("res://scripts/interior/plans/newspaper.gd"),
+	"apartment": preload("res://scripts/interior/plans/apartment.gd"),
+	"farm": preload("res://scripts/interior/plans/farm.gd"),
+	"warehouse": preload("res://scripts/interior/plans/warehouse.gd"),
+	"hq": preload("res://scripts/interior/plans/hq.gd"),
 }
 
 ## Plantas injetadas (testes): têm prioridade sobre o registro.

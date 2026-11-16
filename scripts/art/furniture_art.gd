@@ -48,14 +48,18 @@ const MATERIALS := {
 	"target": "snow", "display_case": "ice", "freezer": "snow", "checkout": "gray", "shopping_cart": "silver",
 	"feed_sacks": "sand", "barrel": "brown", "mannequin": "black", "scale": "silver", "drink_fridge": "red",
 	"gun_rack": "ramp:wood", "tool_rack": "ramp:wood", "cross_sign": "green",
+	# Etapa 2: oficina, academia, cinema, escritório, redação
+	"compressor": "red", "punching_bag": "red", "bench_press": "black", "exercise_bike": "gray", "shower": "silver",
+	"turnstile": "silver", "newspaper_stack": "snow", "photocopier": "snow", "projector": "black",
+	"whiteboard": "snow", "typewriter": "gray", "roll_door": "silver",
 }
 ## Itens presos na face da parede (sem colisão) e itens que ficam em cima de móveis.
 const WALL_KINDS := ["window", "painting", "clock", "extinguisher", "poster", "notice_board", "wall_tv",
 	"wall_shelf", "mirror", "exit_sign", "wall_lamp", "diploma", "wanted_board", "dartboard", "bottle_wall",
 	"case_wall", "safe_wall", "neon", "key_rack", "elevator_door", "menu_board",
-	"gun_rack", "tool_rack", "cross_sign"]
+	"gun_rack", "tool_rack", "cross_sign", "whiteboard", "roll_door"]
 const ON_KINDS := ["plate", "glass", "bottle", "papers", "phone", "book", "table_lamp", "fruit_bowl",
-	"coffee_pot", "mug", "ashtray", "flowers", "stethoscope_tray", "pool_cue", "cat", "candle", "bell", "cash_register"]
+	"coffee_pot", "mug", "ashtray", "flowers", "stethoscope_tray", "pool_cue", "cat", "candle", "bell", "cash_register", "typewriter"]
 
 static var _canvases := {}
 

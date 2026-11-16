@@ -19,6 +19,8 @@ const SIZES := {"P": Vector2i(40, 23), "M": Vector2i(48, 27), "G": Vector2i(56, 
 ## Móveis onde alguém pode sentar ou deitar.
 const SEATS := ["chair", "office_chair", "stool", "bar_stool", "sofa", "armchair", "bench", "seats", "booth", "bunk"]
 const BEDS := ["bed", "double_bed", "hospital_bed", "bunk", "sofa", "car_lift"]
+## Aparelhos onde alguém se exercita (em cima deles).
+const EQUIPMENT := ["treadmill", "exercise_bike", "bench_press", "ring"]
 const FIXED := "#|-DE."
 const GRIDS := ["floor_grid", "object_grid", "detail_grid"]
 const DIRS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
@@ -102,7 +104,9 @@ static func validate(plan: Dictionary) -> Array[String]:
 					errors.append("%s: sentado fora de um assento" % where)
 				elif act == "lie" and not BEDS.has(under):
 					errors.append("%s: deitado fora de uma cama" % where)
-				elif act != "sit" and act != "lie" and _solid_at(plan, x, y):
+				elif act == "exercise" and _solid_at(plan, x, y) and not EQUIPMENT.has(under):
+					errors.append("%s: exercício fora de um aparelho" % where)
+				elif act != "sit" and act != "lie" and act != "exercise" and _solid_at(plan, x, y):
 					errors.append("%s: pessoa dentro de algo sólido" % where)
 				if entry.has("route") and _route_points(plan, entry.route).is_empty():
 					errors.append("%s: rota '%s' sem pontos" % [where, entry.route])
@@ -139,6 +143,7 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 		"size": size, "size_class": plan.size, "mirrored": mirrored, "variant": variant,
 		"rooms": [], "floor_rects": [], "walls": [], "doors": [], "wall_faces": [], "items": [],
 		"npc_slots": [], "zones": [], "exit": Rect2(), "spawn": Vector2.ZERO, "counter": Rect2(),
+		"secret_door": Rect2(), "hidden": [],
 	}
 
 	# pisos: runs horizontais da mesma letra
@@ -165,9 +170,11 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 			for c in comp.cells:
 				seen[c] = true
 			var entry: Dictionary = floor_legend[letter]
-			result.rooms.append({"name": entry.get("room", ""), "rect": _cells(comp.min.x, comp.min.y,
-					comp.max.x - comp.min.x + 1, comp.max.y - comp.min.y + 1), "floor": floor_of.call(letter),
+			var room_rect := _cells(comp.min.x, comp.min.y, comp.max.x - comp.min.x + 1, comp.max.y - comp.min.y + 1)
+			result.rooms.append({"name": entry.get("room", ""), "rect": room_rect, "floor": floor_of.call(letter),
 					"wall": wall_of.call(letter)})
+			if entry.get("hidden", false):
+				result.hidden.append(room_rect)   # cômodo escondido até a passagem abrir
 
 	# paredes cheias (runs horizontais), finas, portas e saída
 	for y in dims.y:
@@ -243,6 +250,9 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 				"layer": "floor", "tone": tone_over.get(entry.item, entry.get("tone", ""))})
 		if entry.get("shop_counter", false):
 			result.counter = rect
+		if entry.get("secret", false):
+			result.items[-1]["secret"] = true   # passagem secreta: sólida até abrir com E
+			result.secret_door = rect
 	for piece in _pieces(plan.object_grid, object_legend, "wall_item"):
 		var entry: Dictionary = object_legend[piece.letter]
 		if not _roll(rng, entry):
@@ -427,6 +437,11 @@ static func _mirror(result: Dictionary) -> void:
 	result.exit = flip.call(result.exit)
 	if result.counter.size.x > 0.0:
 		result.counter = flip.call(result.counter)
+	if result.secret_door.size.x > 0.0:
+		result.secret_door = flip.call(result.secret_door)
+	var hidden: Array = result.hidden
+	for i in hidden.size():
+		hidden[i] = flip.call(hidden[i])
 	result.spawn = Vector2(w - result.spawn.x, result.spawn.y)
 	for slot in result.npc_slots:
 		slot.position = Vector2(w - slot.position.x, slot.position.y)

@@ -351,6 +351,73 @@ static func build(c: RefCounted, kind: String, w: int, h: int, t: Array[Color]) 
 			c.frame(0, 0, w, h, _c("ink"))
 			c.rect(w / 2 - 1, 2, 3, h - 4, t[1])
 			c.rect(w / 2 - 4, h / 2 - 1, 9, 3, t[1])
+		"compressor":
+			c.ellipse(0, h / 4, w, h - h / 4, t[0])
+			c.ellipse(1, h / 4 + 1, w - 2, h - h / 4 - 2, t[1])
+			c.rect(w / 2 - 2, 0, 4, h / 3, _c("slate"))
+			c.px(w / 2, h / 2 + 1, _c("white"))
+			c.outline(_c("ink"))
+		"punching_bag":
+			c.ellipse(1, 1, w - 2, h - 2, t[0])
+			c.ellipse(2, 2, w - 4, h - 4, t[1])
+			c.ellipse(w / 3, h / 3, w / 3, h / 3, t[2])
+			c.outline(_c("ink"))
+		"bench_press":
+			c.rect(w / 4, h / 3, w / 2, h / 3, t[1])
+			c.rect(0, h / 2 - 1, w, 2, _c("gray"))
+			c.rect(0, 1, 3, h - 2, _c("ink"))
+			c.rect(w - 3, 1, 3, h - 2, _c("ink"))
+			c.outline(_c("ink"))
+		"exercise_bike":
+			c.rect(w / 2 - 1, 2, 2, h - 4, t[1])
+			c.ellipse(1, h - w + 1, w - 2, w - 2, _c("slate"))
+			c.rect(1, 1, w - 2, 3, _c("ink"))
+			c.rect(w / 2 - 2, h / 2, 4, 3, _c("red"))
+			c.outline(_c("ink"))
+		"shower":
+			c.rect(0, 0, w, h, _c("white"))
+			c.ellipse(w / 2 - 3, 1, 6, 4, t[1])
+			for y in range(6, h - 1, 3):
+				c.px(w / 2 - 2 + (y % 4), y, _c("sky"))
+			c.frame(0, 0, w, h, _c("ink"))
+		"turnstile":
+			c.rect(0, h / 3, w, h / 3, t[1])
+			c.rect(w / 2 - 1, 0, 2, h, _c("slate"))
+			c.px(2, h / 2, _c("neon_green"))
+			c.outline(_c("ink"))
+		"newspaper_stack":
+			c.rect(1, 1, w - 2, h - 2, _c("white"))
+			for y in range(2, h - 2, 2):
+				c.hline(2, y, w - 4, _c("light"))
+			c.rect(2, 2, w / 2, 3, _c("ink"))
+			c.frame(0, 0, w, h, _c("gray"))
+		"photocopier":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 6, h / 2, _c("slate"))
+			c.rect(w - 4, 2, 2, 2, _c("neon_green"))
+			c.hline(2, h - 4, w - 4, _c("white"))
+		"projector":
+			_box(c, 0, 0, w, h, t)
+			c.ellipse(w - 7, h / 2 - 3, 6, 6, _c("slate"))
+			c.px(w - 4, h / 2, _c("cream"))
+		"roll_door":
+			c.fill(t[1])
+			for y in range(1, h - 1, 2):
+				c.hline(1, y, w - 2, t[0])
+			c.rect(w / 2 - 2, h - 3, 4, 2, _c("amber"))
+			c.frame(0, 0, w, h, _c("ink"))
+		"whiteboard":
+			c.fill(_c("white"))
+			c.frame(0, 0, w, h, _c("slate"))
+			c.hline(2, 3, w / 2, _c("blue"))
+			c.hline(2, 5, w / 3, _c("red"))
+			c.hline(w / 2, 7, w / 3, _c("green"))
+		"typewriter":
+			c.rect(0, h / 3, w, h - h / 3, t[1])
+			c.rect(1, 0, w - 2, h / 3, _c("white"))
+			for x in range(1, w - 1, 2):
+				c.px(x, h - 2, _c("ink"))
+			c.outline(_c("ink"))
 		"coffee_machine":
 			_box(c, 0, 0, w, h, t)
 			c.rect(3, 3, w - 6, h / 3, ink)

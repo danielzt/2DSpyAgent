@@ -291,4 +291,5 @@ func test_dancing_and_exercising_npcs_stay_and_animate() -> void:
 		await wait_physics_frames(300)
 		assert_eq(npc.pose(), act)
 		assert_eq(npc.global_position, spot)
-		assert_false(_shape_disabled(npc), "%s tem colisão" % act)
+		# quem dança ocupa espaço; quem se exercita está em cima do aparelho (sem colisão)
+		assert_eq(_shape_disabled(npc), act == "exercise", act)

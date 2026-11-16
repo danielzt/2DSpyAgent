@@ -381,22 +381,12 @@ func test_interior_npcs_get_their_uniform() -> void:
 
 # --- interiores cheios ---
 
-func test_every_interior_has_the_minimum_amount_of_people() -> void:
-	for type in BuildingDefs.ORDER:
-		if InteriorLayout.is_planned(type):
-			continue   # nas plantas, a gente é definida nelas (ver test_plans.gd)
-		for id in [1, 8, 15]:
-			var inner := InteriorLayout.new(id, type, 240.0)
-			assert_true(inner.npc_slots.size() >= InteriorLayout.MIN_PEOPLE[inner.size_class],
-					"%s %d tem %d pessoas" % [type, id, inner.npc_slots.size()])
-
-
 func test_people_never_stand_inside_furniture_or_walls() -> void:
 	for type in ["hospital", "police", "house", "bar", "hotel", "office"]:
 		for id in range(10):
 			var inner := InteriorLayout.new(id, type)
 			for slot in inner.npc_slots:
-				if slot.get("act", "post") in ["sit", "lie"]:
+				if slot.get("act", "post") in ["sit", "lie", "exercise"]:
 					continue   # sentado ou deitado fica sobre o próprio móvel
 				var probe := Rect2(slot.position - Vector2(10, 10), Vector2(20, 20))
 				for solid in inner.solids():

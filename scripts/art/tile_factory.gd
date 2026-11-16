@@ -311,11 +311,12 @@ static func _build(id: String) -> RefCounted:
 					t.px(x, y, _c("red"))
 			return t
 		"floor/concrete_stripe":
+			# concreto de galpão: manchado e com juntas de dilatação (as faixas de piso vêm como itens)
 			var t := _filled("gray")
-			t.speckle(_c("slate"), 0.03, seed_value)
-			for x in range(0, SIZE, 8):
-				t.rect(x, 0, 4, 2, _c("amber"))
-				t.rect(x + 4, 0, 4, 2, _c("ink"))
+			t.speckle(_c("slate"), 0.04, seed_value)
+			t.speckle(_c("light"), 0.015, seed_value + 1)
+			t.ellipse(5, 9, 9, 5, _c("slate"))
+			t.ellipse(20, 22, 6, 4, _c("slate"))
 			return t
 		"floor/metal":
 			var t := _filled("slate")
