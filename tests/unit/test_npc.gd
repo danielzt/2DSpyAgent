@@ -187,3 +187,120 @@ func test_slow_car_does_not_kill() -> void:
 	car.speed = 40.0
 	await wait_physics_frames(20)
 	assert_false(_is_dead(npc))
+
+
+# --- atividades nos interiores (Fase 7) ---
+
+func _worker(pos: Vector2, activity: String, route := PackedVector2Array(), facing := "down") -> Node:
+	var npc := NPC_SCENE.instantiate()
+	npc.ai_seed = 7
+	npc.activity = activity
+	npc.route = route
+	npc.facing = facing
+	npc.stationary = true
+	return _add(npc, pos)
+
+
+func _shape_disabled(npc: Node) -> bool:
+	return (npc.get_node("CollisionShape2D") as CollisionShape2D).disabled
+
+
+func test_sitting_npc_has_no_collision_and_sits() -> void:
+	var npc := _worker(Vector2(100, 100), "sit", PackedVector2Array(), "right")
+	await wait_physics_frames(30)
+	assert_eq(npc.pose(), "sit")
+	assert_true(_shape_disabled(npc))
+	assert_eq(npc.global_position, Vector2(100, 100))
+	assert_eq(npc.sprite_direction(), "right")
+
+
+func test_lying_npc_lies_down() -> void:
+	var npc := _worker(Vector2(100, 100), "lie", PackedVector2Array(), "left")
+	await wait_physics_frames(5)
+	assert_eq(npc.pose(), "lie")
+	assert_eq(npc.sprite_direction(), "down")
+	assert_true(_shape_disabled(npc))
+
+
+func test_working_npc_stays_and_animates() -> void:
+	var npc := _worker(Vector2(100, 100), "work")
+	await wait_physics_frames(60)
+	assert_eq(npc.pose(), "work")
+	assert_eq(npc.global_position, Vector2(100, 100))
+	assert_false(_shape_disabled(npc))
+
+
+func test_patrol_walks_only_between_route_points() -> void:
+	var route := PackedVector2Array([Vector2(0, 0), Vector2(160, 0), Vector2(160, 160)])
+	var npc := _worker(route[0], "patrol", route)
+	var bounds := Rect2(Vector2(0, 0), Vector2(160, 160)).grow(16.0)
+	var closest := [INF, INF, INF]
+	for i in 1200:   # 20 s: ida, pausas de até 4 s e volta
+		await wait_physics_frames(1)
+		assert_true(bounds.has_point(npc.global_position), "saiu da rota: %s" % str(npc.global_position))
+		for p in 3:
+			closest[p] = minf(closest[p], npc.global_position.distance_to(route[p]))
+	for p in 3:
+		assert_true(closest[p] < npc.ARRIVE_DISTANCE + 1.0, "não passou pelo ponto %d (%.1f)" % [p, closest[p]])
+
+
+func test_patrol_waits_when_blocked_and_moves_on() -> void:
+	var route := PackedVector2Array([Vector2(0, 0), Vector2(160, 0), Vector2(160, 160)])
+	var wall := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(40, 80)
+	shape.shape = rect
+	wall.add_child(shape)
+	_add(wall, Vector2(80, 0))
+	var npc := _worker(route[0], "patrol", route)
+	var reached := false
+	for i in 1200:   # 20 s: ida, pausas de até 4 s e volta
+		await wait_physics_frames(1)
+		if npc.global_position.distance_to(route[2]) < npc.ARRIVE_DISTANCE + 1.0:
+			reached = true
+			break
+	assert_true(reached, "ficou preso tentando passar: %s" % str(npc.global_position))
+	assert_eq(wall.global_position, Vector2(80, 0))
+
+
+func test_attacked_sitting_npc_stands_up_and_flees() -> void:
+	var npc := _worker(Vector2(200, 200), "sit")
+	var attacker := Node2D.new()
+	_add(attacker, Vector2(150, 200))
+	await wait_physics_frames(3)
+	npc.take_damage(1, attacker)
+	await wait_physics_frames(30)
+	assert_eq(npc.activity, "")
+	assert_false(_shape_disabled(npc))
+	assert_eq(npc.pose(), "stand")
+	assert_gt(npc.global_position.distance_to(attacker.global_position), 60.0)
+
+
+func test_post_npc_stays_put() -> void:
+	var npc := _worker(Vector2(300, 300), "post", PackedVector2Array(), "up")
+	await wait_physics_frames(300)
+	assert_eq(npc.global_position, Vector2(300, 300))
+	assert_eq(npc.pose(), "stand")
+
+
+func test_dancing_and_exercising_npcs_stay_and_animate() -> void:
+	for act in ["dance", "exercise"]:
+		var spot := Vector2(400, 400) if act == "dance" else Vector2(900, 400)
+		var npc := _worker(spot, act)
+		await wait_physics_frames(300)
+		assert_eq(npc.pose(), act)
+		assert_eq(npc.global_position, spot)
+		# quem dança ocupa espaço; quem se exercita está em cima do aparelho (sem colisão)
+		assert_eq(_shape_disabled(npc), act == "exercise", act)
+
+
+func test_exercising_on_the_floor_keeps_collision() -> void:
+	var npc := NPC_SCENE.instantiate()
+	npc.ai_seed = 7
+	npc.activity = "exercise"
+	npc.on_furniture = false
+	npc.stationary = true
+	_add(npc, Vector2(600, 600))
+	await wait_physics_frames(5)
+	assert_false(_shape_disabled(npc), "no chão ocupa espaço")

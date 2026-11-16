@@ -87,10 +87,14 @@ func _run_all() -> void:
 			t.tree = self
 			total += 1
 			_reset_globals()
+			var t0 := Time.get_ticks_msec()
 			await t.before_each()
 			await t.call(test_name)
 			await t.after_each()
 			assertions += t.assertions
+			var ms := Time.get_ticks_msec() - t0
+			if ms >= 500:
+				print("  [lento] %s: %d ms" % [test_name, ms])
 			if t.failures.is_empty():
 				if verbose:
 					print("  ok    %s" % test_name)

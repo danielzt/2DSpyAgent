@@ -117,6 +117,17 @@ func _ready() -> void:
 	add_child(pause_panel)
 
 
+## Voltando à árvore (o mundo guardado durante um interior): a vida e os sinais da ficha
+## foram atualizados pelo jogador do interior; retoma a partir dela. Na 1ª entrada, _ready cuida.
+func _enter_tree() -> void:
+	if profile == null:
+		return
+	health = max_health() if profile.health <= 0.0 else minf(profile.health, max_health())
+	_last_max_health = max_health()
+	if not profile.changed.is_connected(_on_profile_changed):
+		profile.changed.connect(_on_profile_changed)
+
+
 func _exit_tree() -> void:
 	if profile != null:
 		profile.health = health

@@ -1,12 +1,41 @@
 # Changelog
 
-## 2026-11-15 (6)
+## 2026-11-16 (3)
 
 - **E2, save e opções:** o jogo grava sozinho (`user://save.json`, funciona no navegador) ao entrar e sair de prédios, ao pausar e ao dormir/sair da casa. Guarda a seed, o relógio, os pontos e, por jogador, a ficha (nível, XP, atributos, dinheiro, banco, mapa explorado, prédios conhecidos, pontos marcados) e o inventário; o mundo é regenerado pela seed. O arquivo leva `version` e passa por `SaveGame.migrate`; save corrompido ou de versão futura é ignorado
 - Título ganha **Continuar** (só com save) e **Opções** (tela cheia, volume, tremor); a pausa ganha tela cheia e volume. As opções ficam em `user://options.cfg`, separadas do save
 - **E4, corpo a corpo:** cassetete (item novo, no kit inicial e na armaria) e **socos** com a mão esquerda vazia; golpe em arco curto à frente, sem munição, afetado pela Força
 - Runner de testes passa a usar arquivos de save e opções próprios (`user://test_*`)
 - 873 testes. Detalhes: [save-e-opcoes.md](save-e-opcoes.md)
+
+## 2026-11-16 (2)
+
+- Correção: ao entrar num prédio e sair, o mundo externo era recriado do zero (o carro deixado na porta sumia,
+  bandidos e NPCs voltavam ao início). Agora a cena da rua é guardada fora da árvore enquanto o jogador está
+  dentro e volta igual ao sair (ver "Mundo persistente" em [arquitetura.md](arquitetura.md))
+- Correção: nos menus (título e pausa) as setas pareciam invertidas: uma seta disparava `p2_down` e `ui_down` e o
+  menu andava duas casas (num menu de 3 itens, +2 = -1). Agora anda no máximo uma casa por quadro, e Enter escolhe uma vez
+- 937 testes
+
+## 2026-11-16
+
+- Fase 7, Etapa 2: plantas próprias para os 20 tipos que faltavam (banco, hotel, restaurante, lanchonete, boate,
+  as 6 lojas, oficina, academia, cinema, escritório, redação, apartamento, casa de fazenda, armazém e QG);
+  construtor antigo de interiores removido
+- Lojas com balcão, vendedor e zona de compra vindos da planta; dançarinos na boate e alunos se exercitando
+- QG: a passagem secreta da lavanderia só abre com E e a sala fica escura até lá
+- 8 pisos, 8 paredes e cerca de 35 móveis e itens novos; novos funcionários (garçom, camareira, bilheteiro, editor...)
+- Rondas validadas para não atravessar móveis; ninguém senta no ar; quem se exercita no chão ocupa espaço
+- 933 testes. Detalhes: [redesign-fase-7.md](redesign-fase-7.md)
+
+## 2026-11-15 (6)
+
+- Fase 7, Etapa 1 (interiores caprichados): plantas autorais em mapa de texto (`PlanParser`, `Plans`) do tamanho da
+  tela ou pouco maiores; móveis na escala do personagem; paredes com face visível e itens de parede; 9 pisos e 9
+  estilos de parede; ~45 móveis e itens novos; uniforme pelo prédio (hospital de branco, delegacia de azul) com
+  chapéus e detalhes; NPCs com atividade (posto, ronda, sentado, deitado, trabalhando) e poses novas
+- Plantas novas: casa, casa do agente, bar, delegacia e hospital. Os outros tipos seguem no modelo antigo até a Etapa 2
+- 901 testes. Detalhes: [redesign-fase-7.md](redesign-fase-7.md)
 
 ## 2026-11-15 (5)
 
@@ -39,6 +68,8 @@
 - Detalhes: [redesign-fase-3.md](redesign-fase-3.md) e [redesign-fase-4.md](redesign-fase-4.md)
 
 ## 2026-11-15
+
+- Testes: suíte passou de ~182 s para ~23 s usando `--fixed-fps 60` (sem sincronizar com o relógio); runner avisa testes acima de 500 ms
 
 - Fase 2 do redesenho, cidade com contexto: duas avenidas mais largas cruzando no centro (duas faixas por sentido), seis bairros por seed com paredes, telhados, alturas e formatos de lote próprios
 - Tabela única de 24 tipos de prédio em `building_defs.gd` (cotas, tamanho mínimo, letreiro, funcionários, horário, serviço); as lojas viraram entradas da tabela com o mesmo estoque; novo tipo "redação do jornal"

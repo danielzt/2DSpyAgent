@@ -4,6 +4,9 @@ extends Node
 const MAIN_SCENE := "res://scenes/main.tscn"
 const TITLE_SCENE := "res://scenes/title/title.tscn"
 const INTERIOR_SCENE := "res://scenes/interior/interior.tscn"
+## Grupos da cena do mundo externo (main.gd) e da cena de interior (interior.gd).
+const WORLD_GROUP := "outside_world"
+const INTERIOR_GROUP := "interiors"
 
 const ProfileScript := preload("res://scripts/player/player_profile.gd")
 const InventoryScript := preload("res://scripts/items/inventory.gd")
@@ -29,6 +32,12 @@ var _world_layout
 var has_return := false
 ## Opções de conforto: tremor de câmera (Fase 5).
 var screen_shake := true
+## Mundo externo guardado (fora da árvore) enquanto o jogador está num interior: ao sair,
+## a mesma cena volta, com carros, bandidos, NPCs e itens onde estavam.
+var parked_world: Node = null
+## Pai e posição do mundo na árvore antes de ser guardado (para voltar ao mesmo lugar).
+var _parked_parent: Node = null
+var _parked_was_current := false
 
 # Dados do jogador sobrevivem às trocas de cena (o nó Player é recriado a cada cena).
 var _profiles := {}
@@ -123,13 +132,71 @@ func go_inside(id: int, p_return_position: Vector2, shop := "", type := "", p_na
 	if Transition.busy:
 		return
 	# O estado só muda com a íris fechada (Transition roda o `before`).
-	Transition.go(INTERIOR_SCENE, set_inside.bind(id, p_return_position, shop, type, p_name, p_width))
+	Transition.run(func() -> void: _enter_building.call_deferred(),
+		set_inside.bind(id, p_return_position, shop, type, p_name, p_width))
 
 
 func go_outside() -> void:
 	if Transition.busy:
 		return
-	Transition.go(MAIN_SCENE, set_outside)
+	Transition.run(func() -> void: _leave_building.call_deferred(), set_outside)
+
+
+## Guarda o mundo externo (sem destruí-lo) e monta o interior no lugar dele.
+## Sem mundo em cena (ex.: interior dentro de interior), troca de cena como antes.
+func _enter_building() -> void:
+	var tree := get_tree()
+	var world := tree.get_first_node_in_group(WORLD_GROUP)
+	if world == null:
+		tree.change_scene_to_file(INTERIOR_SCENE)
+		return
+	discard_parked_world()
+	park_world(world)
+	var interior: Node = (load(INTERIOR_SCENE) as PackedScene).instantiate()
+	_parked_parent.add_child(interior)
+	if _parked_was_current:
+		tree.current_scene = interior
+
+
+## Desfaz o interior e devolve o mundo guardado; sem mundo guardado, carrega um novo.
+func _leave_building() -> void:
+	var tree := get_tree()
+	var was_current := false
+	for interior in tree.get_nodes_in_group(INTERIOR_GROUP):
+		was_current = was_current or interior == tree.current_scene
+		interior.get_parent().remove_child(interior)   # sai da árvore já (o jogador salva a vida)
+		interior.queue_free()
+	if not is_instance_valid(parked_world):
+		parked_world = null
+		tree.change_scene_to_file(MAIN_SCENE)
+		return
+	var world := parked_world
+	var parent: Node = _parked_parent if is_instance_valid(_parked_parent) else tree.root
+	parked_world = null
+	_parked_parent = null
+	parent.add_child(world)
+	if _parked_was_current or was_current:
+		tree.current_scene = world
+	if world.has_method("resume_from_interior"):
+		world.resume_from_interior()
+
+
+## Tira o mundo da árvore sem liberá-lo: fora da árvore nada nele processa (fica congelado).
+func park_world(world: Node) -> void:
+	var tree := get_tree()
+	_parked_parent = world.get_parent()
+	_parked_was_current = world == tree.current_scene
+	_parked_parent.remove_child(world)
+	parked_world = world
+
+
+## Libera o mundo guardado (novo jogo, volta ao título).
+func discard_parked_world() -> void:
+	if is_instance_valid(parked_world):
+		parked_world.free()
+	parked_world = null
+	_parked_parent = null
+	_parked_was_current = false
 
 
 ## Volta ao menu de título (zera a partida).
@@ -142,8 +209,13 @@ func go_to_title() -> void:
 		new_game())
 
 
+func _exit_tree() -> void:
+	discard_parked_world()
+
+
 ## Começa uma partida nova: perfis, inventários, relógio e pontos zerados.
 func new_game() -> void:
+	discard_parked_world()
 	reset_players()
 	has_return = false
 	WorldClock.reset()
