@@ -81,6 +81,8 @@ procedurais. Mundo infinito fica como possibilidade futura.
 
 Entrar em um prédio troca a cena: o jogador aparece em uma sala grande, com móveis e
 uma porta de saída. Ao sair, reaparece na calçada, em frente à porta por onde entrou.
+O mundo de fora **continua lá**: o carro deixado na porta, os bandidos e os NPCs ficam onde estavam
+(a rua fica congelada enquanto o jogador está dentro; o relógio do jogo segue andando).
 Entrar e sair exige apertar **E** diante da porta (aparece a instrução no canto da tela). Estado atual: todos os prédios (cidade e fazendas) têm interior, gerado por seed do id do prédio
 (ver [prototipo-02-interiores.md](prototipo-02-interiores.md)).
 

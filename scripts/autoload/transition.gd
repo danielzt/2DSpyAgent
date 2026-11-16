@@ -106,17 +106,22 @@ func open() -> void:
 
 ## Troca de cena com a íris: fecha, roda `before` (ajuste de estado), troca, abre.
 func go(path: String, before := Callable()) -> void:
+	await run(func() -> void: get_tree().change_scene_to_file(path), before)
+
+
+## Como `go`, mas a troca é feita por `change` (ex.: estacionar o mundo e montar um interior).
+func run(change: Callable, before := Callable()) -> void:
 	if busy:
 		return
 	if not enabled or not is_inside_tree():
 		if before.is_valid():
 			before.call()
-		get_tree().change_scene_to_file(path)
+		change.call()
 		return
 	await close()
 	if before.is_valid():
 		before.call()
-	get_tree().change_scene_to_file(path)
+	change.call()
 	# espera a cena nova existir antes de abrir
 	await get_tree().process_frame
 	await get_tree().process_frame

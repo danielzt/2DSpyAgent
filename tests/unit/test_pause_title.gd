@@ -121,6 +121,44 @@ func test_menu_reads_the_player_actions() -> void:
 	assert_eq(got, [1])
 
 
+func _key(keycode: Key, pressed: bool) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = keycode
+	e.physical_keycode = keycode
+	e.pressed = pressed
+	return e
+
+
+## A seta é `p2_down` e também `ui_down`: o menu deve andar só uma casa (antes andava duas,
+## e num menu de 3 itens +2 parecia ir para cima).
+func test_arrow_keys_move_the_menu_one_step_in_the_right_direction() -> void:
+	var menu := _menu()
+	await wait_frames(1)
+	assert_true(InputMap.action_has_event("ui_down", _key(KEY_DOWN, true)), "seta também é ui_down")
+	Input.parse_input_event(_key(KEY_DOWN, true))
+	await wait_frames(2)
+	Input.parse_input_event(_key(KEY_DOWN, false))
+	await wait_frames(1)
+	assert_eq(menu.selected, 1, "seta para baixo desce uma")
+	Input.parse_input_event(_key(KEY_UP, true))
+	await wait_frames(2)
+	Input.parse_input_event(_key(KEY_UP, false))
+	await wait_frames(1)
+	assert_eq(menu.selected, 0, "seta para cima sobe uma")
+
+
+func test_enter_chooses_only_once() -> void:
+	var menu := _menu()
+	var got := []
+	menu.chosen.connect(func(i: int) -> void: got.append(i))
+	await wait_frames(1)
+	Input.parse_input_event(_key(KEY_ENTER, true))
+	await wait_frames(2)
+	Input.parse_input_event(_key(KEY_ENTER, false))
+	await wait_frames(1)
+	assert_eq(got, [0])
+
+
 func test_inactive_menu_ignores_input() -> void:
 	var menu := _menu()
 	menu.active = false

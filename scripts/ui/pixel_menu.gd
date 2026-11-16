@@ -59,23 +59,36 @@ func choose() -> void:
 		chosen.emit(selected)
 
 
+## Ações que movem/escolhem no menu. Uma mesma tecla pode disparar várias delas (a seta
+## para baixo é `p2_down` e também `ui_down`), por isso o menu anda no máximo um passo por quadro.
+static func nav_actions() -> Dictionary:
+	var down: Array[String] = ["ui_down"]
+	var up: Array[String] = ["ui_up"]
+	var accept: Array[String] = ["ui_accept"]
+	for n in PLAYERS:
+		down.append("p%d_down" % n)
+		up.append("p%d_up" % n)
+		accept.append("p%d_interact" % n)
+	return {"down": down, "up": up, "accept": accept}
+
+
 func _process(_delta: float) -> void:
 	if not active or not is_visible_in_tree():
 		return
-	for n in PLAYERS:
-		var prefix := "p%d_" % n
-		if Input.is_action_just_pressed(prefix + "down"):
-			move(1)
-		elif Input.is_action_just_pressed(prefix + "up"):
-			move(-1)
-		elif Input.is_action_just_pressed(prefix + "interact"):
-			choose()
-	if Input.is_action_just_pressed("ui_down"):
+	var actions := nav_actions()
+	if _any_just_pressed(actions.down):
 		move(1)
-	elif Input.is_action_just_pressed("ui_up"):
+	elif _any_just_pressed(actions.up):
 		move(-1)
-	elif Input.is_action_just_pressed("ui_accept"):
+	elif _any_just_pressed(actions.accept):
 		choose()
+
+
+static func _any_just_pressed(list: Array[String]) -> bool:
+	for action in list:
+		if InputMap.has_action(action) and Input.is_action_just_pressed(action):
+			return true
+	return false
 
 
 func _gui_input(event: InputEvent) -> void:

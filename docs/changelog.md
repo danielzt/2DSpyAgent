@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-16 (2)
+
+- Correção: ao entrar num prédio e sair, o mundo externo era recriado do zero (o carro deixado na porta sumia,
+  bandidos e NPCs voltavam ao início). Agora a cena da rua é guardada fora da árvore enquanto o jogador está
+  dentro e volta igual ao sair (ver "Mundo persistente" em [arquitetura.md](arquitetura.md))
+- Correção: nos menus (título e pausa) as setas pareciam invertidas: uma seta disparava `p2_down` e `ui_down` e o
+  menu andava duas casas (num menu de 3 itens, +2 = -1). Agora anda no máximo uma casa por quadro, e Enter escolhe uma vez
+- 937 testes
 ## 2026-11-16
 
 - Fase 7, Etapa 2: plantas próprias para os 20 tipos que faltavam (banco, hotel, restaurante, lanchonete, boate,
