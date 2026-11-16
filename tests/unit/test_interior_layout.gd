@@ -8,6 +8,8 @@ const Services := preload("res://scripts/interior/services.gd")
 const FurnitureArt := preload("res://scripts/art/furniture_art.gd")
 const TileFactory := preload("res://scripts/art/tile_factory.gd")
 const CityLayout := preload("res://scripts/world/city_layout.gd")
+const Plans := preload("res://scripts/interior/plans/plans.gd")
+const ParserTest := preload("res://tests/unit/test_plan_parser.gd")
 
 const IDS := 20
 
@@ -33,11 +35,13 @@ func test_size_follows_type_and_facade_width() -> void:
 	assert_eq(InteriorLayout.size_class_for("restaurant"), "M")
 	assert_eq(InteriorLayout.size_class_for("diner"), "P", "lanchonete usa a planta do restaurante, menor")
 	# fachada estreita desce um degrau; larga sobe um
-	assert_eq(InteriorLayout.size_class_for("bar", 150.0), "P")
-	assert_eq(InteriorLayout.size_class_for("bar", 300.0), "G")
+	assert_eq(InteriorLayout.size_class_for("restaurant", 150.0), "P")
+	assert_eq(InteriorLayout.size_class_for("restaurant", 300.0), "G")
+	assert_eq(InteriorLayout.size_class_for("bar", 150.0), "M", "as plantas não mudam com a fachada")
+	assert_eq(InteriorLayout.size_class_for("bar", 300.0), "M")
 	assert_eq(InteriorLayout.size_class_for("house", 150.0), "P", "não desce abaixo do menor")
 	assert_eq(InteriorLayout.size_class_for("hotel", 300.0), "G", "não sobe acima do maior")
-	assert_eq(InteriorLayout.new(3, "bar", 300.0).size, InteriorLayout.SIZES["G"])
+	assert_eq(InteriorLayout.new(3, "restaurant", 300.0).size, InteriorLayout.SIZES["G"])
 
 
 func test_every_building_type_has_a_template() -> void:
@@ -106,6 +110,8 @@ func _check(layout, label: String) -> void:
 			assert_false(layout.furniture[i].intersects(wall), "%s: móvel dentro de parede" % label)
 	for slot in layout.npc_slots:
 		assert_true(room.grow(-12.0).has_point(slot.position), "%s: vaga de %s fora da sala" % [label, slot.role])
+		if slot.get("act", "post") in ["sit", "lie"]:
+			continue  # sentado ou deitado fica sobre o móvel por definição
 		for solid in solids:
 			assert_false(solid.grow(10.0).has_point(slot.position), "%s: vaga de %s dentro de um sólido" % [label, slot.role])
 	for z in layout.zones:
@@ -159,7 +165,7 @@ func test_rooms_and_inner_walls() -> void:
 
 
 func test_recognizable_furniture_by_type() -> void:
-	var expected := {"hotel": ["bed", "counter", "sofa"], "restaurant": ["table", "stove"], "bar": ["counter", "stool", "pool_table"],
+	var expected := {"hotel": ["bed", "counter", "sofa"], "restaurant": ["table", "stove"], "bar": ["counter", "bar_stool", "pool_table"],
 		"armory": ["shelf", "counter"], "police": ["cell_bars", "bunk", "desk"], "hospital": ["hospital_bed", "cabinet"],
 		"bank": ["vault", "counter"], "cinema": ["seats", "movie_screen"], "gym": ["ring", "treadmill", "weights"],
 		"workshop": ["car_lift", "workbench", "tires"], "club": ["dj_booth", "speaker"], "house": ["bed", "sofa", "stove", "tv"],
@@ -266,7 +272,8 @@ func test_every_furniture_kind_is_drawn_with_palette_colors() -> void:
 		var canvas: RefCounted = FurnitureArt.canvas(kind, 48, 32)
 		assert_eq(Vector2i(canvas.width, canvas.height), Vector2i(48, 32), kind)
 		assert_true(canvas.only_palette_colors(), kind)
-		assert_gt(canvas.opaque_count(), 100.0, kind)
+		if not FurnitureArt.ON_KINDS.has(kind):
+			assert_gt(canvas.opaque_count(), 100.0, kind)
 		assert_eq(FurnitureArt.tones(kind).size(), 3, kind)
 	assert_false(FurnitureArt.has_kind("trono"))
 
@@ -284,3 +291,77 @@ func test_used_furniture_renders_at_its_real_size() -> void:
 			var h := int(item.rect.size.y / 2.0)
 			var canvas: RefCounted = FurnitureArt.canvas(item.kind, w, h)
 			assert_true(canvas.only_palette_colors(), "%s %dx%d" % [item.kind, w, h])
+
+
+# --- plantas (mapa de texto) ---
+
+func test_planned_type_uses_the_plan() -> void:
+	Plans.override("cinema", ParserTest.fixture())
+	var layout := InteriorLayout.new(3, "cinema")
+	assert_true(layout.planned)
+	assert_true(InteriorLayout.is_planned("cinema"))
+	assert_eq(layout.size, Vector2(1280, 736))
+	assert_eq(InteriorLayout.size_class_for("cinema", 300.0), "P", "a fachada não muda o tamanho da planta")
+	assert_eq(layout.exit_door().size.x, 96.0)
+	assert_true(layout.clear_zone().has_point(layout.spawn_point()))
+	assert_gt(float(layout.wall_faces.size()), 0.0)
+	assert_gt(float(layout.floor_rects.size()), 0.0)
+	_check(layout, "bar planejado")
+	Plans.clear_overrides()
+	assert_false(InteriorLayout.new(3, "cinema").planned)
+
+
+func test_planned_zones_get_the_service_verb() -> void:
+	Plans.override("cinema", ParserTest.fixture())
+	var layout := InteriorLayout.new(5, "cinema")
+	assert_eq(layout.zone("heal").verb, Services.verb("heal"))
+	Plans.clear_overrides()
+
+
+func test_legacy_types_keep_working() -> void:
+	for type in ["armory", "hotel", "cinema"]:
+		var layout := InteriorLayout.new(2, type)
+		assert_false(layout.planned, type)
+		assert_eq(layout.items[0].layer, "floor")
+		assert_eq(layout.npc_slots[0].act, "post")
+		_check(layout, type)
+
+
+# --- móveis na escala do personagem (texels = px / 2) ---
+
+const NEW_FURNITURE := {"armchair": [24, 24], "double_bed": [40, 40], "chair": [16, 16], "office_chair": [16, 16],
+	"floor_lamp": [16, 16], "fireplace": [48, 16], "record_player": [24, 16], "dresser": [40, 16],
+	"round_table": [32, 32], "bar_stool": [12, 12], "beer_taps": [32, 12], "interrogation_table": [48, 32],
+	"flag": [16, 16], "coffee_machine": [16, 16], "kitchen_counter": [32, 16]}
+
+
+func test_new_kinds_have_art_at_real_scale() -> void:
+	for kind in NEW_FURNITURE:
+		var size: Array = NEW_FURNITURE[kind]
+		assert_true(FurnitureArt.has_kind(kind), kind)
+		var canvas: RefCounted = FurnitureArt.canvas(kind, size[0], size[1])
+		assert_true(canvas.only_palette_colors(), kind)
+		assert_gt(float(canvas.opaque_count()), size[0] * size[1] * 0.4, kind)
+	for kind in FurnitureArt.WALL_KINDS:
+		var canvas: RefCounted = FurnitureArt.canvas(kind, 16, 12)
+		assert_true(canvas.only_palette_colors(), kind)
+		assert_gt(float(canvas.opaque_count()), 16 * 12 * 0.4, kind)
+	for kind in FurnitureArt.ON_KINDS:
+		var canvas: RefCounted = FurnitureArt.canvas(kind, 8, 8)
+		assert_true(canvas.only_palette_colors(), kind)
+		assert_gt(float(canvas.opaque_count()), 8 * 8 * 0.2, kind)
+
+
+func test_tone_changes_the_art() -> void:
+	var blue: RefCounted = FurnitureArt.canvas("sofa", 48, 24, "blue")
+	var plain: RefCounted = FurnitureArt.canvas("sofa", 48, 24)
+	assert_ne(blue.image.get_data(), plain.image.get_data())
+	assert_true(blue.only_palette_colors())
+	assert_ne(FurnitureArt.cache_key("sofa", 48, 24, "blue"), FurnitureArt.cache_key("sofa", 48, 24))
+
+
+func test_wall_and_on_kinds_are_listed() -> void:
+	assert_eq(FurnitureArt.WALL_KINDS.size(), 17)
+	assert_eq(FurnitureArt.ON_KINDS.size(), 15)
+	for kind in FurnitureArt.WALL_KINDS + FurnitureArt.ON_KINDS:
+		assert_true(FurnitureArt.has_kind(kind), kind)

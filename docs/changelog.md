@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-15 (6)
+
+- Fase 7, Etapa 1 (interiores caprichados): plantas autorais em mapa de texto (`PlanParser`, `Plans`) do tamanho da
+  tela ou pouco maiores; móveis na escala do personagem; paredes com face visível e itens de parede; 9 pisos e 9
+  estilos de parede; ~45 móveis e itens novos; uniforme pelo prédio (hospital de branco, delegacia de azul) com
+  chapéus e detalhes; NPCs com atividade (posto, ronda, sentado, deitado, trabalhando) e poses novas
+- Plantas novas: casa, casa do agente, bar, delegacia e hospital. Os outros tipos seguem no modelo antigo até a Etapa 2
+- 901 testes. Detalhes: [redesign-fase-7.md](redesign-fase-7.md)
+
 ## 2026-11-15 (5)
 
 - Fase 6 do redesenho: mapa com neblina no que não foi explorado; pontos marcados por clique no mapa (até 5) com seta e distância no HUD; bairro residencial com lotes de casinhas em duas fileiras e beco; **casa do agente** (a casa mais perto do QG, já marcada, com dormir de graça e baú); hospital, delegacia e casas completos; decoração e gente mínima em todos os interiores; uniformes por papel; 13 móveis novos

@@ -6,6 +6,7 @@ extends RefCounted
 
 const Palette := preload("res://scripts/art/palette.gd")
 const PixelCanvas := preload("res://scripts/art/pixel_canvas.gd")
+const FurnitureArt7 := preload("res://scripts/art/furniture_art_7.gd")
 
 ## Material base por tipo: nome de tom (Palette.TONES) ou de rampa, com prefixo "ramp:".
 const MATERIALS := {
@@ -24,7 +25,27 @@ const MATERIALS := {
 	"computer": "gray", "file_cabinet": "gray", "cart": "silver", "xray": "snow", "toilet": "snow",
 	"bathtub": "snow", "bookshelf": "ramp:wood", "vending": "red", "sink": "silver", "monitor": "gray",
 	"curtain": "ice", "trash": "gray", "coat_rack": "ramp:wood",
+	# Fase 7 (interiores caprichados): móveis
+	"armchair": "wine", "double_bed": "wine", "chair": "ramp:wood", "office_chair": "black",
+	"floor_lamp": "yellow", "fireplace": "red", "record_player": "brown", "dresser": "ramp:wood",
+	"round_table": "ramp:wood", "bar_stool": "wine", "beer_taps": "silver", "interrogation_table": "silver",
+	"flag": "green", "coffee_machine": "gray", "kitchen_counter": "ramp:wood",
+	# itens de parede
+	"window": "ramp:wood", "painting": "yellow", "clock": "snow", "extinguisher": "red", "notice_board": "sand",
+	"wall_tv": "black", "wall_shelf": "ramp:wood", "mirror": "ice", "exit_sign": "green", "wall_lamp": "yellow",
+	"diploma": "cream", "wanted_board": "sand", "dartboard": "black", "bottle_wall": "brown", "case_wall": "sand",
+	"safe_wall": "silver",
+	# itens de cima de móvel
+	"plate": "snow", "glass": "yellow", "bottle": "green", "papers": "snow", "phone": "black", "book": "red",
+	"table_lamp": "yellow", "fruit_bowl": "brown", "coffee_pot": "gray", "mug": "snow", "ashtray": "silver",
+	"flowers": "pink", "stethoscope_tray": "silver", "pool_cue": "brown", "cat": "orange",
 }
+## Itens presos na face da parede (sem colisão) e itens que ficam em cima de móveis.
+const WALL_KINDS := ["window", "painting", "clock", "extinguisher", "poster", "notice_board", "wall_tv",
+	"wall_shelf", "mirror", "exit_sign", "wall_lamp", "diploma", "wanted_board", "dartboard", "bottle_wall",
+	"case_wall", "safe_wall"]
+const ON_KINDS := ["plate", "glass", "bottle", "papers", "phone", "book", "table_lamp", "fruit_bowl",
+	"coffee_pot", "mug", "ashtray", "flowers", "stethoscope_tray", "pool_cue", "cat"]
 
 static var _canvases := {}
 
@@ -37,15 +58,18 @@ static func has_kind(kind: String) -> bool:
 	return MATERIALS.has(kind)
 
 
-static func cache_key(kind: String, w: int, h: int) -> String:
+static func cache_key(kind: String, w: int, h: int, tone := "") -> String:
+	if tone != "":
+		return "furniture/%s/%dx%d/%s" % [kind, w, h, tone]
 	return "furniture/%s/%dx%d" % [kind, w, h]
 
 
-## Tela do móvel (gerada uma vez por tipo e tamanho).
-static func canvas(kind: String, w: int, h: int) -> RefCounted:
-	var key := cache_key(kind, w, h)
+## Tela do móvel (gerada uma vez por tipo, tamanho e tom). `tone` (opcional) troca o material
+## por um tom da paleta (variantes de cor das plantas).
+static func canvas(kind: String, w: int, h: int, tone := "") -> RefCounted:
+	var key := cache_key(kind, w, h, tone)
 	if not _canvases.has(key):
-		_canvases[key] = _build(kind, maxi(w, 4), maxi(h, 4))
+		_canvases[key] = _build(kind, maxi(w, 4), maxi(h, 4), tone)
 	return _canvases[key]
 
 
@@ -54,7 +78,9 @@ static func _c(color_name: String) -> Color:
 
 
 ## [sombra, base, luz] do material do tipo.
-static func tones(kind: String) -> Array[Color]:
+static func tones(kind: String, tone := "") -> Array[Color]:
+	if tone != "" and Palette.TONES.has(tone):
+		return Palette.tone(tone)
 	var material: String = MATERIALS.get(kind, "ramp:wood")
 	if material.begins_with("ramp:"):
 		return Palette.ramp(material.trim_prefix("ramp:"))
@@ -70,10 +96,12 @@ static func _box(c: RefCounted, x: int, y: int, w: int, h: int, t: Array[Color])
 	c.frame(x, y, w, h, _c("ink"))
 
 
-static func _build(kind: String, w: int, h: int) -> RefCounted:
+static func _build(kind: String, w: int, h: int, tone := "") -> RefCounted:
 	var c: RefCounted = PixelCanvas.new(w, h)
-	var t := tones(kind)
+	var t := tones(kind, tone)
 	var ink := _c("ink")
+	if FurnitureArt7.build(c, kind, w, h, t):
+		return c
 	match kind:
 		"rug":
 			c.rect(0, 0, w, h, t[1])
@@ -145,14 +173,7 @@ static func _build(kind: String, w: int, h: int) -> RefCounted:
 					c.hline(1, y, w - 2, t[0])
 				c.hline(1, 2, w - 2, _c("cream"))
 		"bed", "hospital_bed", "bunk":
-			var blanket := _c("teal") if kind == "hospital_bed" else (_c("slate") if kind == "bunk" else _c("blue"))
-			if w >= h:
-				c.rect(1, 1, w / 4, h - 2, _c("white"))
-				c.rect(w / 4 + 1, 2, w - w / 4 - 3, h - 4, blanket)
-			else:
-				c.rect(1, 1, w - 2, h / 4, _c("white"))
-				c.rect(2, h / 4 + 1, w - 4, h - h / 4 - 3, blanket)
-			c.frame(0, 0, w, h, ink)
+			FurnitureArt7.bed(c, kind, w, h)
 		"nightstand", "cabinet", "wardrobe", "locker":
 			var vertical := h > w * 2
 			if vertical:

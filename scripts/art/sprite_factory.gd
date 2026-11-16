@@ -40,6 +40,11 @@ static func tile(id: String) -> ImageTexture:
 	return TileFactory.texture(id)
 
 
+## Face de parede de interior (16x12 texels), por estilo.
+static func face(style: String) -> ImageTexture:
+	return _cached("face/%s" % style, func() -> RefCounted: return TileFactory.face(style))
+
+
 static func prop(id: String) -> ImageTexture:
 	return _cached("prop/" + id, func() -> RefCounted: return PropSprites.canvas(id))
 
@@ -55,9 +60,10 @@ static func fx(id: String) -> ImageTexture:
 
 
 ## Quadro de personagem (16x20 texels). `frame`: 0 parado, 1 e 2 passos.
-static func character(look: Dictionary, direction: String, frame: int) -> ImageTexture:
-	var key := "char/%s/%s/%d" % [CharacterSprites.look_key(look), direction, frame]
-	return _cached(key, func() -> RefCounted: return CharacterSprites.build(look, direction, frame))
+## `pose`: "stand", "sit", "lie" ou "work" (ver CharacterSprites.rows_for).
+static func character(look: Dictionary, direction: String, frame: int, pose := "stand") -> ImageTexture:
+	var key := "char/%s/%s/%d/%s" % [CharacterSprites.look_key(look), direction, frame, pose]
+	return _cached(key, func() -> RefCounted: return CharacterSprites.build(look, direction, frame, pose))
 
 
 ## Quadro de carro na direção pré-gerada `direction` (0 a 31).

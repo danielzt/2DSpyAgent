@@ -8,6 +8,8 @@ extends RefCounted
 const Services := preload("res://scripts/interior/services.gd")
 const BuildingDefs := preload("res://scripts/world/building_defs.gd")
 const ShopDefs := preload("res://scripts/items/shop_defs.gd")
+const Plans := preload("res://scripts/interior/plans/plans.gd")
+const PlanParser := preload("res://scripts/interior/plan_parser.gd")
 
 const SIZES := {"P": Vector2(1280, 800), "M": Vector2(1920, 1200), "G": Vector2(2560, 1440)}
 const SIZE_ORDER := ["P", "M", "G"]
@@ -125,6 +127,16 @@ var furniture: Array[Rect2] = []
 var npc_slots: Array[Dictionary] = []
 ## Zonas de serviço: {id:String, rect:Rect2, verb:String}
 var zones: Array[Dictionary] = []
+## Interior lido de uma planta em mapa de texto (Plans)? Os demais usam os construtores abaixo.
+var planned := false
+## Só nas plantas: pisos por trecho {rect, floor}, faces de parede {rect, style}, vãos de porta
+## e a variante de cores sorteada.
+var floor_rects: Array = []
+var wall_faces: Array = []
+var doors: Array = []
+var variant := 0
+var _exit := Rect2()
+var _spawn := Vector2.ZERO
 
 var _rng := RandomNumberGenerator.new()
 
@@ -138,6 +150,9 @@ func _init(p_building_id: int = 0, p_type := "", facade_width := DEFAULT_FACADE)
 	base_floor = FLOORS[template]
 	shop = BuildingDefs.shop_of(p_type) if BuildingDefs.exists(p_type) else (p_type if ShopDefs.exists(p_type) else "")
 	is_shop = shop != ""
+	if Plans.has(p_type):
+		_load_plan(Plans.data(p_type))
+		return
 	_rng.seed = p_building_id * 7919 + 13
 	mirrored = _rng.randf() < 0.5
 	match template:
@@ -181,7 +196,40 @@ func _init(p_building_id: int = 0, p_type := "", facade_width := DEFAULT_FACADE)
 	_dress()
 
 
+## Monta o interior a partir da planta (sem decoração sorteada nem gente extra).
+func _load_plan(plan: Dictionary) -> void:
+	var parsed := PlanParser.parse(plan, building_id)
+	planned = true
+	size_class = parsed.size_class
+	size = parsed.size
+	mirrored = parsed.mirrored
+	variant = parsed.variant
+	for room in parsed.rooms:
+		rooms.append(room)
+	for wall in parsed.walls:
+		walls.append(wall)
+	for item in parsed.items:
+		items.append(item)
+	for slot in parsed.npc_slots:
+		npc_slots.append(slot)
+	for z in parsed.zones:
+		z.verb = z.verb if z.verb != "" else Services.verb(z.id)
+		zones.append(z)
+	floor_rects = parsed.floor_rects
+	wall_faces = parsed.wall_faces
+	doors = parsed.doors
+	_exit = parsed.exit
+	_spawn = parsed.spawn
+	if not floor_rects.is_empty():
+		base_floor = floor_rects[0].floor
+	_refresh_furniture()
+
+
 # --- consultas ---
+
+static func is_planned(p_type: String) -> bool:
+	return Plans.has(p_type)
+
 
 static func template_of(p_type: String) -> String:
 	return TEMPLATES.get(p_type, DEFAULT_TEMPLATE)
@@ -189,6 +237,8 @@ static func template_of(p_type: String) -> String:
 
 ## Tamanho do interior: o base do modelo, ajustado pela largura da fachada.
 static func size_class_for(p_type: String, facade_width := DEFAULT_FACADE) -> String:
+	if Plans.has(p_type):
+		return Plans.data(p_type).size
 	var index := SIZE_ORDER.find(BASE_SIZE[template_of(p_type)])
 	if SMALLER.has(p_type):
 		index -= 1
@@ -206,15 +256,21 @@ func room_rect() -> Rect2:
 
 
 func exit_door() -> Rect2:
+	if planned:
+		return _exit
 	return Rect2(size.x / 2.0 - EXIT_WIDTH / 2.0, size.y - EXIT_DEPTH, EXIT_WIDTH, EXIT_DEPTH)
 
 
 func spawn_point() -> Vector2:
+	if planned:
+		return _spawn
 	return Vector2(size.x / 2.0, size.y - 80.0)
 
 
 ## Área em frente à saída que fica sempre livre de móveis e paredes.
 func clear_zone() -> Rect2:
+	if planned:
+		return Rect2(_exit.position.x, size.y - 3.0 * PlanParser.CELL, _exit.size.x, 3.0 * PlanParser.CELL)
 	return Rect2(size.x / 2.0 - 160.0, size.y - 260.0, 320.0, 260.0)
 
 
@@ -348,12 +404,12 @@ func _put(kind: String, rect: Rect2, solid := true) -> bool:
 		for item in items:
 			if item.solid and rect.intersects(item.rect):
 				return false
-	items.append({"kind": kind, "rect": rect, "solid": solid})
+	items.append({"kind": kind, "rect": rect, "solid": solid, "layer": "floor", "tone": ""})
 	return true
 
 
 func _slot(role: String, position: Vector2, staff := true) -> void:
-	npc_slots.append({"role": role, "position": position, "staff": staff})
+	npc_slots.append({"role": role, "position": position, "staff": staff, "act": "post", "route": [], "facing": "down"})
 
 
 func _zone(id: String, rect: Rect2, verb := "") -> void:

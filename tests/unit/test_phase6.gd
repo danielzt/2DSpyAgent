@@ -165,8 +165,8 @@ func test_agent_home_interior_is_complete_and_has_no_strangers() -> void:
 			var kinds := {}
 			for item in inner.items:
 				kinds[item.kind] = true
-			for needed in ["bed", "chest", "stove", "fridge", "sofa", "tv", "bathtub", "toilet", "computer", "wardrobe"]:
-				assert_true(kinds.has(needed) or inner.items.size() > 20, "casa sem %s" % needed)
+			for needed in ["double_bed", "chest", "stove", "fridge", "sofa", "wall_tv", "bathtub", "toilet", "monitor", "wardrobe"]:
+				assert_true(kinds.has(needed), "casa sem %s" % needed)
 			var zone_ids := []
 			for z in inner.zones:
 				zone_ids.append(z.id)
@@ -297,6 +297,70 @@ func test_uniform_colors_are_palette_names() -> void:
 			assert_true(value == "" or palette.COLORS.has(value), "%s: %s" % [key, value])
 
 
+func test_hospital_staff_all_white_by_building() -> void:
+	for role in BuildingDefs.staff_of("hospital") + ["atendente"]:
+		assert_eq(CharacterSprites.look_for("innocent", 5, role, "hospital", true).shirt, "white", role)
+	assert_eq(CharacterSprites.look_for("innocent", 5, "médica", "hospital", true).detail, "coat")
+	assert_eq(CharacterSprites.look_for("innocent", 5, "enfermeiro", "hospital", true).hat, "nurse_cap")
+
+
+func test_police_staff_all_blue_with_kepi() -> void:
+	for role in BuildingDefs.staff_of("police") + ["atendente"]:
+		if role == "perito" or role == "detetive":
+			continue
+		var look := CharacterSprites.look_for("innocent", 8, role, "police", true)
+		assert_eq(look.shirt, "blue", role)
+		assert_eq(look.hat, "kepi", role)
+	assert_eq(CharacterSprites.look_for("innocent", 8, "perito", "police", true).detail, "coat")
+	assert_eq(CharacterSprites.look_for("innocent", 8, "preso", "police", false).shirt, "orange")
+	assert_eq(CharacterSprites.look_for("innocent", 8, "paciente", "hospital", false).shirt, "ice")
+
+
+func test_customers_keep_their_clothes() -> void:
+	var base := CharacterSprites.civilian_look(7)
+	var look := CharacterSprites.look_for("innocent", 7, "frequentador", "bar", false)
+	for key in ["shirt", "shirt2", "pants", "cap", "hat", "detail"]:
+		assert_eq(look[key], base[key], key)
+	assert_eq(CharacterSprites.look_for("criminal", 7, "bartender", "bar", true), CharacterSprites.criminal_look(7))
+
+
+func test_every_building_type_has_a_staff_uniform() -> void:
+	var palette := preload("res://scripts/art/palette.gd")
+	for type in BuildingDefs.ORDER:
+		if type in ["house", "apartment", "agent_home"]:
+			continue
+		assert_true(CharacterSprites.BUILDING_UNIFORMS.has(type), type)
+		var entry: Dictionary = CharacterSprites.BUILDING_UNIFORMS[type]
+		assert_false((entry.staff as Dictionary).is_empty(), type)
+		var all: Array = [entry.staff]
+		for role in entry.get("roles", {}):
+			all.append(entry.roles[role])
+		for overrides in all:
+			for key in overrides:
+				if key in ["shirt", "shirt2", "pants", "cap", "detail_color"]:
+					var value: String = overrides[key]
+					assert_true(value == "" or palette.COLORS.has(value), "%s %s: %s" % [type, key, value])
+	assert_eq(CharacterSprites.look_for("innocent", 3, "morador", "house", false).shirt, CharacterSprites.civilian_look(3).shirt)
+
+
+func test_hat_and_detail_change_the_sprite() -> void:
+	var base := CharacterSprites.civilian_look(11)
+	base.hair_style = "short"
+	for hat in ["kepi", "nurse_cap", "chef_hat", "helmet", "straw"]:
+		var look := base.duplicate()
+		look.hat = hat
+		look.cap = "navy"
+		for dir in ["down", "up", "right"]:
+			assert_ne(CharacterSprites.rows_for(look, dir, 0), CharacterSprites.rows_for(base, dir, 0), "%s %s" % [hat, dir])
+	for detail in ["coat", "apron", "vest", "tie", "badge", "reflective"]:
+		var look := base.duplicate()
+		look.detail = detail
+		look.detail_color = "amber"
+		assert_ne(CharacterSprites.rows_for(look, "down", 0), CharacterSprites.rows_for(base, "down", 0), detail)
+		assert_true(CharacterSprites.build(look, "down", 0).only_palette_colors(), detail)
+	assert_ne(CharacterSprites.look_key(base), CharacterSprites.look_key(CharacterSprites.look_for("innocent", 11, "policial", "police", true)))
+
+
 func test_interior_npcs_get_their_uniform() -> void:
 	GameState.set_inside(9, Vector2(500, 500), "", "hospital", "Hospital Teste", 240.0)
 	var scene := INTERIOR_SCENE.instantiate()
@@ -304,9 +368,12 @@ func test_interior_npcs_get_their_uniform() -> void:
 	await wait_physics_frames(3)
 	var whites := 0
 	for npc in tree.get_nodes_in_group("interior_npcs"):
-		if npc.uniform_role != "" and npc.look().shirt in ["white", "ice"]:
+		if npc.uniform_staff:
+			assert_eq(npc.look().shirt, "white", "equipe de branco: %s" % npc.get_meta("role"))
 			whites += 1
-	assert_gt(float(whites), 3.0, "equipe e pacientes de branco")
+		elif npc.get_meta("role") == "paciente":
+			assert_eq(npc.look().shirt, "ice", "paciente de camisola")
+	assert_gt(float(whites), 3.0, "equipe de branco")
 	scene.queue_free()
 	GameState.set_outside()
 	await wait_frames(2)
@@ -316,6 +383,8 @@ func test_interior_npcs_get_their_uniform() -> void:
 
 func test_every_interior_has_the_minimum_amount_of_people() -> void:
 	for type in BuildingDefs.ORDER:
+		if InteriorLayout.is_planned(type):
+			continue   # nas plantas, a gente é definida nelas (ver test_plans.gd)
 		for id in [1, 8, 15]:
 			var inner := InteriorLayout.new(id, type, 240.0)
 			assert_true(inner.npc_slots.size() >= InteriorLayout.MIN_PEOPLE[inner.size_class],
@@ -327,6 +396,8 @@ func test_people_never_stand_inside_furniture_or_walls() -> void:
 		for id in range(10):
 			var inner := InteriorLayout.new(id, type)
 			for slot in inner.npc_slots:
+				if slot.get("act", "post") in ["sit", "lie"]:
+					continue   # sentado ou deitado fica sobre o próprio móvel
 				var probe := Rect2(slot.position - Vector2(10, 10), Vector2(20, 20))
 				for solid in inner.solids():
 					assert_false(solid.intersects(probe), "%s %d: %s dentro de um sólido" % [type, id, slot.role])
@@ -338,12 +409,12 @@ func test_hospital_is_a_complete_hospital() -> void:
 		var rooms := []
 		for room in inner.rooms:
 			rooms.append(room.name)
-		for needed in ["Enfermaria", "UTI", "Consultório 1", "Consultório 2", "Farmácia", "Raio-X"]:
+		for needed in ["Enfermaria", "UTI", "Consultório", "Farmácia", "Recepção"]:
 			assert_true(rooms.has(needed), "hospital %d sem %s" % [id, needed])
 		var kinds := {}
 		for item in inner.items:
 			kinds[item.kind] = true
-		for needed in ["hospital_bed", "monitor", "xray", "desk", "computer", "cart", "bench", "counter", "bottle_shelf"]:
+		for needed in ["hospital_bed", "monitor", "desk", "computer", "cart", "counter", "bottle_shelf"]:
 			assert_true(kinds.has(needed), "hospital %d sem %s" % [id, needed])
 		var roles := {}
 		for slot in inner.npc_slots:
@@ -351,7 +422,7 @@ func test_hospital_is_a_complete_hospital() -> void:
 		assert_true(roles.has("paciente"), "sem pacientes")
 		assert_true(roles.size() >= 4, "equipe variada: %s" % str(roles.keys()))
 		assert_eq(inner.unreachable(), [], "hospital %d" % id)
-		assert_eq(inner.size_class, "M", "hospital denso nunca passa de M")
+		assert_eq(inner.size_class, "G", "hospital é grande (planta própria)")
 
 
 func test_police_station_is_a_complete_police_station() -> void:
@@ -360,7 +431,7 @@ func test_police_station_is_a_complete_police_station() -> void:
 		var rooms := []
 		for room in inner.rooms:
 			rooms.append(room.name)
-		for needed in ["Celas", "Sala dos agentes", "Delegado", "Provas"]:
+		for needed in ["Celas", "Sala dos agentes", "Delegado", "Interrogatório", "Recepção"]:
 			assert_true(rooms.has(needed), "delegacia %d sem %s" % [id, needed])
 		var kinds := {}
 		for item in inner.items:
@@ -370,9 +441,27 @@ func test_police_station_is_a_complete_police_station() -> void:
 		var roles := {}
 		for slot in inner.npc_slots:
 			roles[slot.role] = true
-		assert_true(roles.has("policial") and roles.has("preso") or roles.has("policial"), "policiais")
+		assert_true(roles.has("policial") and roles.has("preso"), "policiais e presos")
 		assert_true(roles.has("delegado"), "delegado")
 		assert_eq(inner.unreachable(), [], "delegacia %d" % id)
+
+
+func test_police_staff_wear_blue_in_the_scene() -> void:
+	GameState.set_inside(6, Vector2(500, 500), "", "police", "Delegacia Teste", 240.0)
+	var scene := INTERIOR_SCENE.instantiate()
+	tree.root.add_child(scene)
+	await wait_physics_frames(3)
+	var blue := 0
+	for npc in tree.get_nodes_in_group("interior_npcs"):
+		if npc.uniform_staff and npc.get_meta("role") != "detetive":
+			assert_eq(npc.look().shirt, "blue", npc.get_meta("role"))
+			blue += 1
+		if npc.get_meta("role") == "preso":
+			assert_eq(npc.look().shirt, "orange")
+	assert_gt(float(blue), 3.0)
+	scene.queue_free()
+	GameState.set_outside()
+	await wait_frames(2)
 
 
 func test_ordinary_home_has_all_four_rooms() -> void:
@@ -381,7 +470,7 @@ func test_ordinary_home_has_all_four_rooms() -> void:
 		var rooms := []
 		for room in inner.rooms:
 			rooms.append(room.name)
-		for needed in ["Sala", "Quarto", "Banheiro", "Cozinha"]:
+		for needed in ["Sala", "Quarto do casal", "Banheiro", "Cozinha"]:
 			assert_true(rooms.has(needed), "casa %d sem %s" % [id, needed])
 		assert_eq(inner.unreachable(), [], "casa %d" % id)
 

@@ -68,7 +68,8 @@ Carisma). Ver [armas-e-inventario.md](armas-e-inventario.md).
 
 - Cidade: **quarteirão de 560 px**, rua de 200 px (asfalto 140 + 2 calçadas de 30), lote de 360 px; prédios de formatos variados dentro do lote.
 - Jogador: 24 px.
-- Interiores: 1920x1200 px (≈ 5x a largura da fachada). A proporção externa **não** é a interna.
+- Interiores: do tamanho da tela ou pouco maiores (1280x736, 1536x864 ou 1792x1024 px), com móveis na escala do
+  personagem. A proporção externa **não** é a interna.
 
 ### 4.3 Mundo grande ou infinito
 
@@ -83,8 +84,11 @@ uma porta de saída. Ao sair, reaparece na calçada, em frente à porta por onde
 Entrar e sair exige apertar **E** diante da porta (aparece a instrução no canto da tela). Estado atual: todos os prédios (cidade e fazendas) têm interior, gerado por seed do id do prédio
 (ver [prototipo-02-interiores.md](prototipo-02-interiores.md)).
 
-Planejado: tipos de interior (delegacia, bar, banco, armazém, QG), NPCs, itens,
-pistas, cofres, andares/escadas, salas conectadas.
+**Fase 7 (em andamento):** cada tipo ganha uma **planta autoral** em mapa de texto, única e característica, com piso e
+paredes do lugar, móveis na escala do personagem e NPCs de uniforme que fazem algo (atendem, fazem ronda, sentam,
+deitam, trabalham). Prontas: casa, casa do agente, bar, delegacia e hospital. Ver [redesign-fase-7.md](redesign-fase-7.md).
+
+Planejado: as outras plantas, falas por papel, itens, pistas, cofres, andares/escadas.
 
 ## 5. Veículos
 

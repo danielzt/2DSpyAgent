@@ -3,7 +3,7 @@ extends SceneTree
 ## salva capturas em docs/img/ e mede o desempenho (vsync desligado).
 ##
 ## Uso (com janela, sem --headless):
-##   godot --path . -s tools/probe.gd -- <prefixo> [hora] [sem-interiores]
+##   godot --path . -s tools/probe.gd -- <prefixo> [hora] [sem-interiores | so-interiores [tipo,tipo...]]
 ## Gera docs/img/<prefixo>-<ponto>.png e imprime tempo de quadro, chamadas de desenho e nós.
 ## `hora` (0-24) fixa o relógio do mundo (-1 deixa o relógio correr). Também captura um
 ## interior de cada modelo em docs/img/<prefixo>-interior-<tipo>.png.
@@ -14,7 +14,7 @@ const SETTLE_FRAMES := 40
 const MEASURE_SECONDS := 4.0
 ## Um tipo de prédio por modelo de interior.
 const INTERIOR_TYPES := ["armory", "hotel", "restaurant", "bar", "club", "bank", "police", "hospital",
-	"workshop", "cinema", "gym", "office", "house", "warehouse", "hq"]
+	"workshop", "cinema", "gym", "office", "house", "warehouse", "hq", "agent_home"]
 
 
 func _initialize() -> void:
@@ -69,6 +69,9 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://docs/img"))
 	var total_ms := 0.0
 	print("ponto;ms_por_quadro;fps;desenhos;nos")
+	var only_interiors := args.size() > 2 and args[2] == "so-interiores"
+	if only_interiors:
+		points.clear()
 	for point_name in points:
 		var pos: Vector2 = points[point_name]
 		for i in SETTLE_FRAMES:
@@ -88,7 +91,8 @@ func _run() -> void:
 		print("%s;%.3f;%.0f;%d;%d" % [point_name, ms, 1000.0 / ms,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
 			int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))])
-	print("media;%.3f;%.0f" % [total_ms / points.size(), 1000.0 * points.size() / total_ms])
+	if not points.is_empty():
+		print("media;%.3f;%.0f" % [total_ms / points.size(), 1000.0 * points.size() / total_ms])
 
 	# Interiores: um prédio de cada modelo (a troca de cena é adiada: espera alguns quadros).
 	# O jogador vai para a primeira zona de serviço, para a captura mostrar o balcão.
@@ -96,7 +100,10 @@ func _run() -> void:
 		quit()
 		return
 	var state: Node = root.get_node("GameState")
-	for type in INTERIOR_TYPES:
+	var types: Array = INTERIOR_TYPES
+	if only_interiors and args.size() > 3:
+		types = Array(args[3].split(","))
+	for type in types:
 		var target: Dictionary = {}
 		for b in layout.buildings():
 			if b.get("type", "") == type:
@@ -110,7 +117,7 @@ func _run() -> void:
 		var inside: Node = current_scene
 		var visitor: Node2D = get_nodes_in_group("players")[0]
 		var spot: Vector2 = inside.layout.size / 2.0
-		if not inside.layout.zones.is_empty():
+		if not inside.layout.planned and not inside.layout.zones.is_empty():
 			spot = (inside.layout.zones[0].rect as Rect2).get_center()
 		for i in SETTLE_FRAMES:
 			visitor.global_position = spot

@@ -251,3 +251,67 @@ func test_text_texture_is_cached_by_content() -> void:
 	var a := SpriteFactory.text("Armaria", "white")
 	assert_eq(SpriteFactory.text("Armaria", "white"), a)
 	assert_ne(SpriteFactory.text("Farmácia", "white"), a)
+
+
+# --- interiores caprichados: pisos novos e faces de parede ---
+
+const NEW_FLOORS := ["floor/herringbone", "floor/wood_dark", "floor/laminate", "floor/carpet_navy",
+	"floor/carpet_cream", "floor/linoleum_mint", "floor/linoleum_gray", "floor/linoleum_white", "floor/bath_tile"]
+const FACE_STYLES := ["stripes_wine", "wood_panel", "tile_blue", "tile_white_green", "navy_half", "brick",
+	"floral", "plaster_cream", "plaster_gray"]
+
+
+func test_new_floors_exist_and_use_the_palette() -> void:
+	for id in NEW_FLOORS:
+		assert_true(TileFactory.has_tile(id), id)
+		var canvas: RefCounted = TileFactory.canvas(id)
+		assert_eq(Vector2i(canvas.width, canvas.height), Vector2i(32, 32), id)
+		assert_true(canvas.only_palette_colors(), id)
+		assert_gt(float(canvas.used_colors().size()), 2.0, id)
+
+
+func test_wall_faces() -> void:
+	for style in FACE_STYLES:
+		assert_true(TileFactory.has_face(style), style)
+		var canvas: RefCounted = TileFactory.face(style)
+		assert_eq(Vector2i(canvas.width, canvas.height), Vector2i(16, 12), style)
+		assert_true(canvas.only_palette_colors(), style)
+		assert_ne(canvas.get_px(4, 11), canvas.get_px(4, 6), "%s: rodapé" % style)
+		assert_true(SpriteFactory.face(style) == SpriteFactory.face(style), "cache")
+	assert_false(TileFactory.has_face("castelo"))
+
+
+# --- poses (sentado, deitado, trabalhando) ---
+
+func test_poses_differ_from_standing() -> void:
+	var look := CharacterSprites.civilian_look(4)
+	var stand: RefCounted = CharacterSprites.build(look, "down", 0, "stand")
+	for pose in ["sit", "lie", "work"]:
+		var canvas: RefCounted = CharacterSprites.build(look, "down", 1, pose)
+		assert_ne(canvas.image.get_data(), stand.image.get_data(), pose)
+		assert_true(canvas.only_palette_colors(), pose)
+	for dir in ["up", "right", "left"]:
+		var sit: RefCounted = CharacterSprites.build(look, dir, 0, "sit")
+		assert_ne(sit.image.get_data(), CharacterSprites.build(look, dir, 0).image.get_data(), "sentado %s" % dir)
+	assert_eq(CharacterSprites.POSES, ["stand", "sit", "lie", "work"])
+
+
+func test_lying_has_no_floor_shadow() -> void:
+	var canvas: RefCounted = CharacterSprites.build(CharacterSprites.civilian_look(4), "down", 0, "lie")
+	var shadow: Color = Palette.cast_shadow()
+	for y in range(canvas.height - 3, canvas.height):
+		for x in canvas.width:
+			assert_false(canvas.get_px(x, y).is_equal_approx(shadow), "sombra em %d,%d" % [x, y])
+
+
+func test_work_animates() -> void:
+	var look := CharacterSprites.civilian_look(6)
+	var a: RefCounted = CharacterSprites.build(look, "down", 1, "work")
+	var b: RefCounted = CharacterSprites.build(look, "down", 2, "work")
+	assert_ne(a.image.get_data(), b.image.get_data())
+
+
+func test_pose_is_part_of_the_cache_key() -> void:
+	var look := CharacterSprites.civilian_look(2)
+	assert_false(SpriteFactory.character(look, "down", 0, "sit") == SpriteFactory.character(look, "down", 0))
+	assert_true(SpriteFactory.character(look, "down", 0, "sit") == SpriteFactory.character(look, "down", 0, "sit"))

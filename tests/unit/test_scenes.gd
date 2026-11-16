@@ -8,6 +8,8 @@ const InteriorLayout := preload("res://scripts/interior/interior_layout.gd")
 const DoorScript := preload("res://scripts/world/door.gd")
 const CrimeProfiles := preload("res://scripts/crime/crime_profiles.gd")
 const NPC_SCENE := preload("res://scenes/npc/npc.tscn")
+const Plans := preload("res://scripts/interior/plans/plans.gd")
+const ParserTest := preload("res://tests/unit/test_plan_parser.gd")
 
 
 func before_each() -> void:
@@ -426,3 +428,58 @@ func test_entering_passes_the_facade_width_to_the_interior() -> void:
 ## Espera a íris fechar (o estado da troca de cena só muda com ela fechada).
 func _wait_transition() -> void:
 	await tree.create_timer(Transition.DURATION + 0.15).timeout
+
+
+# --- interior a partir de planta (Fase 7) ---
+
+func _open_planned(type := "bar") -> Node:
+	Plans.override(type, ParserTest.fixture())
+	GameState.set_inside(4, Vector2(100, 100), "", type, "Bar Teste", 240.0)
+	var interior := INTERIOR_SCENE.instantiate()
+	tree.root.add_child(interior)
+	await wait_physics_frames(3)
+	return interior
+
+
+func test_planned_interior_draws_faces_wall_items_and_on_items() -> void:
+	var interior: Node = await _open_planned()
+	assert_true(interior.layout.planned)
+	var faces := tree.get_nodes_in_group("wall_faces")
+	assert_gt(float(faces.size()), 0.0)
+	for face in faces:
+		assert_false(face is CollisionObject2D, "face de parede não colide")
+		assert_eq(face.get_child_count(), 0)
+	assert_eq(tree.get_nodes_in_group("wall_items").size(), 1, "a janela")
+	assert_eq(tree.get_nodes_in_group("on_items").size(), 1, "o prato")
+	assert_eq(interior.window_rects().size(), 0, "janelas do modelo antigo não entram nas plantas")
+	Plans.clear_overrides()
+	await _cleanup(interior)
+
+
+func test_planned_interior_npcs_get_activity_and_building_uniform() -> void:
+	var interior: Node = await _open_planned()
+	var sitting := 0
+	var staff := 0
+	for npc in tree.get_nodes_in_group("interior_npcs"):
+		if npc.activity == "sit":
+			sitting += 1
+			assert_eq(npc.pose(), "sit")
+		if npc.uniform_staff:
+			staff += 1
+			assert_eq(npc.uniform_building, "bar")
+			assert_eq(npc.look().detail, "vest", "uniforme do bar")
+	assert_eq(sitting, 1)
+	assert_eq(staff, 1)
+	Plans.clear_overrides()
+	await _cleanup(interior)
+
+
+func test_legacy_interior_still_builds() -> void:
+	GameState.set_inside(2, Vector2(100, 100), "armory", "armory", "Armaria Teste", 240.0)
+	var interior := INTERIOR_SCENE.instantiate()
+	tree.root.add_child(interior)
+	await wait_physics_frames(3)
+	assert_false(interior.layout.planned)
+	assert_eq(tree.get_nodes_in_group("exit_doors").size(), 1)
+	assert_eq(tree.get_nodes_in_group("wall_faces").size(), 0)
+	await _cleanup(interior)
