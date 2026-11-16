@@ -401,7 +401,7 @@ func _stand_up() -> void:
 
 ## Pose atual do sprite: "stand", "sit", "lie" ou "work".
 func pose() -> String:
-	if activity == "sit" or activity == "lie" or activity == "work":
+	if activity in ["sit", "lie", "work", "exercise", "dance"]:
 		return activity
 	return "stand"
 
@@ -425,7 +425,7 @@ func _update_sprite(delta: float) -> void:
 		_anim_time += delta
 		_sprite_direction = CharacterSprites.direction_of(velocity)
 		frame = 1 + int(_anim_time / WALK_FRAME_TIME) % 2
-	elif current_pose == "work":
+	elif current_pose in ["work", "exercise", "dance"]:
 		_anim_time += delta
 		frame = 1 + int(_anim_time / WORK_FRAME_TIME) % 2
 	else:

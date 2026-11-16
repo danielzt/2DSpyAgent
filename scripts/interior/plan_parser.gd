@@ -74,6 +74,12 @@ static func validate(plan: Dictionary) -> Array[String]:
 		var entry: Dictionary = object_legend[piece.letter]
 		if entry.has("size") and (float(entry.size[0]) * CELL > piece.block.size.x + 0.01 or float(entry.size[1]) * CELL > piece.block.size.y + 0.01):
 			errors.append("object_grid linha %d coluna %d: peça '%s' maior que o bloco desenhado" % [piece.cell.y, piece.cell.x, piece.letter])
+	var shop_counters := 0
+	for piece in _pieces(plan.object_grid, object_legend, "item"):
+		if (object_legend[piece.letter] as Dictionary).get("shop_counter", false):
+			shop_counters += 1
+	if shop_counters > 1:
+		errors.append("object_grid: mais de um balcão de loja (shop_counter)")
 	for piece in _pieces(plan.floor_grid, floor_legend, "rug"):
 		if not piece.rectangular:
 			errors.append("floor_grid linha %d coluna %d: tapete '%s' não é retangular" % [piece.cell.y, piece.cell.x, piece.letter])
@@ -132,7 +138,7 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 	var result := {
 		"size": size, "size_class": plan.size, "mirrored": mirrored, "variant": variant,
 		"rooms": [], "floor_rects": [], "walls": [], "doors": [], "wall_faces": [], "items": [],
-		"npc_slots": [], "zones": [], "exit": Rect2(), "spawn": Vector2.ZERO,
+		"npc_slots": [], "zones": [], "exit": Rect2(), "spawn": Vector2.ZERO, "counter": Rect2(),
 	}
 
 	# pisos: runs horizontais da mesma letra
@@ -232,8 +238,11 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 		var entry: Dictionary = object_legend[piece.letter]
 		if not _roll(rng, entry):
 			continue
-		result.items.append({"kind": entry.item, "rect": _place(piece.block, entry), "solid": entry.get("solid", true),
+		var rect := _place(piece.block, entry)
+		result.items.append({"kind": entry.item, "rect": rect, "solid": entry.get("solid", true),
 				"layer": "floor", "tone": tone_over.get(entry.item, entry.get("tone", ""))})
+		if entry.get("shop_counter", false):
+			result.counter = rect
 	for piece in _pieces(plan.object_grid, object_legend, "wall_item"):
 		var entry: Dictionary = object_legend[piece.letter]
 		if not _roll(rng, entry):
@@ -416,6 +425,8 @@ static func _mirror(result: Dictionary) -> void:
 		for i in list.size():
 			list[i] = flip.call(list[i])
 	result.exit = flip.call(result.exit)
+	if result.counter.size.x > 0.0:
+		result.counter = flip.call(result.counter)
 	result.spawn = Vector2(w - result.spawn.x, result.spawn.y)
 	for slot in result.npc_slots:
 		slot.position = Vector2(w - slot.position.x, slot.position.y)

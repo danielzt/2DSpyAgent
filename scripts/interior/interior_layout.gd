@@ -222,6 +222,13 @@ func _load_plan(plan: Dictionary) -> void:
 	_spawn = parsed.spawn
 	if not floor_rects.is_empty():
 		base_floor = floor_rects[0].floor
+	if is_shop and parsed.counter.size.x > 0.0:
+		# loja: o vendedor atrás do balcão é a primeira vaga; a zona de compra fica logo à frente
+		counter = parsed.counter
+		var shop_label: String = ShopDefs.shop_name(shop) if shop != "" else "loja"
+		zones.append({"id": "shop", "rect": counter_zone(), "verb": "comprar: %s" % shop_label})
+		npc_slots.insert(0, {"role": _role(0), "position": merchant_position(), "staff": true, "act": "post",
+				"route": [], "facing": "down"})
 	_refresh_furniture()
 
 

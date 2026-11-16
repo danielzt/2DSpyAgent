@@ -173,6 +173,99 @@ static func build(c: RefCounted, kind: String, w: int, h: int, t: Array[Color]) 
 				c.vline(x, h / 3 + 1, h - h / 3 - 2, t[0])
 				c.px(x - 2, h * 2 / 3, _c("amber"))
 			c.frame(0, 0, w, h, _c("ink"))
+		"teller":
+			# guichê: balcão de madeira com vidro em cima e divisórias
+			_box(c, 0, h / 3, w, h - h / 3, t)
+			c.rect(1, 0, w - 2, h / 3, _c("ice"))
+			c.hline(1, 0, w - 2, _c("white"))
+			for x in range(w / 3, w - 1, w / 3):
+				c.vline(x, 0, h, _c("slate"))
+			c.frame(0, 0, w, h, _c("ink"))
+		"column":
+			c.ellipse(0, 0, w, h, t[0])
+			c.ellipse(1, 1, w - 2, h - 2, t[1])
+			c.ellipse(2, 2, w / 2, h / 2, t[2])
+			c.outline(ink)
+		"luggage_cart":
+			c.rect(1, h - 3, w - 2, 2, t[0])
+			c.rect(1, 1, 2, h - 2, t[1])
+			c.rect(w - 3, 1, 2, h - 2, t[1])
+			c.rect(4, 3, w / 2 - 3, h - 7, _c("brown"))
+			c.rect(w / 2 + 1, 5, w / 2 - 5, h - 9, _c("wine"))
+			c.outline(ink)
+		"dining_table":
+			# mesa com toalha branca e barra
+			c.rect(0, 0, w, h, _c("light"))
+			c.rect(1, 1, w - 2, h - 2, _c("white"))
+			c.frame(2, 2, w - 4, h - 4, _c("wine"))
+			c.outline(ink)
+		"booth":
+			# cabine de lanchonete: banco estofado em U visto de cima
+			c.rect(0, 0, w, h, t[1])
+			c.rect(0, 0, w, 3, t[0])
+			c.rect(3, 4, w - 6, h - 5, _c("cream"))
+			c.rect(4, 5, w - 8, h - 7, _c("white"))
+			c.frame(0, 0, w, h, ink)
+		"griddle":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w - 4, h - 5, _c("shadow"))
+			c.rect(4, 4, 4, 3, _c("brown"))
+			c.rect(w / 2, 4, 4, 3, _c("brown"))
+			c.px(w - 4, h - 3, _c("orange"))
+		"milkshake":
+			_box(c, 0, 0, w, h, t)
+			c.rect(w / 2 - 2, 2, 4, h / 2, _c("silver") if Palette.has_color("silver") else _c("light"))
+			c.ellipse(w / 2 - 3, h - 7, 6, 5, _c("cream"))
+		"dance_floor":
+			var lights := ["magenta", "purple", "neon_cyan", "blue", "neon_green"]
+			c.fill(_c("shadow"))
+			for y in range(0, h, 8):
+				for x in range(0, w, 8):
+					c.rect(x + 1, y + 1, 6, 6, _c(lights[((x / 8) * 3 + (y / 8) * 5) % lights.size()]))
+			c.frame(0, 0, w, h, ink)
+		"cleaning_cart":
+			_box(c, 0, 0, w, h, t)
+			c.rect(2, 2, w / 2 - 2, h - 5, _c("white"))
+			c.rect(w / 2 + 1, 2, w / 2 - 3, h / 2 - 1, _c("sky"))
+			c.px(w - 4, h - 4, _c("amber"))
+		"neon":
+			c.fill(_c("shadow"))
+			c.frame(0, 0, w, h, ink)
+			for x in range(2, w - 2):
+				c.px(x, h / 2 + (1 if (x / 3) % 2 == 0 else -1), t[1])
+			c.hline(2, h - 3, w - 4, _c("neon_cyan"))
+		"key_rack":
+			c.fill(t[1])
+			c.frame(0, 0, w, h, ink)
+			for x in range(2, w - 2, 3):
+				for y in range(2, h - 2, 4):
+					c.px(x, y, _c("amber"))
+		"elevator_door":
+			c.fill(t[1])
+			c.vline(w / 2, 1, h - 1, _c("slate"))
+			c.rect(w / 2 - 2, 1, 4, 2, _c("amber"))
+			c.frame(0, 0, w, h, ink)
+		"menu_board":
+			c.fill(t[1])
+			c.frame(0, 0, w, h, _c("brown"))
+			for y in range(2, h - 2, 3):
+				c.hline(2, y, w / 2, _c("white"))
+				c.hline(w - 6, y, 3, _c("amber"))
+		"candle":
+			c.ellipse(0, 0, w, h, _c("cream"))
+			c.ellipse(w / 3, h / 3, maxi(w / 3, 2), maxi(h / 3, 2), t[1])
+			c.px(w / 2, h / 2, _c("orange"))
+		"bell":
+			c.ellipse(0, 0, w, h, t[0])
+			c.ellipse(1, 1, w - 2, h - 2, t[1])
+			c.px(w / 2 - 1, h / 2 - 1, _c("cream"))
+		"cash_register":
+			c.rect(0, 0, w, h, t[1])
+			c.rect(1, 1, w - 2, h / 3, _c("ink"))
+			c.px(2, 2, _c("neon_green"))
+			for y in range(h / 2, h - 1, 2):
+				c.hline(1, y, w - 2, _c("light"))
+			c.frame(0, 0, w, h, ink)
 		"coffee_machine":
 			_box(c, 0, 0, w, h, t)
 			c.rect(3, 3, w - 6, h / 3, ink)

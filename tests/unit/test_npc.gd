@@ -282,3 +282,13 @@ func test_post_npc_stays_put() -> void:
 	await wait_physics_frames(300)
 	assert_eq(npc.global_position, Vector2(300, 300))
 	assert_eq(npc.pose(), "stand")
+
+
+func test_dancing_and_exercising_npcs_stay_and_animate() -> void:
+	for act in ["dance", "exercise"]:
+		var spot := Vector2(400, 400) if act == "dance" else Vector2(900, 400)
+		var npc := _worker(spot, act)
+		await wait_physics_frames(300)
+		assert_eq(npc.pose(), act)
+		assert_eq(npc.global_position, spot)
+		assert_false(_shape_disabled(npc), "%s tem colisão" % act)

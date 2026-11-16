@@ -266,3 +266,25 @@ func test_legend_cannot_redefine_fixed_symbols() -> void:
 	var plan := fixture()
 	plan.object_legend["D"] = {"item": "desk"}
 	assert_true(_has_error(PlanParser.validate(plan), "símbolo fixo"))
+
+
+## Planta de loja: a fixture com um balcão de loja no meio da sala.
+static func shop_fixture() -> Dictionary:
+	var plan := fixture()
+	_stamp(plan.object_grid, 15, 12, "KKKK")
+	plan.object_legend["K"] = {"item": "counter", "shop_counter": true}
+	return plan
+
+
+func test_shop_counter_is_reported() -> void:
+	assert_eq(PlanParser.validate(shop_fixture()), [] as Array[String])
+	var parsed := PlanParser.parse(shop_fixture(), _unmirrored_id())
+	assert_eq(parsed.counter, Rect2(15 * 32, 12 * 32, 128, 32))
+	assert_eq(PlanParser.parse(fixture(), 1).counter, Rect2())
+
+
+func test_only_one_shop_counter() -> void:
+	var plan := shop_fixture()
+	_stamp(plan.object_grid, 15, 16, "LL")
+	plan.object_legend["L"] = {"item": "counter", "shop_counter": true}
+	assert_true(_has_error(PlanParser.validate(plan), "balcão de loja"))

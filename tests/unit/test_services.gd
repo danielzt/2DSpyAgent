@@ -443,7 +443,7 @@ func test_interior_npcs_stay_in_place() -> void:
 
 
 func test_interior_size_follows_the_facade() -> void:
-	GameState.set_inside(4, Vector2.ZERO, "", "restaurant", "Restaurante", 300.0)
+	GameState.set_inside(4, Vector2.ZERO, "", "office", "Escritório", 300.0)
 	var interior := INTERIOR_SCENE.instantiate()
 	tree.root.add_child(interior)
 	nodes.append(interior)

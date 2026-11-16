@@ -10,6 +10,11 @@ const PLANS := {
 	"bar": preload("res://scripts/interior/plans/bar.gd"),
 	"police": preload("res://scripts/interior/plans/police.gd"),
 	"hospital": preload("res://scripts/interior/plans/hospital.gd"),
+	"bank": preload("res://scripts/interior/plans/bank.gd"),
+	"hotel": preload("res://scripts/interior/plans/hotel.gd"),
+	"restaurant": preload("res://scripts/interior/plans/restaurant.gd"),
+	"diner": preload("res://scripts/interior/plans/diner.gd"),
+	"club": preload("res://scripts/interior/plans/club.gd"),
 }
 
 ## Plantas injetadas (testes): têm prioridade sobre o registro.

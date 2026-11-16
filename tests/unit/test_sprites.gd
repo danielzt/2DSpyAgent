@@ -256,9 +256,12 @@ func test_text_texture_is_cached_by_content() -> void:
 # --- interiores caprichados: pisos novos e faces de parede ---
 
 const NEW_FLOORS := ["floor/herringbone", "floor/wood_dark", "floor/laminate", "floor/carpet_navy",
-	"floor/carpet_cream", "floor/linoleum_mint", "floor/linoleum_gray", "floor/linoleum_white", "floor/bath_tile"]
+	"floor/carpet_cream", "floor/linoleum_mint", "floor/linoleum_gray", "floor/linoleum_white", "floor/bath_tile",
+	"floor/rubber", "floor/carpet_purple", "floor/carpet_gray", "floor/carpet_pattern", "floor/concrete_stripe",
+	"floor/metal", "floor/rustic", "floor/tile_beige"]
 const FACE_STYLES := ["stripes_wine", "wood_panel", "tile_blue", "tile_white_green", "navy_half", "brick",
-	"floral", "plaster_cream", "plaster_gray"]
+	"floral", "plaster_cream", "plaster_gray", "tile_cream_red", "black_neon", "velvet_wine", "corrugated",
+	"barn_wood", "concrete_block", "metal_lights", "plaster_green"]
 
 
 func test_new_floors_exist_and_use_the_palette() -> void:
@@ -293,7 +296,7 @@ func test_poses_differ_from_standing() -> void:
 	for dir in ["up", "right", "left"]:
 		var sit: RefCounted = CharacterSprites.build(look, dir, 0, "sit")
 		assert_ne(sit.image.get_data(), CharacterSprites.build(look, dir, 0).image.get_data(), "sentado %s" % dir)
-	assert_eq(CharacterSprites.POSES, ["stand", "sit", "lie", "work"])
+	assert_eq(CharacterSprites.POSES, ["stand", "sit", "lie", "work", "exercise", "dance"])
 
 
 func test_lying_has_no_floor_shadow() -> void:
@@ -315,3 +318,15 @@ func test_pose_is_part_of_the_cache_key() -> void:
 	var look := CharacterSprites.civilian_look(2)
 	assert_false(SpriteFactory.character(look, "down", 0, "sit") == SpriteFactory.character(look, "down", 0))
 	assert_true(SpriteFactory.character(look, "down", 0, "sit") == SpriteFactory.character(look, "down", 0, "sit"))
+
+
+func test_exercise_and_dance_poses() -> void:
+	var look := CharacterSprites.civilian_look(8)
+	var stand: RefCounted = CharacterSprites.build(look, "down", 0)
+	for pose in ["exercise", "dance"]:
+		assert_true(CharacterSprites.POSES.has(pose), pose)
+		var a: RefCounted = CharacterSprites.build(look, "down", 1, pose)
+		var b: RefCounted = CharacterSprites.build(look, "down", 2, pose)
+		assert_ne(a.image.get_data(), stand.image.get_data(), pose)
+		assert_ne(a.image.get_data(), b.image.get_data(), "%s anima" % pose)
+		assert_true(a.only_palette_colors() and b.only_palette_colors(), pose)

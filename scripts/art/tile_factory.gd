@@ -13,13 +13,16 @@ const IDS := [
 	"floor/carpet", "floor/checker", "floor/concrete", "floor/dance", "floor/marble",
 	"floor/herringbone", "floor/wood_dark", "floor/laminate", "floor/carpet_navy", "floor/carpet_cream",
 	"floor/linoleum_mint", "floor/linoleum_gray", "floor/linoleum_white", "floor/bath_tile",
+	"floor/rubber", "floor/carpet_purple", "floor/carpet_gray", "floor/carpet_pattern", "floor/concrete_stripe",
+	"floor/metal", "floor/rustic", "floor/tile_beige",
 	"dash_v", "dash_h", "dash_lane_v", "dash_lane_h", "cross_h", "cross_v",
 ]
 
 ## Faces de parede dos interiores (16x12 texels, repetidas na horizontal): estilo -> desenho.
 const FACE_SIZE := Vector2i(16, 12)
 const FACE_STYLES := ["stripes_wine", "wood_panel", "tile_blue", "tile_white_green", "navy_half", "brick",
-	"floral", "plaster_cream", "plaster_gray"]
+	"floral", "plaster_cream", "plaster_gray", "tile_cream_red", "black_neon", "velvet_wine", "corrugated",
+	"barn_wood", "concrete_block", "metal_lights", "plaster_green"]
 
 static var _canvases := {}
 static var _textures := {}
@@ -277,6 +280,67 @@ static func _build(id: String) -> RefCounted:
 				for x in range(0, SIZE, 16):
 					t.rect(x + 9, y + 9, 6, 6, _c("sky"))
 			return t
+		"floor/rubber":
+			var t := _filled("shadow")
+			t.speckle(_c("slate"), 0.05, seed_value)
+			for i in range(0, SIZE, 16):
+				t.hline(0, i, SIZE, _c("ink"))
+				t.vline(i, 0, SIZE, _c("ink"))
+			return t
+		"floor/carpet_purple":
+			var t := _filled("purple")
+			for y in range(0, SIZE, 8):
+				for x in range(((y / 8) % 2) * 4, SIZE, 8):
+					t.px(x + 2, y + 2, _c("magenta"))
+			t.speckle(_c("shadow"), 0.04, seed_value)
+			return t
+		"floor/carpet_gray":
+			var t := _filled("gray")
+			t.speckle(_c("slate"), 0.05, seed_value)
+			t.speckle(_c("light"), 0.03, seed_value + 1)
+			return t
+		"floor/carpet_pattern":
+			# carpete vinho com losangos dourados (cinema, hotel)
+			var t := _filled("wine")
+			for y in range(0, SIZE, 16):
+				for x in range(0, SIZE, 16):
+					t.px(x + 8, y + 4, _c("amber"))
+					t.px(x + 7, y + 5, _c("amber"))
+					t.px(x + 9, y + 5, _c("amber"))
+					t.px(x + 8, y + 6, _c("amber"))
+					t.px(x, y, _c("red"))
+			return t
+		"floor/concrete_stripe":
+			var t := _filled("gray")
+			t.speckle(_c("slate"), 0.03, seed_value)
+			for x in range(0, SIZE, 8):
+				t.rect(x, 0, 4, 2, _c("amber"))
+				t.rect(x + 4, 0, 4, 2, _c("ink"))
+			return t
+		"floor/metal":
+			var t := _filled("slate")
+			for y in range(0, SIZE, 8):
+				for x in range(((y / 8) % 2) * 4, SIZE, 8):
+					t.hline(x, y + 2, 3, _c("gray"))
+			for i in range(0, SIZE, 16):
+				t.hline(0, i, SIZE, _c("shadow"))
+			return t
+		"floor/rustic":
+			var t := _filled("sand")
+			for y in range(5, SIZE, 6):
+				t.hline(0, y, SIZE, _c("brown"))
+			for y in range(0, SIZE, 6):
+				t.px(((y / 6) * 11 + 4) % SIZE, y + 2, _c("brown_dark"))
+				t.vline(((y / 6) * 17 + 9) % SIZE, y, 5, _c("brown"))
+			t.speckle(_c("brown"), 0.02, seed_value)
+			return t
+		"floor/tile_beige":
+			var t := _filled("cream")
+			t.speckle(_c("white"), 0.04, seed_value)
+			for i in range(0, SIZE, 8):
+				t.hline(0, i, SIZE, _c("sand"))
+				t.vline(i, 0, SIZE, _c("sand"))
+			return t
 		"dash_v":
 			var t: RefCounted = PixelCanvas.new(2, 24)
 			t.rect(0, 0, 2, 12, _c("amber"))
@@ -383,6 +447,55 @@ static func _build_face(style: String) -> RefCounted:
 			t.fill(_c("light"))
 			t.speckle(_c("gray"), 0.06, hash(style))
 			skirting = "slate"
+		"plaster_green":
+			t.fill(_c("lime"))
+			t.speckle(_c("green"), 0.05, hash(style))
+			skirting = "green_dark"
+		"tile_cream_red":
+			t.fill(_c("cream"))
+			for x in range(0, w, 4):
+				t.vline(x, 1, 9, _c("sand"))
+			t.rect(0, 6, w, 2, _c("red"))
+			skirting = "red"
+		"black_neon":
+			t.fill(_c("shadow"))
+			t.hline(0, 4, w, _c("magenta"))
+			t.hline(0, 7, w, _c("neon_cyan"))
+			skirting = "ink"
+		"velvet_wine":
+			t.fill(_c("wine"))
+			for x in range(1, w, 4):
+				t.vline(x, 1, 9, _c("red"))
+			t.hline(0, 1, w, _c("amber"))
+			skirting = "amber"
+		"corrugated":
+			t.fill(_c("gray"))
+			for x in range(0, w, 3):
+				t.vline(x, 1, 9, _c("slate"))
+				t.vline(x + 1, 1, 9, _c("light"))
+			skirting = "slate"
+		"barn_wood":
+			t.fill(_c("brown"))
+			for x in range(0, w, 5):
+				t.vline(x, 1, 9, _c("brown_dark"))
+			t.px(3, 3, _c("brown_dark"))
+			t.px(11, 6, _c("brown_dark"))
+			t.hline(0, 1, w, _c("sand"))
+		"concrete_block":
+			t.fill(_c("concrete"))
+			for y in range(1, 10, 3):
+				t.hline(0, y + 2, w, _c("gray"))
+				for x in range(((y / 3) % 2) * 4, w, 8):
+					t.vline(x, y, 2, _c("gray"))
+			skirting = "slate"
+		"metal_lights":
+			t.fill(_c("slate"))
+			for x in range(0, w, 4):
+				t.vline(x, 1, 9, _c("shadow"))
+			t.px(2, 4, _c("neon_cyan"))
+			t.px(10, 4, _c("neon_green"))
+			t.px(6, 7, _c("red"))
+			skirting = "ink"
 		_:
 			push_warning("Face de parede desconhecida: %s" % style)
 			t.fill(_c("magenta"))
