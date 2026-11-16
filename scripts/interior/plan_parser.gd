@@ -112,13 +112,54 @@ static func validate(plan: Dictionary) -> Array[String]:
 					errors.append("%s: rota '%s' sem pontos" % [where, entry.route])
 			elif entry.has("route") and _solid_at(plan, x, y):
 				errors.append("%s: ponto de ronda sobre algo sólido" % where)
+	if errors.is_empty():
+		errors.append_array(_blocked_routes(plan))
+	return errors
+
+
+## Raio da colisão de um NPC (px), usado para ver se a ronda passa livre entre os pontos.
+const NPC_RADIUS := 11.0
+
+
+## Rondas que atravessam algo sólido (inclusive do último ponto de volta ao primeiro). Usa a planta com
+## todos os itens opcionais presentes, para valer em qualquer sorteio.
+static func _blocked_routes(plan: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	var full := parse(plan, 0, true)
+	var solids: Array[Rect2] = []
+	for wall in full.walls:
+		solids.append((wall as Rect2).grow(NPC_RADIUS))
+	for it in full.items:
+		if it.solid and not it.get("secret", false):
+			solids.append((it.rect as Rect2).grow(NPC_RADIUS))
+	var w: float = full.size.x
+	for slot in full.npc_slots:
+		var route: Array = slot.route
+		for i in route.size():
+			var a: Vector2 = route[i]
+			var b: Vector2 = route[(i + 1) % route.size()]
+			var steps := maxi(int(a.distance_to(b) / 4.0), 1)
+			for k in steps + 1:
+				var p := a.lerp(b, float(k) / steps)
+				var hit := false
+				for r in solids:
+					if r.has_point(p):
+						hit = true
+						break
+				if hit:
+					var ga := Vector2i(int((w - a.x if full.mirrored else a.x) / CELL), int(a.y / CELL))
+					var gb := Vector2i(int((w - b.x if full.mirrored else b.x) / CELL), int(b.y / CELL))
+					errors.append("rota de %s atravessa algo sólido entre (coluna %d, linha %d) e (coluna %d, linha %d)"
+							% [slot.role, ga.x, ga.y, gb.x, gb.y])
+					break
 	return errors
 
 
 # --- leitura ---
 
 ## Lê a planta para o prédio `building_id`. Supõe uma planta válida (ver `validate`).
-static func parse(plan: Dictionary, building_id: int) -> Dictionary:
+## `all_optional` liga todos os itens e pessoas opcionais (usado na validação).
+static func parse(plan: Dictionary, building_id: int, all_optional := false) -> Dictionary:
 	var dims: Vector2i = SIZES[plan.size]
 	var size := Vector2(dims) * CELL
 	var rng := RandomNumberGenerator.new()
@@ -243,7 +284,7 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 	# móveis e itens de parede (ordem de leitura); os opcionais consomem a seed nessa ordem
 	for piece in _pieces(plan.object_grid, object_legend, "item"):
 		var entry: Dictionary = object_legend[piece.letter]
-		if not _roll(rng, entry):
+		if not _roll(rng, entry, all_optional):
 			continue
 		var rect := _place(piece.block, entry)
 		result.items.append({"kind": entry.item, "rect": rect, "solid": entry.get("solid", true),
@@ -255,7 +296,7 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 			result.secret_door = rect
 	for piece in _pieces(plan.object_grid, object_legend, "wall_item"):
 		var entry: Dictionary = object_legend[piece.letter]
-		if not _roll(rng, entry):
+		if not _roll(rng, entry, all_optional):
 			continue
 		var block: Rect2 = piece.block
 		var width: float = block.size.x
@@ -268,7 +309,7 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 	# camada de detalhe: itens de cima de móvel, zonas, pessoas
 	for piece in _pieces(plan.detail_grid, detail_legend, "on"):
 		var entry: Dictionary = detail_legend[piece.letter]
-		if not _roll(rng, entry):
+		if not _roll(rng, entry, all_optional):
 			continue
 		result.items.append({"kind": entry.on, "rect": _place(piece.block, entry), "solid": false, "layer": "on",
 				"tone": tone_over.get(entry.on, entry.get("tone", ""))})
@@ -281,15 +322,22 @@ static func parse(plan: Dictionary, building_id: int) -> Dictionary:
 			if d == "." or not detail_legend[d].has("npc"):
 				continue
 			var entry: Dictionary = detail_legend[d]
-			if not _roll(rng, entry):
+			if not _roll(rng, entry, all_optional):
 				continue
 			var position := _center(x, y)
+			var act: String = entry.get("act", "post")
+			var on_item := false
+			for it in result.items:
+				if it.layer == "floor" and it.solid and (it.rect as Rect2).grow(1.0).has_point(position):
+					on_item = true
+			if (act == "sit" or act == "lie") and not on_item:
+				continue   # o assento ou a cama não saiu neste sorteio: a pessoa não aparece
 			var route: Array[Vector2] = []
 			if entry.has("route"):
 				route.append(position)
 				route.append_array(_route_points(plan, entry.route))
 			result.npc_slots.append({"role": entry.npc, "position": position, "staff": entry.get("staff", false),
-					"act": entry.get("act", "post"), "route": route, "facing": entry.get("facing", "down")})
+					"act": act, "route": route, "facing": entry.get("facing", "down"), "on_item": on_item})
 
 	if mirrored:
 		_mirror(result)
@@ -419,9 +467,12 @@ static func _place(block: Rect2, entry: Dictionary) -> Rect2:
 
 
 ## Sorteio dos opcionais: só consome a seed quando há `chance` menor que 1.
-static func _roll(rng: RandomNumberGenerator, entry: Dictionary) -> bool:
+static func _roll(rng: RandomNumberGenerator, entry: Dictionary, all_optional := false) -> bool:
 	var chance: float = entry.get("chance", 1.0)
-	return chance >= 1.0 or rng.randf() < chance
+	if chance >= 1.0:
+		return true
+	var hit := rng.randf() < chance   # consome a seed sempre, para o sorteio não mudar com all_optional
+	return hit or all_optional
 
 
 static func _mirror(result: Dictionary) -> void:

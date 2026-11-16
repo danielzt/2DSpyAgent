@@ -8,7 +8,8 @@
 - Lojas com balcão, vendedor e zona de compra vindos da planta; dançarinos na boate e alunos se exercitando
 - QG: a passagem secreta da lavanderia só abre com E e a sala fica escura até lá
 - 8 pisos, 8 paredes e cerca de 35 móveis e itens novos; novos funcionários (garçom, camareira, bilheteiro, editor...)
-- 928 testes. Detalhes: [redesign-fase-7.md](redesign-fase-7.md)
+- Rondas validadas para não atravessar móveis; ninguém senta no ar; quem se exercita no chão ocupa espaço
+- 933 testes. Detalhes: [redesign-fase-7.md](redesign-fase-7.md)
 
 ## 2026-11-15 (6)
 

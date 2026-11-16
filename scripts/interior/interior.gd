@@ -338,6 +338,7 @@ func _add_npcs() -> void:
 		npc.activity = slot.get("act", "post")
 		npc.route = PackedVector2Array(slot.get("route", []))
 		npc.facing = slot.get("facing", "down")
+		npc.on_furniture = slot.get("on_item", false)
 		npc.context = context_for(slot)
 		npc.position = slot.position
 		npc.set_meta("role", slot.role)

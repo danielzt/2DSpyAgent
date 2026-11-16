@@ -325,3 +325,41 @@ func test_secret_door_and_hidden_rooms() -> void:
 		if it.kind == "washer_secret":
 			washer = it
 	assert_true(washer.get("secret", false))
+
+
+func test_route_through_furniture_is_an_error() -> void:
+	var plan := fixture()
+	_stamp(plan.object_grid, 23, 10, "t")   # mesa no meio do caminho da enfermeira
+	assert_true(_has_error(PlanParser.validate(plan), "atravessa"), str(PlanParser.validate(plan)))
+	assert_false(_has_error(PlanParser.validate(fixture()), "atravessa"), "a rota da fixture está livre")
+
+
+func test_seated_npc_needs_its_seat_to_be_there() -> void:
+	var plan := fixture()
+	plan.object_legend["s"] = {"item": "sofa", "size": [3, 1], "chance": 0.5}
+	var empty := 0
+	for id in 40:
+		var parsed := PlanParser.parse(plan, id)
+		var sofas := _items(parsed, "sofa").size()
+		for slot in parsed.npc_slots:
+			if slot.act == "sit":
+				assert_eq(sofas, 1, "id %d: sentado sem sofá" % id)
+		if sofas == 0:
+			empty += 1
+	assert_gt(float(empty), 0.0, "o sofá opcional às vezes não aparece")
+
+
+func test_slot_knows_whether_it_is_on_furniture() -> void:
+	var plan := fixture()
+	_stamp(plan.object_grid, 5, 15, "Q")
+	plan.object_legend["Q"] = {"item": "treadmill"}
+	_stamp(plan.detail_grid, 5, 15, "4")
+	_stamp(plan.detail_grid, 8, 15, "4")
+	plan.detail_legend["4"] = {"npc": "aluno", "act": "exercise"}
+	var parsed := PlanParser.parse(plan, _unmirrored_id())
+	var flags := {}
+	for slot in parsed.npc_slots:
+		if slot.role == "aluno":
+			flags[slot.position.x] = slot.on_item
+	assert_eq(flags[5 * 32 + 16.0], true, "na esteira")
+	assert_eq(flags[8 * 32 + 16.0], false, "no chão")

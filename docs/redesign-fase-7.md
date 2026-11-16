@@ -162,6 +162,10 @@ O que entrou no motor:
 - Funcionários novos nos tipos (para as plantas): garçom (restaurante), camareira (hotel), bilheteiro e atendente
   (cinema), editor (redação), recepcionista (escritório), agente e chefe (QG).
 
+Depois da revisão final: `validate()` também recusa **rondas que atravessam algo sólido** (cada trecho, inclusive a
+volta ao primeiro ponto, com o raio do NPC e todos os opcionais presentes); quem senta ou deita num móvel opcional
+que não saiu no sorteio não aparece; quem se exercita no chão livre mantém a colisão (só em cima de aparelho fica sem).
+
 Testes da Etapa 2: `test_plans.gd` ganhou o verificador `_assert_plan` (cômodos, itens, zonas de serviço,
 funcionários e clientes de cada tipo) e os testes de cada planta; `test_plan_parser` cobre balcão de loja,
 exercício em aparelho e passagem secreta; `test_scenes` cobre a passagem do QG (só abre com E, sombra, volta fechada)

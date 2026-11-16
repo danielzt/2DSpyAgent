@@ -412,3 +412,17 @@ func test_hq_plan() -> void:
 	assert_false(layout.hidden_rooms.is_empty())
 	assert_eq(layout.zone("secret").verb, "entrar no QG")
 	assert_false(layout.furniture.has(layout.secret_door), "a passagem não conta como móvel fixo")
+
+
+func test_people_sit_and_lie_only_on_furniture_that_is_there() -> void:
+	for type in Plans.types():
+		for id in 30:
+			var layout := InteriorLayout.new(id, type)
+			for slot in layout.npc_slots:
+				if not slot.act in ["sit", "lie"]:
+					continue
+				var under := false
+				for item in layout.items:
+					if item.solid and (item.rect as Rect2).grow(1.0).has_point(slot.position):
+						under = true
+				assert_true(under, "%s %d: %s %s no ar" % [type, id, slot.role, slot.act])
