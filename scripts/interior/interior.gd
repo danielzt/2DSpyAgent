@@ -24,12 +24,15 @@ const TEXEL := 2.0
 const FLOOR_ITEM_Z := 1
 const SOLID_Z := 2
 const NPC_SEED_BASE := 50000
-const WINDOW_STEP := 420.0
-const WINDOW_SIZE := Vector2(96.0, 14.0)
 const SERVICE_TOAST_SECONDS := 7.0
 
 var layout
 var rng := RandomNumberGenerator.new()
+## Céu atrás das janelas das plantas (recolorido a cada hora).
+var _window_skies: Array[Sprite2D] = []
+## Passagem secreta do QG (corpo sólido até abrir) e as sombras dos cômodos escondidos.
+var secret_body: StaticBody2D
+var _secret_open := false
 
 
 func _ready() -> void:
@@ -46,13 +49,19 @@ func _ready() -> void:
 	_add_solid(Rect2(-WALL, 0, WALL, s.y), "wall")
 	_add_solid(Rect2(s.x, 0, WALL, s.y), "wall")
 	for wall in layout.walls:
-		_add_solid(wall, "wall")
+		_add_solid(wall, "top")
+	_add_wall_faces()
 	for item in layout.items:
-		_add_furniture(item)
+		if item.get("layer", "floor") != "on":
+			_add_furniture(item)
+	for item in layout.items:
+		if item.get("layer", "floor") == "on":
+			_add_furniture(item)   # depois dos móveis: fica por cima deles
 	_add_exit_door()
 	for z in layout.zones:
 		_add_zone(z)
 	_add_npcs()
+	_add_secret_shadows()
 	if layout.is_shop:
 		_add_shop_sign()
 
@@ -73,7 +82,8 @@ func _exit_tree() -> void:
 
 
 func _on_hour_changed(_hour: int) -> void:
-	queue_redraw()   # as janelas acompanham o céu
+	for sky in _window_skies:   # as janelas acompanham o céu
+		sky.modulate = sky_color(WorldClock.hour())
 
 
 ## Semente do NPC da vaga `index` deste prédio.
@@ -88,21 +98,11 @@ static func sky_color(hour: float) -> Color:
 
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(TEXEL, TEXEL))
-	var s: Vector2 = layout.size / TEXEL
-	draw_texture_rect(SpriteFactory.tile(layout.base_floor), Rect2(Vector2.ZERO, s), true)
-	for room in layout.rooms:
-		var rect: Rect2 = room.rect
-		draw_texture_rect(SpriteFactory.tile(room.floor), Rect2(rect.position / TEXEL, rect.size / TEXEL), true)
-	# Rodapé escuro junto às paredes e janelas na parede norte.
+	for part in layout.floor_rects:
+		var r: Rect2 = part.rect
+		draw_texture_rect(SpriteFactory.tile(part.floor), Rect2(r.position / TEXEL, r.size / TEXEL), true)
+	_draw_doorways()
 	var ink := Palette.get_color("ink")
-	draw_rect(Rect2(0, 0, s.x, 2), Palette.cast_shadow())
-	draw_rect(Rect2(0, 0, 2, s.y), Palette.cast_shadow())
-	var sky := sky_color(WorldClock.hour())
-	for rect in window_rects():
-		var r := Rect2(rect.position / TEXEL, rect.size / TEXEL)
-		draw_rect(r, ink)
-		draw_rect(r.grow(-1.0), sky)
-		draw_rect(Rect2(r.get_center().x, r.position.y, 1.0, r.size.y), ink)
 	# Capacho e porta de saída.
 	var door: Rect2 = layout.exit_door()
 	var mat := Rect2(door.position.x / TEXEL, door.position.y / TEXEL - 8.0, door.size.x / TEXEL, 8.0)
@@ -110,22 +110,6 @@ func _draw() -> void:
 	draw_rect(Rect2(mat.position.x, mat.position.y, mat.size.x, 1.0), Palette.get_color("wine"))
 	draw_rect(Rect2(door.position / TEXEL, door.size / TEXEL), Palette.get_color("brown_dark"))
 	draw_rect(Rect2(door.position.x / TEXEL, door.position.y / TEXEL, door.size.x / TEXEL, 1.0), ink)
-
-
-## Janelas ao longo da parede norte (px do interior), fora de móveis encostados nela.
-func window_rects() -> Array[Rect2]:
-	var result: Array[Rect2] = []
-	var x := WINDOW_STEP / 2.0
-	while x + WINDOW_SIZE.x < layout.size.x:
-		var rect := Rect2(Vector2(x, 0.0), WINDOW_SIZE)
-		var free := true
-		for solid in layout.solids():
-			if (solid as Rect2).intersects(rect):
-				free = false
-		if free:
-			result.append(rect)
-		x += WINDOW_STEP
-	return result
 
 
 ## Corpo sólido com visual da fábrica de arte (parede).
@@ -156,12 +140,30 @@ func _add_furniture(item: Dictionary) -> void:
 	var w := int(rect.size.x / TEXEL)
 	var h := int(rect.size.y / TEXEL)
 	var kind: String = item.kind
-	var texture := SpriteFactory.custom(FurnitureArt.cache_key(kind, w, h),
-		func() -> RefCounted: return FurnitureArt.canvas(kind, w, h))
+	var tone: String = item.get("tone", "")
+	var layer: String = item.get("layer", "floor")
+	var texture := SpriteFactory.custom(FurnitureArt.cache_key(kind, w, h, tone),
+		func() -> RefCounted: return FurnitureArt.canvas(kind, w, h, tone))
 	var sprite := SpriteFactory.make_sprite(texture, rect.size / (2.0 * TEXEL))
+	if layer == "wall":
+		if kind == "window":
+			_add_window_sky(rect)
+		sprite.position = rect.get_center()
+		sprite.z_index = FLOOR_ITEM_Z + 1
+		sprite.add_to_group("wall_items")
+		add_child(sprite)
+		return
+	if layer == "on":
+		sprite.position = rect.get_center()
+		sprite.z_index = SOLID_Z
+		sprite.add_to_group("on_items")
+		add_child(sprite)
+		return
 	if item.solid:
 		var body := _make_body(rect)
 		body.add_child(sprite)
+		if item.get("secret", false):
+			secret_body = body
 		body.z_index = SOLID_Z
 		body.add_to_group("furniture")
 		body.set_meta("kind", kind)
@@ -178,6 +180,11 @@ static func _block_canvas(size: Vector2, material: String) -> RefCounted:
 	var w := maxi(int(size.x / TEXEL), 2)
 	var h := maxi(int(size.y / TEXEL), 2)
 	var canvas: RefCounted = PixelCanvas.new(w, h)
+	if material == "top":
+		# topo de parede visto de cima (a altura aparece na face, logo abaixo)
+		canvas.fill(Palette.get_color("shadow"))
+		canvas.frame(0, 0, w, h, Palette.get_color("ink"))
+		return canvas
 	var tones: Array[Color] = Palette.ramp("wood") if material == "wood" else Palette.tone("gray")
 	canvas.fill(tones[1])
 	if h > 4 and w > 4:
@@ -185,6 +192,76 @@ static func _block_canvas(size: Vector2, material: String) -> RefCounted:
 		canvas.rect(1, h - 4, w - 2, 3, tones[0])
 	canvas.frame(0, 0, w, h, Palette.get_color("ink"))
 	return canvas
+
+
+## Faces das paredes (só visual, sem colisão): o padrão do cômodo repetido ao longo da parede.
+func _add_wall_faces() -> void:
+	for face in layout.wall_faces:
+		var rect: Rect2 = face.rect
+		var sprite := Sprite2D.new()
+		sprite.texture = SpriteFactory.face(face.style)
+		sprite.centered = false
+		sprite.region_enabled = true
+		sprite.region_rect = Rect2(Vector2.ZERO, rect.size / TEXEL)
+		sprite.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+		sprite.scale = Vector2(TEXEL, TEXEL)
+		sprite.position = rect.position
+		sprite.z_index = FLOOR_ITEM_Z
+		sprite.add_to_group("wall_faces")
+		add_child(sprite)
+
+
+## Céu visto pela janela: fica atrás da moldura (o vidro da arte é transparente).
+func _add_window_sky(rect: Rect2) -> void:
+	var r := rect.grow(-TEXEL)
+	var white := SpriteFactory.custom("interior/sky_px", func() -> RefCounted:
+		var canvas: RefCounted = PixelCanvas.new(1, 1)
+		canvas.fill(Palette.get_color("white"))
+		return canvas)
+	var sky := Sprite2D.new()
+	sky.texture = white
+	sky.centered = false
+	sky.position = r.position
+	sky.scale = r.size
+	sky.modulate = sky_color(WorldClock.hour())   # tinta da hora, como o resto da iluminação
+	sky.z_index = FLOOR_ITEM_Z + 1
+	add_child(sky)
+	_window_skies.append(sky)
+
+
+## Sombra escura sobre cada cômodo escondido (a sala do QG) até a passagem abrir nesta visita.
+func _add_secret_shadows() -> void:
+	for rect in layout.hidden_rooms:
+		var shade := Sprite2D.new()
+		shade.texture = SpriteFactory.custom("interior/shadow_px", func() -> RefCounted:
+			var canvas: RefCounted = PixelCanvas.new(1, 1)
+			canvas.fill(Palette.get_color("ink"))
+			return canvas)
+		shade.centered = false
+		shade.position = (rect as Rect2).position
+		shade.scale = (rect as Rect2).size
+		shade.z_index = 20   # acima de tudo dentro da sala, menos o HUD
+		shade.add_to_group("secret_shadow")
+		add_child(shade)
+
+
+## Abre a passagem secreta: a máquina desliza (sem colisão) e a sala escondida aparece.
+func open_secret() -> void:
+	if _secret_open:
+		return
+	_secret_open = true
+	if secret_body != null:
+		(secret_body.get_child(0) as CollisionShape2D).set_deferred("disabled", true)
+		secret_body.modulate = Color(1, 1, 1, 0.35)
+	for shade in get_tree().get_nodes_in_group("secret_shadow"):
+		shade.queue_free()
+
+
+## Soleira nos vãos de porta internos das plantas.
+func _draw_doorways() -> void:
+	for door in layout.doors:
+		var r := Rect2((door as Rect2).position / TEXEL, (door as Rect2).size / TEXEL)
+		draw_rect(Rect2(r.position.x + 2.0, r.get_center().y - 1.0, r.size.x - 4.0, 2.0), Palette.get_color("brown_dark"))
 
 
 func _add_exit_door() -> void:
@@ -226,6 +303,9 @@ func _add_zone(z: Dictionary) -> void:
 
 ## Executa o serviço da zona para o jogador e mostra o resultado no HUD.
 func use_service(id: String, player: Node) -> Dictionary:
+	if id == "secret":
+		open_secret()
+		return {"result": "ok", "message": ""}
 	if id == "shop":
 		player.open_shop(layout.shop)
 		return {"result": "ok", "message": ""}
@@ -253,6 +333,12 @@ func _add_npcs() -> void:
 		npc.ai_seed = npc_seed(layout.building_id, i)
 		npc.stationary = true
 		npc.uniform_role = slot.role
+		npc.uniform_building = layout.type
+		npc.uniform_staff = slot.staff
+		npc.activity = slot.get("act", "post")
+		npc.route = PackedVector2Array(slot.get("route", []))
+		npc.facing = slot.get("facing", "down")
+		npc.on_furniture = slot.get("on_item", false)
 		npc.context = context_for(slot)
 		npc.position = slot.position
 		npc.set_meta("role", slot.role)

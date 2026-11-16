@@ -19,6 +19,8 @@
 | [redesign-fase-3.md](redesign-fase-3.md) | Fase 3 do redesenho: 15 modelos de interior, móveis, NPCs com papel, 13 serviços, mecânicas da D7 |
 | [redesign-fase-4.md](redesign-fase-4.md) | Fase 4 do redesenho: relógio, cor ambiente, camada de luz, portas fechadas, população e crimes por hora |
 | [redesign-fase-6.md](redesign-fase-6.md) | Fase 6 do redesenho: neblina e pontos no mapa, casinhas, casa do agente, interiores completos, uniformes |
+| [redesign-fase-7.md](redesign-fase-7.md) | Fase 7: os 25 interiores em plantas de texto, escala do personagem, faces de parede, uniformes por prédio, NPCs com atividade, lojas planejadas, passagem secreta do QG |
+| [superpowers/specs/2026-11-15-interiores-caprichados-design.md](superpowers/specs/2026-11-15-interiores-caprichados-design.md) | Design dos interiores caprichados (25 plantas, escala, piso e parede, NPCs) |
 | [redesign-fase-5.md](redesign-fase-5.md) | Fase 5 do redesenho: efeitos, íris, mapa e minimapa, título e pausa, regras de arte |
 | [roteiro-jogo.md](roteiro-jogo.md) | Roteiro do jogo completo (plano em discussão): etapas E1 a E12, com status por item e decisões em aberto |
 | [historia.md](historia.md) | História da campanha (proposta): 5 atos, personagens, progressão, percepção, finais, campanha em mapa procedural |

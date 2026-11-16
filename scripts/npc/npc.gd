@@ -39,6 +39,12 @@ const MOVING_SPEED := 5.0
 ## Indo para casa (à noite): confere de tempos em tempos se chegou a uma porta de moradia.
 const HOME_CHECK_TIME := 0.4
 const HOME_REACH := 56.0
+## Atividades dos interiores (Fase 7).
+const PATROL_SPEED := 40.0
+const PATROL_PAUSE := Vector2(2.0, 4.0)     # pausa em cada ponto da ronda (mín., máx. em s)
+const LOOK_AROUND := Vector2(4.0, 8.0)      # de quanto em quanto tempo quem está no posto olha em volta
+const LOOK_AWAY_TIME := 1.5
+const WORK_FRAME_TIME := 0.4
 
 @export var kind := "innocent"
 @export var max_health := 3
@@ -81,6 +87,21 @@ var _sprite: Sprite2D
 var _look := {}
 ## Papel que define o uniforme (médico de branco, policial de azul...). Vazio = roupa comum.
 var uniform_role := ""
+## Prédio e vínculo que definem o uniforme (Fase 7): todo funcionário do hospital de branco etc.
+var uniform_building := ""
+var uniform_staff := false
+## Atividade no interior: "" (comportamento antigo), "post", "patrol", "sit", "lie" ou "work".
+var activity := ""
+## Pontos da ronda (o primeiro é o posto); `facing` é para onde olha parado.
+var route := PackedVector2Array()
+var facing := "down"
+## Em cima de um móvel (assento, cama, aparelho): aí a pessoa não tem colisão.
+var on_furniture := true
+var _route_index := 1
+var _pause_timer := 0.0
+var _patrol_blocked := 0.0
+var _look_timer := 0.0
+var _look_away := 0.0
 var _sprite_direction := "down"
 var _anim_time := 0.0
 var _shown_key := ""
@@ -97,7 +118,12 @@ func _ready() -> void:
 	identity = NpcIdentity.generate(ai_seed if ai_seed != 0 else rng.randi(), kind, context)
 	display_name = identity.name
 	z_index = ACTOR_Z
-	_look = CharacterSprites.look_for(kind, identity.seed, uniform_role)
+	_look = CharacterSprites.look_for(kind, identity.seed, uniform_role, uniform_building, uniform_staff)
+	if activity != "":
+		_sprite_direction = "down" if activity == "lie" else facing
+		_look_timer = rng.randf_range(LOOK_AROUND.x, LOOK_AROUND.y)
+		if activity in ["sit", "lie"] or (activity == "exercise" and on_furniture):
+			(get_node("CollisionShape2D") as CollisionShape2D).disabled = true
 	_sprite = SpriteFactory.make_sprite(null, Vector2(CharacterSprites.PIVOT))
 	add_child(_sprite)
 	_update_sprite(0.0)
@@ -148,9 +174,17 @@ func _physics_process(delta: float) -> void:
 			_attack(target)
 		else:
 			_wander(delta)
+	var wanted := velocity
 	move_and_slide()
 	if get_slide_collision_count() > 0 and not use_sidewalks:
 		_wander_timer = 0.0  # bateu: escolhe outro rumo
+	if activity == "patrol":
+		# bloqueado = quer andar mas quase não sai do lugar (deslizar pela quina de uma parede não conta)
+		var stuck := wanted.length() > 0.0 and get_real_velocity().length() < PATROL_SPEED * 0.25
+		_patrol_blocked = _patrol_blocked + delta if stuck else 0.0
+		if _patrol_blocked > BLOCKED_TURN_BACK_TIME:
+			_patrol_blocked = 0.0
+			_next_patrol_point()   # alguém ou algo no caminho: espera e segue para o próximo ponto
 
 
 func take_damage(amount: float, source: Node = null) -> void:
@@ -161,6 +195,8 @@ func take_damage(amount: float, source: Node = null) -> void:
 	if health <= 0:
 		_die(source)
 		return
+	if activity != "":
+		_stand_up()
 	if kind == "innocent" and is_instance_valid(source):
 		_flee_dir = (global_position - source.global_position).normalized()
 		_flee_threat = source.global_position
@@ -279,6 +315,9 @@ func _drop_loot() -> void:
 
 
 func _wander(delta: float) -> void:
+	if activity != "":
+		_act(delta)
+		return
 	if stationary:
 		velocity = Vector2.ZERO
 		return
@@ -322,6 +361,53 @@ func _process(delta: float) -> void:
 	_update_sprite(delta)
 
 
+## Atividade de interior: parado no posto (olhando em volta), em ronda, sentado, deitado ou trabalhando.
+func _act(delta: float) -> void:
+	velocity = Vector2.ZERO
+	match activity:
+		"post":
+			if _look_away > 0.0:
+				_look_away -= delta
+				if _look_away <= 0.0:
+					_sprite_direction = facing
+			else:
+				_look_timer -= delta
+				if _look_timer <= 0.0:
+					_look_timer = rng.randf_range(LOOK_AROUND.x, LOOK_AROUND.y)
+					_look_away = LOOK_AWAY_TIME
+					var others: Array = CharacterSprites.DIRECTIONS.filter(func(d: String) -> bool: return d != facing)
+					_sprite_direction = others[rng.randi_range(0, others.size() - 1)]
+		"patrol":
+			if route.size() < 2:
+				return
+			if _pause_timer > 0.0:
+				_pause_timer -= delta
+				return
+			var to := route[_route_index] - global_position
+			if to.length() <= ARRIVE_DISTANCE:
+				_next_patrol_point()
+				return
+			velocity = to.normalized() * PATROL_SPEED
+
+
+func _next_patrol_point() -> void:
+	_route_index = (_route_index + 1) % route.size()
+	_pause_timer = rng.randf_range(PATROL_PAUSE.x, PATROL_PAUSE.y)
+
+
+## Interrompe a atividade (atacado): levanta, volta a ter colisão e passa a agir como civil comum.
+func _stand_up() -> void:
+	activity = ""
+	(get_node("CollisionShape2D") as CollisionShape2D).set_deferred("disabled", false)
+
+
+## Pose atual do sprite: "stand", "sit", "lie" ou "work".
+func pose() -> String:
+	if activity in ["sit", "lie", "work", "exercise", "dance"]:
+		return activity
+	return "stand"
+
+
 ## Aparência (roupa, cabelo, pele), determinística pela identidade.
 func look() -> Dictionary:
 	return _look
@@ -335,15 +421,20 @@ func _update_sprite(delta: float) -> void:
 	if _sprite == null:
 		return
 	var moving := velocity.length() >= MOVING_SPEED
+	var current_pose := pose()
+	var frame := 0
 	if moving:
 		_anim_time += delta
 		_sprite_direction = CharacterSprites.direction_of(velocity)
+		frame = 1 + int(_anim_time / WALK_FRAME_TIME) % 2
+	elif current_pose in ["work", "exercise", "dance"]:
+		_anim_time += delta
+		frame = 1 + int(_anim_time / WORK_FRAME_TIME) % 2
 	else:
 		_anim_time = 0.0
-	var frame := (1 + int(_anim_time / WALK_FRAME_TIME) % 2) if moving else 0
-	var key := "%s/%d" % [_sprite_direction, frame]
+	var key := "%s/%d/%s" % [_sprite_direction, frame, current_pose]
 	if key != _shown_key:
 		_shown_key = key
-		_sprite.texture = SpriteFactory.character(_look, _sprite_direction, frame)
+		_sprite.texture = SpriteFactory.character(_look, _sprite_direction, frame, current_pose)
 	# Atordoado: fica azulado até passar.
 	_sprite.modulate = Palette.get_color("sky") if stunned else Color.WHITE

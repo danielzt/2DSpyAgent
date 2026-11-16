@@ -102,8 +102,11 @@ o runner chama antes de cada teste).
 
 ## Interiores, serviços e dia e noite
 
-- `InteriorLayout.new(id, tipo, largura_da_fachada)`: planta por tipo (15 modelos), móveis, vagas de NPC e zonas
-  de serviço; `unreachable()` valida os caminhos. `interior.gd` só monta os nós.
+- `InteriorLayout.new(id, tipo)`: a planta do tipo (25 plantas), móveis, vagas de NPC e zonas de serviço;
+  `unreachable()` valida os caminhos. `interior.gd` só monta os nós.
+- Fase 7: `PlanParser` lê plantas em mapa de texto (`interior/plans/<tipo>.gd`, registro em `Plans`); o `InteriorLayout`
+  só monta o interior a partir da planta (pisos por trecho, faces de parede, itens de parede e de cima de móvel, vagas
+  com atividade e rota, balcão de loja, passagem secreta). Tipo sem planta usa a da casa. Ver [redesign-fase-7.md](redesign-fase-7.md).
 - `Services.use(id, ator, mundo)`: lógica pura de cada serviço; a zona do interior só chama quando o jogador aperta E.
 - `DayCycle` (lógica pura) + `WorldClock` (autoload, só acumula o tempo). Tudo que depende da hora (cor ambiente,
   luzes, horário das portas, população, crimes) pergunta ao `DayCycle`.
