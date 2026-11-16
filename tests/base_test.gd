@@ -59,3 +59,16 @@ func wait_physics_frames(count: int) -> void:
 func wait_frames(count: int) -> void:
 	for i in count:
 		await tree.process_frame
+
+
+## Asserção barata para laços longos: conta a asserção e devolve `condition`, sem montar mensagem.
+## Uso: `if not ok(a.size.x > 0.0): fail("%s: largura zero" % label)` — a string só é formatada
+## quando falha (formatar milhões de mensagens que passam custava segundos na suíte).
+func ok(condition: bool) -> bool:
+	assertions += 1
+	return condition
+
+
+## Registra uma falha com a mensagem dada (par de `ok`).
+func fail(message: String) -> void:
+	failures.append(message)

@@ -4,7 +4,7 @@
 |---|---|
 | [gdd.md](gdd.md) | Game Design Document (documento vivo) |
 | [arquitetura.md](arquitetura.md) | Stack, estrutura de pastas e decisões técnicas |
-| [testes.md](testes.md) | Como rodar e escrever testes |
+| [testes.md](testes.md) | Como rodar (por assunto e a suíte em paralelo) e escrever testes |
 | [mundo-grande.md](mundo-grande.md) | Mundos grandes/infinitos: limites e técnicas |
 | [prototipo-01.md](prototipo-01.md) | Jogador andando na cidade de teste |
 | [prototipo-02-interiores.md](prototipo-02-interiores.md) | Prédios maiores e interiores |
@@ -18,6 +18,7 @@
 | [redesign-fase-2.md](redesign-fase-2.md) | Fase 2 do redesenho: avenidas, bairros, tipos de prédio, nomes, NPCs com trabalho e moradia, crimes por lugar |
 | [redesign-fase-3.md](redesign-fase-3.md) | Fase 3 do redesenho: 15 modelos de interior, móveis, NPCs com papel, 13 serviços, mecânicas da D7 |
 | [redesign-fase-4.md](redesign-fase-4.md) | Fase 4 do redesenho: relógio, cor ambiente, camada de luz, portas fechadas, população e crimes por hora |
+| [save-e-opcoes.md](save-e-opcoes.md) | E2: save automático, versão e migração, opções; E4: cassetete e socos |
 | [redesign-fase-6.md](redesign-fase-6.md) | Fase 6 do redesenho: neblina e pontos no mapa, casinhas, casa do agente, interiores completos, uniformes |
 | [redesign-fase-7.md](redesign-fase-7.md) | Fase 7: os 25 interiores em plantas de texto, escala do personagem, faces de parede, uniformes por prédio, NPCs com atividade, lojas planejadas, passagem secreta do QG |
 | [superpowers/specs/2026-11-15-interiores-caprichados-design.md](superpowers/specs/2026-11-15-interiores-caprichados-design.md) | Design dos interiores caprichados (25 plantas, escala, piso e parede, NPCs) |

@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-11-16 (4)
+
+- **Testes mais rápidos**: suíte inteira de ~111 s para **~20 s** com o runner paralelo novo
+  (`tests/run_parallel.gd`, divide por método em lotes de tempo parecido, um processo do Godot por lote)
+  e ~58 s no runner sequencial. Fluxo novo no `AGENTS.md`: durante o trabalho só os arquivos do
+  assunto; a suíte inteira uma vez, no fim
+- Varreduras de plantas usam um cache de `InteriorLayout` (`tests/layout_cache.gd`; gerar uma planta
+  custa ~15 ms) e `ok`/`fail` em laços longos (a mensagem só é montada se falhar)
+- Runner isola os testes: libera o que ficou pendurado em `root`, zera `Fx` e plantas injetadas;
+  save e opções de teste por processo. A divisão em lotes revelou testes que só passavam pela ordem
+  (`test_effects_are_deterministic` contava partículas de outros testes), corrigidos
+- Laço de fachada removido de dois testes de `test_phase6` (a fachada não muda a planta; garantido
+  por `test_facade_does_not_change_the_layout`)
+- 983 testes. Detalhes: [testes.md](testes.md)
+
+## 2026-11-16 (3)
+
+- **E2, save e opções:** o jogo grava sozinho (`user://save.json`, funciona no navegador) ao entrar e sair de prédios, ao pausar e ao dormir/sair da casa. Guarda a seed, o relógio, os pontos e, por jogador, a ficha (nível, XP, atributos, dinheiro, banco, mapa explorado, prédios conhecidos, pontos marcados) e o inventário; o mundo é regenerado pela seed. O arquivo leva `version` e passa por `SaveGame.migrate`; save corrompido ou de versão futura é ignorado
+- Título ganha **Continuar** (só com save) e **Opções** (tela cheia, volume, tremor); a pausa ganha tela cheia e volume. As opções ficam em `user://options.cfg`, separadas do save
+- **E4, corpo a corpo:** cassetete (item novo, no kit inicial e na armaria) e **socos** com a mão esquerda vazia; golpe em arco curto à frente, sem munição, afetado pela Força
+- Runner de testes passa a usar arquivos de save e opções próprios (`user://test_*`)
+- 873 testes. Detalhes: [save-e-opcoes.md](save-e-opcoes.md)
+
 ## 2026-11-16 (2)
 
 - Correção: ao entrar num prédio e sair, o mundo externo era recriado do zero (o carro deixado na porta sumia,
@@ -8,6 +31,7 @@
 - Correção: nos menus (título e pausa) as setas pareciam invertidas: uma seta disparava `p2_down` e `ui_down` e o
   menu andava duas casas (num menu de 3 itens, +2 = -1). Agora anda no máximo uma casa por quadro, e Enter escolhe uma vez
 - 937 testes
+
 ## 2026-11-16
 
 - Fase 7, Etapa 2: plantas próprias para os 20 tipos que faltavam (banco, hotel, restaurante, lanchonete, boate,

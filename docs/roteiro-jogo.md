@@ -20,9 +20,9 @@
 |---|---|---|---|
 | E1b | Redesenho, Fase 6 (casas, casa do agente, mapa com pontos, interiores completos) | E1 | Pendente |
 | E1 | Redesenho, Fases 2 a 4 (cidade com contexto, interiores, dia e noite) | — | Feito (falta o item 1.2) |
-| E2 | Base: menu inicial, pausa, save, opções | — | Parcial (menu inicial e pausa na Fase 5; faltam save e opções) |
+| E2 | Base: menu inicial, pausa, save, opções | — | Parcial (menu, pausa, save e opções básicas feitos; faltam co-op no menu, seed da campanha, remapear teclas e gamepad) |
 | E3 | Split-screen local (até 4) | E2 | Pendente |
-| E4 | Corpo a corpo, armas e atributos | — | Pendente |
+| E4 | Corpo a corpo, armas e atributos | — | Parcial (cassetete e socos; falta o resto) |
 | E5 | Percepção e scanner | E4 | Pendente |
 | E6 | Quests e guia do jogador | E1 | Pendente |
 | E7 | Conversa nova com retrato | E1, E5 | Pendente |
@@ -49,10 +49,10 @@ Itens e status em [redesign-roteiro.md](redesign-roteiro.md). Acréscimos que a 
 | 2.1 | Menu inicial: nova campanha, continuar, modo livre, co-op, opções, sair | Pendente |
 | 2.2 | Nova campanha: escolha entre seed canônica e seed aleatória | Pendente |
 | 2.3 | Pausa de verdade (hoje os painéis não param o mundo); em co-op não pausa | Pendente |
-| 2.4 | Save automático, sem slots (um por modo de jogo): seed + estado (ficha, inventário, dinheiro, quests, história, relógio, contatos, inocentes mortos). O mundo é regenerado pela seed, não gravado | Pendente |
-| 2.5 | Save funciona no browser (`user://`) | Pendente |
-| 2.6 | Versão no arquivo de save e migração entre versões | Pendente |
-| 2.7 | Opções: volume, tela cheia, remapeamento de teclas | Pendente |
+| 2.4 | Save automático, sem slots (um por modo de jogo): seed + estado (ficha, inventário, dinheiro, quests, história, relógio, contatos, inocentes mortos). O mundo é regenerado pela seed, não gravado | Feito para ficha, inventário, relógio, pontos e mapa; quests, história, contatos e inocentes mortos entram com as etapas que os criam |
+| 2.5 | Save funciona no browser (`user://`) | Feito (usa `user://`; não medido no navegador) |
+| 2.6 | Versão no arquivo de save e migração entre versões | Feito (versão 1; `migrate` pronto para os próximos passos) |
+| 2.7 | Opções: volume, tela cheia, remapeamento de teclas | Parcial (volume guardado para o áudio da E11, tela cheia e tremor; falta remapear) |
 | 2.8 | Suporte a gamepad nas ações `p{N}_*` | Pendente |
 
 ## E3 — Split-screen local (até 4)
@@ -70,7 +70,7 @@ Itens e status em [redesign-roteiro.md](redesign-roteiro.md). Acréscimos que a 
 
 | # | Item | Status |
 |---|---|---|
-| 4.1 | Punhos e cassetete (curto alcance); o jogo começa sem arma de fogo | Pendente |
+| 4.1 | Punhos e cassetete (curto alcance); o jogo começa sem arma de fogo | Parcial (golpes feitos; o kit inicial ainda traz a pistola, a troca depende da história) |
 | 4.2 | Armas e gadgets desbloqueados pela história (15 armas, tabela em `armas-e-inventario.md`) | Pendente |
 | 4.9 | Munição limitada: 6 tipos, pente, recarga, reserva, venda em loja e loot | Pendente |
 | 4.10 | Barra de itens (8 espaços) no lugar de mão esquerda/direita; ação secundária no botão direito | Pendente |

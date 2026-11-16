@@ -5,18 +5,25 @@ extends Control
 const TitleArt := preload("res://scripts/art/title_art.gd")
 const PixelMenu := preload("res://scripts/ui/pixel_menu.gd")
 const ControlsText := preload("res://scripts/ui/controls_text.gd")
+const SaveGame := preload("res://scripts/save/save_game.gd")
+const Options := preload("res://scripts/save/options.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 
 const GAME_NAME := "2DGTA"
 const TAGLINE := "Um agente. Uma cidade. Zero discrição."
 const VERSION_TEXT := "Protótipo"
-const NEW_GAME := 0
-const CONTROLS := 1
-const QUIT := 2
+const CONTINUE := "Continuar"
+const NEW_GAME := "Novo jogo"
+const OPTIONS := "Opções"
+const CONTROLS := "Controles"
+const QUIT := "Sair"
+const BACK := "Voltar"
 const BLINK_SECONDS := 0.6
 
 var controls_open := false
+## O menu mostra as opções (tela cheia, volume, tremor) no lugar do menu principal.
+var options_open := false
 
 var _menu: Control
 var _scene: ImageTexture
@@ -31,18 +38,37 @@ func _ready() -> void:
 	_scene = SpriteFactory.custom("title/scene", func() -> RefCounted: return TitleArt.canvas())
 	_menu = PixelMenu.new()
 	add_child(_menu)
-	_menu.set_items(menu_items())
+	Options.load_options()
+	Options.apply()
+	_refresh_menu()
 	_menu.chosen.connect(_on_chosen)
 	resized.connect(_place_menu)
 	_place_menu()
 
 
-## Itens do menu ("Sair" não existe no navegador).
+## Itens do menu: "Continuar" só com save, e "Sair" não existe no navegador.
 static func menu_items() -> Array[String]:
-	var items: Array[String] = ["Novo jogo", "Controles"]
+	var items: Array[String] = []
+	if SaveGame.exists():
+		items.append(CONTINUE)
+	items.append_array([NEW_GAME, OPTIONS, CONTROLS])
 	if not OS.has_feature("web"):
-		items.append("Sair")
+		items.append(QUIT)
 	return items
+
+
+## Itens do submenu de opções.
+static func option_items() -> Array[String]:
+	return [Options.fullscreen_text(), Options.volume_text(), Options.shake_text(), BACK]
+
+
+func _refresh_menu(keep_selection := false) -> void:
+	var keep: int = _menu.selected
+	_menu.set_items(option_items() if options_open else menu_items())
+	if keep_selection:
+		_menu.selected = mini(keep, _menu.items.size() - 1)
+	_place_menu()
+	queue_redraw()
 
 
 func menu() -> Control:
@@ -73,9 +99,26 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_chosen(index: int) -> void:
-	match index:
+	if options_open:
+		match index:
+			0:
+				Options.toggle_fullscreen()
+			1:
+				Options.cycle_volume()
+			2:
+				Options.toggle_shake()
+			_:
+				options_open = false
+		_refresh_menu(options_open)
+		return
+	match _menu.items[index]:
+		CONTINUE:
+			GameState.continue_game()
 		NEW_GAME:
 			GameState.start_game()
+		OPTIONS:
+			options_open = true
+			_refresh_menu()
 		CONTROLS:
 			_set_controls(true)
 		QUIT:

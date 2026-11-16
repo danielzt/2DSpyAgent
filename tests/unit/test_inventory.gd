@@ -67,7 +67,7 @@ func test_item_definitions_are_complete() -> void:
 		assert_eq(d.id, id)
 		assert_ne(d.name, "")
 		assert_ne(d.description, "")
-		assert_true(["weapon", "tool", "shield"].has(d.kind), id)
+		assert_true(["weapon", "melee", "tool", "shield"].has(d.kind), id)
 		if d.kind == "weapon":
 			assert_gt(d.interval, 0.0)
 			assert_gt(d.lifetime, 0.0)
@@ -81,7 +81,7 @@ func test_has_weapon_tool_and_shield_kinds() -> void:
 	var kinds := {}
 	for id in ItemDefs.all_ids():
 		kinds[ItemDefs.get_def(id).kind] = true
-	assert_eq(kinds.size(), 3)
+	assert_eq(kinds.size(), 4)
 
 
 # --- inventário (puro) ---

@@ -4,7 +4,7 @@ extends RefCounted
 const ItemDefs := preload("res://scripts/items/item_defs.gd")
 
 const SHOPS := {
-	"armory": {"name": "Armaria", "stock": ["pistol", "shotgun", "taser"]},
+	"armory": {"name": "Armaria", "stock": ["pistol", "shotgun", "taser", "baton"]},
 	"pharmacy": {"name": "Farmácia", "stock": ["medkit"]},
 	"agent_store": {"name": "Loja do Agente", "stock": ["shield", "taser", "medkit"]},
 	"farm_store": {"name": "Armazém Rural", "stock": ["medkit", "shotgun"]},

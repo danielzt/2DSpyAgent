@@ -1,6 +1,7 @@
 extends RefCounted
 ## Definições dos itens que o jogador pode carregar e equipar nas mãos.
-## kind: "weapon" (atira ao segurar o botão), "tool" (usa ao clicar), "shield" (bloqueia ao segurar).
+## kind: "weapon" (atira ao segurar o botão), "melee" (golpe curto ao clicar), "tool" (usa ao clicar),
+## "shield" (bloqueia ao segurar).
 
 const ITEMS := {
 	"pistol": {
@@ -18,6 +19,11 @@ const ITEMS := {
 		"damage": 0.0, "interval": 1.5, "pellets": 1, "spread": 0.0, "lifetime": 0.35, "effect": "stun",
 		"description": "Atordoa por 3 s sem matar. Atordoar criminoso dá pontos; inocente tira poucos.", "price": 200,
 	},
+	"baton": {
+		"id": "baton", "name": "Cassetete", "kind": "melee",
+		"damage": 1.0, "interval": 0.45, "range": 64.0, "arc": 1.6,
+		"description": "Golpe de curto alcance, sem munição e sem barulho.", "price": 60,
+	},
 	"medkit": {
 		"id": "medkit", "name": "Kit médico", "kind": "tool",
 		"heal": 4.0,
@@ -32,6 +38,13 @@ const ITEMS := {
 		"id": "shield", "name": "Escudo balístico", "kind": "shield",
 		"description": "Segure para bloquear tiros vindos da frente. Andar fica 40% mais lento.", "price": 250,
 	},
+}
+
+
+## Socos: valem quando a mão esquerda está vazia (não é um item, ninguém o carrega).
+const FISTS := {
+	"id": "fists", "name": "Punhos", "kind": "melee",
+	"damage": 0.5, "interval": 0.5, "range": 48.0, "arc": 1.4,
 }
 
 

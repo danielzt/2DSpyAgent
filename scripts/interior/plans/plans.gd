@@ -60,3 +60,8 @@ static func override(type: String, plan: Dictionary) -> void:
 
 static func clear_overrides() -> void:
 	_overrides.clear()
+
+
+## Há planta injetada agora? (o cache de plantas dos testes não guarda nada enquanto houver)
+static func has_overrides() -> bool:
+	return not _overrides.is_empty()

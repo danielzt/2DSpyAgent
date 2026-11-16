@@ -453,10 +453,15 @@ func _hand_label(hand: String) -> String:
 func _process_hands(prefix: String) -> void:
 	for hand in HANDS:
 		var def: Dictionary = inventory.equipped_def(hand)
-		if def.is_empty():
-			continue
 		var action: String = prefix + "use_" + hand
+		if def.is_empty():
+			if hand == "left" and Input.is_action_just_pressed(action):
+				punch()  # mão esquerda vazia: soco
+			continue
 		match def.kind:
+			"melee":
+				if Input.is_action_just_pressed(action):
+					melee_hand(hand)
 			"weapon":
 				if Input.is_action_pressed(action):
 					fire_hand(hand)
@@ -496,6 +501,42 @@ func fire_hand(hand: String) -> Node:
 	if pellets > 1:
 		shake(SHAKE_SHOTGUN)  # escopeta dá coice
 	return first
+
+
+## Golpe corpo a corpo com o item da mão (cassetete). Retorna quantos alvos acertou (-1 se não pôde).
+func melee_hand(hand: String) -> int:
+	var def: Dictionary = inventory.equipped_def(hand)
+	if def.is_empty() or def.kind != "melee":
+		return -1
+	return _melee(def, hand)
+
+
+## Soco com a mão esquerda vazia.
+func punch() -> int:
+	if not inventory.equipped("left").is_empty():
+		return -1
+	return _melee(ItemDefsScript.FISTS, "left")
+
+
+## Fere os NPCs vivos dentro do alcance e do arco à frente. A Força (dano) vale aqui também.
+func _melee(def: Dictionary, hand: String) -> int:
+	if is_instance_valid(vehicle) or talking_with != null or panels_open() or _cooldowns[hand] > 0.0:
+		return -1
+	_cooldowns[hand] = def.interval
+	var damage: float = def.damage * profile.damage_multiplier()
+	var hits := 0
+	for npc in get_tree().get_nodes_in_group("npcs"):
+		if not is_instance_valid(npc) or npc.get("dead") == true:
+			continue
+		var to_npc: Vector2 = npc.global_position - global_position
+		if to_npc.length() > def.range:
+			continue
+		if absf(_facing.angle_to(to_npc)) > def.arc / 2.0:
+			continue
+		npc.take_damage(damage, self)
+		Fx.sparks(get_parent(), npc.global_position, _facing)
+		hits += 1
+	return hits
 
 
 ## Atalho: dispara a arma da mão esquerda.

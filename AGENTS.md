@@ -35,8 +35,12 @@ docs/                documentação (ver regra abaixo)
    1. Escreva (ou atualize) o teste da feature em `tests/unit/test_<assunto>.gd`
       (`extends "res://tests/base_test.gd"`, métodos `test_*`, ver `docs/testes.md`).
    2. Implemente.
-   3. Rode `--headless --path . --import` se criou scripts novos e depois a suíte (comando em "Validação").
-   4. Só então reporte, citando o resultado (`N testes, 0 falha(s)`).
+   3. Rode `--headless --path . --import` se criou scripts novos. **Enquanto trabalha**, rode só os
+      arquivos do assunto (`run_tests.gd -- <termos>`, poucos segundos); não repita a suíte inteira a cada passo.
+   4. **Uma vez, no fim** (antes de reportar ou commitar), rode a suíte inteira em paralelo
+      (`run_parallel.gd`, ~20 s; comando em "Validação"). Se algo falhar, corrija rodando só o arquivo
+      afetado e repita a suíte inteira uma vez no fim.
+   5. Só então reporte, citando o resultado (`N testes, 0 falha(s)`).
    Prefira lógica pura em `RefCounted` (layout x nós) para facilitar o teste; comportamento de
    nós (movimento, E, cenas) testa-se instanciando a cena em `tree.root` com `await wait_physics_frames(n)`.
 1. **Documentar tudo**: toda feature, cena, sistema ou decisão nova deve ser registrada
@@ -62,11 +66,18 @@ docs/                documentação (ver regra abaixo)
 
 ## Validação
 
-Antes de concluir uma mudança, rode os testes e confirme `0 falha(s)`:
+Durante o trabalho, só os arquivos do assunto (termos do nome do arquivo):
 
 ```bash
-Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . -s tests/run_tests.gd
+Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . -s tests/run_tests.gd -- combat traffic
 ```
 
+Antes de concluir uma mudança, **uma vez**, a suíte inteira em paralelo, e confirme `0 falha(s)`:
+
+```bash
+Godot_v4.7.2-stable_win64_console.exe --headless --path . -s tests/run_parallel.gd
+```
+
+(`run_tests.gd` sem filtro também roda tudo, num processo só, e é mais lento: ~60 s.)
 Após adicionar scripts novos, rode antes `--headless --path . --import`.
 Um aviso `Tipo de morte desconhecido` e avisos de "leaked" ao final são esperados.
