@@ -7,6 +7,7 @@ const WorldLayout := preload("res://scripts/world/world_layout.gd")
 const BuildingDefs := preload("res://scripts/world/building_defs.gd")
 const BuildingStyle := preload("res://scripts/world/building_style.gd")
 const InteriorLayout := preload("res://scripts/interior/interior_layout.gd")
+const Layouts := preload("res://tests/layout_cache.gd")   # plantas geradas uma vez (só leitura)
 const Services := preload("res://scripts/interior/services.gd")
 const ProfileScript := preload("res://scripts/player/player_profile.gd")
 const InventoryScript := preload("res://scripts/items/inventory.gd")
@@ -155,32 +156,32 @@ func test_a_new_profile_knows_and_marks_the_agent_home() -> void:
 # --- interior da casa do agente ---
 
 func test_agent_home_interior_is_complete_and_has_no_strangers() -> void:
+	# a fachada não muda a planta: ver test_interior_layout.test_facade_does_not_change_the_layout
 	for id in [0, 5, 31, 77]:
-		for facade in [150.0, 240.0, 320.0]:
-			var inner := InteriorLayout.new(id, "agent_home", facade)
-			assert_eq(inner.template, "agent_home")
-			assert_ne(inner.size_class, "P", "a casa do agente não é pequena")
-			assert_eq(inner.unreachable(), [], "casa %d fachada %d" % [id, facade])
-			assert_eq(inner.npc_slots.size(), 0, "sem estranhos na casa do agente")
-			var kinds := {}
-			for item in inner.items:
-				kinds[item.kind] = true
-			for needed in ["double_bed", "chest", "stove", "fridge", "sofa", "wall_tv", "bathtub", "toilet", "monitor", "wardrobe"]:
-				assert_true(kinds.has(needed), "casa sem %s" % needed)
-			var zone_ids := []
-			for z in inner.zones:
-				zone_ids.append(z.id)
-			assert_true(zone_ids.has("rest") and zone_ids.has("stash"), "dormir e baú")
-			var room_names := []
-			for room in inner.rooms:
-				room_names.append(room.name)
-			for room_name in ["Sala", "Escritório", "Quarto", "Cozinha", "Banheiro"]:
-				assert_true(room_names.has(room_name), room_name)
+		var inner := Layouts.layout(id, "agent_home")
+		assert_eq(inner.template, "agent_home")
+		assert_ne(inner.size_class, "P", "a casa do agente não é pequena")
+		assert_eq(inner.unreachable(), [], "casa %d" % id)
+		assert_eq(inner.npc_slots.size(), 0, "sem estranhos na casa do agente")
+		var kinds := {}
+		for item in inner.items:
+			kinds[item.kind] = true
+		for needed in ["double_bed", "chest", "stove", "fridge", "sofa", "wall_tv", "bathtub", "toilet", "monitor", "wardrobe"]:
+			assert_true(kinds.has(needed), "casa sem %s" % needed)
+		var zone_ids := []
+		for z in inner.zones:
+			zone_ids.append(z.id)
+		assert_true(zone_ids.has("rest") and zone_ids.has("stash"), "dormir e baú")
+		var room_names := []
+		for room in inner.rooms:
+			room_names.append(room.name)
+		for room_name in ["Sala", "Escritório", "Quarto", "Cozinha", "Banheiro"]:
+			assert_true(room_names.has(room_name), room_name)
 
 
 func test_agent_home_interior_is_fuller_than_the_old_home() -> void:
-	var home := InteriorLayout.new(3, "agent_home")
-	var plain := InteriorLayout.new(3, "house")
+	var home := Layouts.layout(3, "agent_home")
+	var plain := Layouts.layout(3, "house")
 	assert_gt(float(home.items.size()), 30.0)
 	assert_gt(float(plain.items.size()), 18.0, "a casa comum também ficou mais cheia")
 
@@ -233,7 +234,7 @@ func test_home_services_are_listed_for_the_agent_home() -> void:
 
 
 func test_pressing_interact_in_the_bedroom_zone_rests() -> void:
-	var inner := InteriorLayout.new(4, "agent_home")
+	var inner := Layouts.layout(4, "agent_home")
 	GameState.set_inside(4, Vector2(500, 500), "", "agent_home", "Casa do agente", 240.0)
 	var scene := INTERIOR_SCENE.instantiate()
 	tree.root.add_child(scene)
@@ -384,18 +385,19 @@ func test_interior_npcs_get_their_uniform() -> void:
 func test_people_never_stand_inside_furniture_or_walls() -> void:
 	for type in ["hospital", "police", "house", "bar", "hotel", "office"]:
 		for id in range(10):
-			var inner := InteriorLayout.new(id, type)
+			var inner := Layouts.layout(id, type)
 			for slot in inner.npc_slots:
 				if slot.get("act", "post") in ["sit", "lie", "exercise"]:
 					continue   # sentado ou deitado fica sobre o próprio móvel
 				var probe := Rect2(slot.position - Vector2(10, 10), Vector2(20, 20))
 				for solid in inner.solids():
-					assert_false(solid.intersects(probe), "%s %d: %s dentro de um sólido" % [type, id, slot.role])
+					if not ok(not solid.intersects(probe)):
+						fail("%s %d: %s dentro de um sólido" % [type, id, slot.role])
 
 
 func test_hospital_is_a_complete_hospital() -> void:
 	for id in range(6):
-		var inner := InteriorLayout.new(id, "hospital", 320.0)
+		var inner := Layouts.layout(id, "hospital")
 		var rooms := []
 		for room in inner.rooms:
 			rooms.append(room.name)
@@ -417,7 +419,7 @@ func test_hospital_is_a_complete_hospital() -> void:
 
 func test_police_station_is_a_complete_police_station() -> void:
 	for id in range(6):
-		var inner := InteriorLayout.new(id, "police", 320.0)
+		var inner := Layouts.layout(id, "police")
 		var rooms := []
 		for room in inner.rooms:
 			rooms.append(room.name)
@@ -456,7 +458,7 @@ func test_police_staff_wear_blue_in_the_scene() -> void:
 
 func test_ordinary_home_has_all_four_rooms() -> void:
 	for id in range(8):
-		var inner := InteriorLayout.new(id, "house")
+		var inner := Layouts.layout(id, "house")
 		var rooms := []
 		for room in inner.rooms:
 			rooms.append(room.name)
@@ -467,9 +469,9 @@ func test_ordinary_home_has_all_four_rooms() -> void:
 
 func test_decoration_never_blocks_a_door_or_a_room() -> void:
 	for type in BuildingDefs.ORDER + ["agent_home"]:
+		# a fachada não muda a planta: ver test_interior_layout.test_facade_does_not_change_the_layout
 		for id in range(6):
-			for facade in [150.0, 240.0, 320.0]:
-				assert_eq(InteriorLayout.new(id, type, facade).unreachable(), [], "%s %d (%d)" % [type, id, facade])
+			assert_eq(Layouts.layout(id, type).unreachable(), [], "%s %d" % [type, id])
 
 
 func test_new_furniture_kinds_have_art() -> void:

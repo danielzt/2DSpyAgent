@@ -3,6 +3,7 @@ extends "res://tests/base_test.gd"
 ## e a validação de caminho (entrada -> saída e todas as zonas).
 
 const InteriorLayout := preload("res://scripts/interior/interior_layout.gd")
+const Layouts := preload("res://tests/layout_cache.gd")   # plantas geradas uma vez (só leitura)
 const BuildingDefs := preload("res://scripts/world/building_defs.gd")
 const Services := preload("res://scripts/interior/services.gd")
 const FurnitureArt := preload("res://scripts/art/furniture_art.gd")
@@ -24,7 +25,7 @@ func test_interior_is_bigger_than_the_building() -> void:
 	# Proporção interna diferente da externa (como em Retro City), mas do tamanho da tela ou pouco maior.
 	var building_size: float = CityLayout.BLOCK - CityLayout.ROAD
 	for type in BuildingDefs.ORDER:
-		var size: Vector2 = InteriorLayout.new(1, type).size
+		var size: Vector2 = Layouts.layout(1, type).size
 		assert_gt(size.x, building_size * 3.0, type)
 		assert_true(size.x <= 1792.0 and size.y <= 1024.0, "%s grande demais: %s" % [type, size])
 
@@ -39,10 +40,18 @@ func test_size_comes_from_the_plan_not_the_facade() -> void:
 		assert_eq(InteriorLayout.new(3, "office", facade).size, Vector2(1536, 864))
 
 
+func test_facade_does_not_change_the_layout() -> void:
+	# o cache de plantas dos testes (tests/layout_cache.gd) guarda por (id, tipo) e conta com isto
+	for type in BuildingDefs.ORDER + ["agent_home"]:
+		var narrow := InteriorLayout.new(4, type, 150.0)
+		var wide := InteriorLayout.new(4, type, 320.0)
+		assert_eq(_signature(narrow), _signature(wide), type)
+
+
 func test_every_building_type_has_a_plan() -> void:
 	for type in BuildingDefs.ORDER + ["agent_home"]:
 		assert_true(InteriorLayout.is_planned(type), type)
-		assert_eq(InteriorLayout.new(1, type).template, type)
+		assert_eq(Layouts.layout(1, type).template, type)
 	assert_eq(Plans.types().size(), 25, "24 tipos de prédio + a casa do agente")
 
 
@@ -65,14 +74,14 @@ func test_different_buildings_of_a_type_differ() -> void:
 	for type in ["bar", "hotel", "house", "warehouse", "armory", "office"]:
 		var seen := {}
 		for id in 12:
-			seen[str(_signature(InteriorLayout.new(id, type)))] = true
+			seen[str(_signature(Layouts.layout(id, type)))] = true
 		assert_gt(seen.size(), 2.0, "interiores de %s todos iguais" % type)
 
 
 func test_some_interiors_are_mirrored() -> void:
 	var mirrored := 0
 	for id in 40:
-		if InteriorLayout.new(id, "bar").mirrored:
+		if Layouts.layout(id, "bar").mirrored:
 			mirrored += 1
 	assert_true(mirrored > 8 and mirrored < 32, "%d espelhados de 40" % mirrored)
 
@@ -81,7 +90,7 @@ func test_types_have_different_plans() -> void:
 	var plans := {}
 	for type in ["bar", "hotel", "bank", "police", "hospital", "cinema", "gym", "office", "house", "warehouse", "hq", "club", "workshop", "restaurant", "armory"]:
 		var kinds := {}
-		for item in InteriorLayout.new(5, type).items:
+		for item in Layouts.layout(5, type).items:
 			kinds[item.kind] = true
 		var list := kinds.keys()
 		list.sort()
@@ -91,37 +100,54 @@ func test_types_have_different_plans() -> void:
 
 # --- validade (V5) ---
 
+## Laços longos: `ok()` conta a asserção e a mensagem só é montada se falhar.
 func _check(layout, label: String) -> void:
 	var room: Rect2 = layout.room_rect()
 	var solids: Array[Rect2] = layout.solids()
+	var clear: Rect2 = layout.clear_zone()
+	var exit: Rect2 = layout.exit_door()
+	var spawn: Vector2 = layout.spawn_point()
 	for item in layout.items:
-		assert_true(room.encloses(item.rect), "%s: %s fora da sala" % [label, item.kind])
-		assert_true(FurnitureArt.has_kind(item.kind), "%s: móvel sem desenho: %s" % [label, item.kind])
-	for i in solids.size():
-		assert_false(solids[i].intersects(layout.clear_zone()), "%s: sólido na área da saída" % label)
-		assert_false(solids[i].has_point(layout.spawn_point()), "%s: sólido na entrada" % label)
-		assert_false(solids[i].intersects(layout.exit_door()), "%s: sólido na porta" % label)
+		if not ok(room.encloses(item.rect)):
+			fail("%s: %s fora da sala" % [label, item.kind])
+		if not ok(FurnitureArt.has_kind(item.kind)):
+			fail("%s: móvel sem desenho: %s" % [label, item.kind])
+	for solid in solids:
+		if not ok(not solid.intersects(clear)):
+			fail("%s: sólido na área da saída" % label)
+		if not ok(not solid.has_point(spawn)):
+			fail("%s: sólido na entrada" % label)
+		if not ok(not solid.intersects(exit)):
+			fail("%s: sólido na porta" % label)
 	for i in layout.furniture.size():
+		var piece: Rect2 = layout.furniture[i]
 		for j in range(i + 1, layout.furniture.size()):
-			assert_false(layout.furniture[i].intersects(layout.furniture[j]), "%s: móveis sobrepostos" % label)
+			if not ok(not piece.intersects(layout.furniture[j])):
+				fail("%s: móveis sobrepostos" % label)
 		for wall in layout.walls:
-			assert_false(layout.furniture[i].intersects(wall), "%s: móvel dentro de parede" % label)
+			if not ok(not piece.intersects(wall)):
+				fail("%s: móvel dentro de parede" % label)
+	var inner := room.grow(-12.0)
 	for slot in layout.npc_slots:
-		assert_true(room.grow(-12.0).has_point(slot.position), "%s: vaga de %s fora da sala" % [label, slot.role])
+		if not ok(inner.has_point(slot.position)):
+			fail("%s: vaga de %s fora da sala" % [label, slot.role])
 		if slot.get("act", "post") in ["sit", "lie", "exercise"]:
 			continue  # sentado ou deitado fica sobre o móvel por definição
 		for solid in solids:
-			assert_false(solid.grow(10.0).has_point(slot.position), "%s: vaga de %s dentro de um sólido" % [label, slot.role])
+			if not ok(not solid.grow(10.0).has_point(slot.position)):
+				fail("%s: vaga de %s dentro de um sólido" % [label, slot.role])
 	for z in layout.zones:
-		assert_true(room.encloses(z.rect), "%s: zona %s fora da sala" % [label, z.id])
-		assert_ne(z.verb, "", "%s: zona %s sem verbo" % [label, z.id])
+		if not ok(room.encloses(z.rect)):
+			fail("%s: zona %s fora da sala" % [label, z.id])
+		if not ok(z.verb != ""):
+			fail("%s: zona %s sem verbo" % [label, z.id])
 	assert_eq(layout.unreachable(), [] as Array[String], "%s: caminho bloqueado" % label)
 
 
 func test_every_type_gives_a_valid_interior() -> void:
 	for type in BuildingDefs.ORDER:
 		for id in IDS:
-			_check(InteriorLayout.new(id, type), "%s %d" % [type, id])
+			_check(Layouts.layout(id, type), "%s %d" % [type, id])
 
 
 func test_blocked_path_is_detected() -> void:
@@ -134,7 +160,7 @@ func test_blocked_path_is_detected() -> void:
 
 func test_exit_door_and_spawn() -> void:
 	for type in ["house", "bar", "hotel"]:
-		var layout := InteriorLayout.new(4, type)
+		var layout := Layouts.layout(4, type)
 		assert_true(layout.room_rect().encloses(layout.exit_door()))
 		assert_false(layout.exit_door().has_point(layout.spawn_point()))
 		assert_true(layout.room_rect().has_point(layout.spawn_point()))
@@ -146,7 +172,7 @@ func test_exit_door_and_spawn() -> void:
 
 func test_rooms_and_inner_walls() -> void:
 	for type in ["hotel", "police", "hospital", "office", "house", "cinema", "hq", "bank"]:
-		var layout := InteriorLayout.new(3, type)
+		var layout := Layouts.layout(3, type)
 		assert_gt(layout.rooms.size(), 0.0, type)
 		assert_gt(layout.walls.size(), 1.0, type)
 		for room in layout.rooms:
@@ -163,7 +189,7 @@ func test_recognizable_furniture_by_type() -> void:
 		"warehouse": ["forklift"], "hq": ["washer", "washer_secret", "briefing_table", "wall_screen"], "office": ["desk", "photocopier"]}
 	for type in expected:
 		var kinds := {}
-		for item in InteriorLayout.new(6, type).items:
+		for item in Layouts.layout(6, type).items:
 			kinds[item.kind] = true
 		for kind in expected[type]:
 			assert_true(kinds.has(kind), "%s sem %s" % [type, kind])
@@ -173,7 +199,7 @@ func test_hotel_has_three_furnished_rooms() -> void:
 	# planta do hotel (Fase 7): três quartos fixos, cada um com cama de casal
 	for id in 20:
 		var beds := 0
-		for item in InteriorLayout.new(id, "hotel").items:
+		for item in Layouts.layout(id, "hotel").items:
 			if item.kind == "double_bed":
 				beds += 1
 		assert_eq(beds, 3, "hotel %d" % id)
@@ -182,19 +208,19 @@ func test_hotel_has_three_furnished_rooms() -> void:
 func test_every_service_has_a_zone() -> void:
 	for type in Services.BY_TYPE:
 		for id in 5:
-			var layout := InteriorLayout.new(id, type)
+			var layout := Layouts.layout(id, type)
 			for service in Services.for_type(type):
 				var z: Dictionary = layout.zone(service)
 				assert_false(z.is_empty(), "%s sem zona de %s" % [type, service])
 				assert_eq(z.verb, Services.verb(service))
-	assert_eq(InteriorLayout.new(1, "house").zones.size(), 0, "moradia só tem conversa")
-	assert_eq(InteriorLayout.new(1, "bar").zone("sleep"), {})
+	assert_eq(Layouts.layout(1, "house").zones.size(), 0, "moradia só tem conversa")
+	assert_eq(Layouts.layout(1, "bar").zone("sleep"), {})
 
 
 func test_shops_keep_counter_merchant_and_buy_zone() -> void:
 	for type in ["armory", "pharmacy", "agent_store", "farm_store", "market", "gas_station"]:
 		for id in 6:
-			var layout := InteriorLayout.new(id, type)
+			var layout := Layouts.layout(id, type)
 			assert_true(layout.is_shop, type)
 			assert_eq(layout.shop, BuildingDefs.shop_of(type))
 			var zone: Rect2 = layout.counter_zone()
@@ -207,8 +233,8 @@ func test_shops_keep_counter_merchant_and_buy_zone() -> void:
 			assert_eq(layout.npc_slots[0].position, layout.merchant_position(), "o vendedor é a primeira vaga")
 			for r in layout.furniture:
 				assert_false(r.intersects(zone), "%s: móvel na zona de compra" % type)
-	assert_false(InteriorLayout.new(1, "bar").is_shop)
-	assert_true(InteriorLayout.new(1, "armory").is_shop)
+	assert_false(Layouts.layout(1, "bar").is_shop)
+	assert_true(Layouts.layout(1, "armory").is_shop)
 
 
 func test_staff_slots_use_the_roles_of_the_building_type() -> void:
@@ -216,7 +242,7 @@ func test_staff_slots_use_the_roles_of_the_building_type() -> void:
 		var staff := BuildingDefs.staff_of(type)
 		if staff.is_empty() or type == "farm" or type == "warehouse":
 			continue
-		var layout := InteriorLayout.new(2, type)
+		var layout := Layouts.layout(2, type)
 		var found := 0
 		for slot in layout.npc_slots:
 			if slot.staff and staff.has(slot.role):
@@ -229,7 +255,7 @@ func test_guests_vary_and_have_roles() -> void:
 	for id in 30:
 		var guests := 0
 		var spots := []
-		for slot in InteriorLayout.new(id, "bar").npc_slots:
+		for slot in Layouts.layout(id, "bar").npc_slots:
 			assert_ne(slot.role, "")
 			if not slot.staff:
 				guests += 1
@@ -239,14 +265,14 @@ func test_guests_vary_and_have_roles() -> void:
 	assert_gt(counts.size(), 1.0)
 	var residents := 0
 	for id in 30:
-		for slot in InteriorLayout.new(id, "house").npc_slots:
+		for slot in Layouts.layout(id, "house").npc_slots:
 			assert_eq(slot.role, "morador")
 			residents += 1
 	assert_gt(residents, 5.0)
 
 
 func test_club_has_an_informant() -> void:
-	var layout := InteriorLayout.new(1, "club")
+	var layout := Layouts.layout(1, "club")
 	var roles := []
 	for slot in layout.npc_slots:
 		roles.append(slot.role)
@@ -275,7 +301,7 @@ func test_furniture_art_is_cached_per_kind_and_size() -> void:
 
 func test_used_furniture_renders_at_its_real_size() -> void:
 	for type in ["hotel", "club", "hq", "workshop", "gym"]:
-		for item in InteriorLayout.new(2, type).items:
+		for item in Layouts.layout(2, type).items:
 			var w := int(item.rect.size.x / 2.0)
 			var h := int(item.rect.size.y / 2.0)
 			var canvas: RefCounted = FurnitureArt.canvas(item.kind, w, h)

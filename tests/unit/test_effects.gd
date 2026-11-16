@@ -143,21 +143,25 @@ func test_particle_cap_is_respected() -> void:
 
 
 func test_effects_are_deterministic() -> void:
+	# só as partículas deste teste (filhas do holder): outras podem sobrar de testes anteriores
 	Fx.reset()
 	Fx.sparks(holder, Vector2.ZERO, Vector2.RIGHT)
-	var first: Array = []
-	for p in tree.get_nodes_in_group("fx"):
-		first.append(p.velocity)
-	for p in tree.get_nodes_in_group("fx"):
+	var first := _fx_velocities()
+	for p in holder.get_children():
 		p.queue_free()
 	await wait_frames(2)
 	Fx.reset()
 	Fx.sparks(holder, Vector2.ZERO, Vector2.RIGHT)
-	var second: Array = []
-	for p in tree.get_nodes_in_group("fx"):
-		second.append(p.velocity)
-	assert_eq(first, second)
+	assert_gt(float(first.size()), 0.0, "faíscas criadas")
+	assert_eq(first, _fx_velocities())
 
+
+func _fx_velocities() -> Array:
+	var result: Array = []
+	for p in holder.get_children():
+		if p.is_in_group("fx"):
+			result.append(p.velocity)
+	return result
 
 func test_counter_returns_to_zero_when_particles_expire() -> void:
 	Fx.sparks(holder, Vector2.ZERO, Vector2.RIGHT)

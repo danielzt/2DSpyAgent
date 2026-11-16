@@ -4,7 +4,7 @@
 |---|---|
 | [gdd.md](gdd.md) | Game Design Document (documento vivo) |
 | [arquitetura.md](arquitetura.md) | Stack, estrutura de pastas e decisões técnicas |
-| [testes.md](testes.md) | Como rodar e escrever testes |
+| [testes.md](testes.md) | Como rodar (por assunto e a suíte em paralelo) e escrever testes |
 | [mundo-grande.md](mundo-grande.md) | Mundos grandes/infinitos: limites e técnicas |
 | [prototipo-01.md](prototipo-01.md) | Jogador andando na cidade de teste |
 | [prototipo-02-interiores.md](prototipo-02-interiores.md) | Prédios maiores e interiores |
