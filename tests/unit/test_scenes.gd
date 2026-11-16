@@ -36,8 +36,10 @@ func _start_main(keep_actors := false) -> Node:
 	return main
 
 
-func _cleanup(main: Node) -> void:
-	main.queue_free()
+## `main` pode já ter sido liberado (sair de um prédio desfaz o interior).
+func _cleanup(main: Variant) -> void:
+	if is_instance_valid(main):
+		main.queue_free()
 	await wait_frames(3)
 	# Limpa cenas criadas por trocas de cena durante o teste.
 	for n in tree.root.get_children():
@@ -423,6 +425,62 @@ func test_entering_passes_the_facade_width_to_the_interior() -> void:
 	for d in tree.get_nodes_in_group("building_doors"):
 		assert_almost_eq(d.facade_width, (layout.building_by_id(d.building_id).rect as Rect2).size.x)
 	await _cleanup(main)
+
+
+# --- o mundo externo continua lá ao entrar e sair de prédios ---
+
+func _wait_full_transition() -> void:
+	await tree.create_timer(Transition.DURATION * 2.0 + 0.3).timeout
+
+
+func test_leaving_a_building_brings_back_the_same_world() -> void:
+	GameState.reset_players()   # ficha nova: vida cheia e máximo padrão
+	var main := await _start_main(true)
+	var target: Dictionary = WorldLayout.new().city.buildings[12]
+	var player = tree.get_nodes_in_group("players")[0]
+	# o carro deixado na porta e os bandidos/NPCs da rua
+	var car: Node2D = tree.get_nodes_in_group("vehicles")[0]
+	car.global_position = target.exit_spawn + Vector2(80, 0)
+	var parked_at: Vector2 = car.global_position
+	var npcs := tree.get_nodes_in_group("npcs")
+	var npc_count := npcs.size()
+	var npc: Node2D = npcs[0]
+	GameState.go_inside(target.id, target.exit_spawn, "", target.type, target.name, 240.0)
+	await _wait_full_transition()
+	assert_true(GameState.is_inside())
+	assert_false(main.is_inside_tree(), "o mundo é guardado fora da árvore")
+	assert_true(is_instance_valid(main), "o mundo não é destruído")
+	assert_eq(tree.get_nodes_in_group("interiors").size(), 1, "o interior entrou no lugar")
+	assert_eq(tree.get_nodes_in_group("players").size(), 1, "só o jogador do interior")
+	var inside_player = tree.get_nodes_in_group("players")[0]
+	var hurt: float = inside_player.max_health() * 0.4
+	inside_player.health = hurt   # apanhou lá dentro
+	GameState.go_outside()
+	await _wait_full_transition()
+	assert_false(GameState.is_inside())
+	assert_true(main.is_inside_tree(), "o mesmo mundo voltou")
+	assert_eq(tree.get_nodes_in_group("interiors").size(), 0, "o interior foi desfeito")
+	assert_true(is_instance_valid(car) and car.is_inside_tree(), "o carro continua lá")
+	assert_true(car.global_position.distance_to(parked_at) < 1.0, "o carro está onde ficou")
+	assert_true(is_instance_valid(npc) and npc.is_inside_tree(), "o mesmo NPC continua lá")
+	assert_eq(tree.get_nodes_in_group("npcs").size(), npc_count)
+	var players := tree.get_nodes_in_group("players")
+	assert_eq(players.size(), 1)
+	assert_eq(players[0], player, "o mesmo jogador da rua")
+	assert_eq(player.global_position, target.exit_spawn, "reaparece na porta")
+	assert_almost_eq(player.health, hurt, 0.01, "a vida de dentro vale lá fora")
+	assert_true((player.get_node("Camera2D") as Camera2D).is_current(), "a câmera volta para a rua")
+	assert_eq(GameState.parked_world, null)
+	await _cleanup(main)
+
+
+func test_new_game_discards_a_parked_world() -> void:
+	var main := await _start_main()
+	GameState.park_world(main)
+	assert_false(main.is_inside_tree())
+	GameState.new_game()
+	assert_false(is_instance_valid(main), "novo jogo libera o mundo guardado")
+	assert_eq(GameState.parked_world, null)
 
 
 ## Espera a íris fechar (o estado da troca de cena só muda com ela fechada).

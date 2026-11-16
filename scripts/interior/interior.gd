@@ -36,6 +36,7 @@ var _secret_open := false
 
 
 func _ready() -> void:
+	add_to_group(GameState.INTERIOR_GROUP)
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	var id := maxi(GameState.building_id, 0)
 	var type: String = GameState.building_type
