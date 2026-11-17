@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-16 (5)
+
+- O jogo agora se chama **Agente ZERO B** (o agente de 0 bits): nome do projeto (janela e export),
+  tela de título ("AGENTE ZERO B" com o subtítulo "O AGENTE DE 0 BITS"), README e GDD. O repositório e
+  a pasta continuam com o nome antigo
+- Tela de título: o nome grande se ajusta à largura da janela (`TitleScreen.title_scale`) e a placa atrás dele cresce junto
+- Ferramenta `tools/title_shot.gd` (com janela): captura a tela de título em 1280 e 1920 de largura em `docs/img/`
+  (ex.: `docs/img/titulo-agente-zero-b-1920.png`)
+- Mudar o nome do projeto muda a pasta de dados do Godot (`user://`): saves e opções gravados com o nome
+  antigo (`app_userdata/2DGTA`) não são lidos
+
 ## 2026-11-16 (4)
 
 - **Testes mais rápidos**: suíte inteira de ~111 s para **~20 s** com o runner paralelo novo

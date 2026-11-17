@@ -10,7 +10,9 @@ const Options := preload("res://scripts/save/options.gd")
 const SpriteFactory := preload("res://scripts/art/sprite_factory.gd")
 const Palette := preload("res://scripts/art/palette.gd")
 
-const GAME_NAME := "2DGTA"
+const GAME_NAME := "AGENTE ZERO B"
+## O agente de 0 bits: a piada do nome, logo abaixo dele.
+const SUBTITLE := "O AGENTE DE 0 BITS"
 const TAGLINE := "Um agente. Uma cidade. Zero discrição."
 const VERSION_TEXT := "Protótipo"
 const CONTINUE := "Continuar"
@@ -147,18 +149,32 @@ func _draw() -> void:
 	if controls_open:
 		_draw_controls(ink)
 		return
-	var title_scale := floorf(clampf(size.x / 160.0, 4.0, 10.0))
+	var name_px := float(SpriteFactory.text(GAME_NAME, "neon_cyan", "navy", 1).get_size().x)
+	var name_scale := title_scale(size, name_px)
 	var title_y := size.y * 0.20
-	var tagline_y := title_y + title_scale * 9.0 + 44.0
+	var tagline_y := title_y + name_scale * 9.0 + 44.0
 	# placas escuras atrás dos textos: a cidade ao fundo é cheia de janelas acesas
-	_plate(Rect2(size.x / 2.0 - 400.0, title_y - title_scale * 5.0 - 14.0, 800.0, tagline_y - title_y + title_scale * 5.0 + 36.0))
+	var plate_w := plate_width(size, name_px * name_scale)
+	_plate(Rect2(size.x / 2.0 - plate_w / 2.0, title_y - name_scale * 5.0 - 14.0, plate_w, tagline_y - title_y + name_scale * 5.0 + 36.0))
 	_plate(Rect2(_menu.position - Vector2(24.0, 12.0), _menu.size + Vector2(40.0, 24.0)))
-	_text(GAME_NAME, "neon_cyan", "navy", title_scale, Vector2(size.x / 2.0, title_y))
-	_text("AGENTE SECRETO", "amber", "ink", 4.0, Vector2(size.x / 2.0, title_y + title_scale * 9.0))
+	_text(GAME_NAME, "neon_cyan", "navy", name_scale, Vector2(size.x / 2.0, title_y))
+	_text(SUBTITLE, "amber", "ink", 4.0, Vector2(size.x / 2.0, title_y + name_scale * 9.0))
 	_text(TAGLINE, "cream", "ink", 2.0, Vector2(size.x / 2.0, tagline_y))
 	if _blink:
 		_text("W S e E para escolher", "light", "ink", 2.0, Vector2(size.x / 2.0, size.y - 60.0))
 	_text(VERSION_TEXT, "gray", "ink", 2.0, Vector2(size.x - 80.0, size.y - 24.0))
+
+
+## Escala do nome do jogo: grande (1/160 da largura, entre 4 e 10), mas sempre cabendo na tela.
+static func title_scale(screen: Vector2, name_width: float) -> float:
+	var wanted := floorf(clampf(screen.x / 160.0, 4.0, 10.0))
+	var fits := floorf((screen.x - 64.0) / maxf(name_width, 1.0))
+	return maxf(1.0, minf(wanted, fits))
+
+
+## Largura da placa escura atrás do nome: pelo menos 800 px, com folga, sem passar da tela.
+static func plate_width(screen: Vector2, name_px: float) -> float:
+	return minf(maxf(800.0, name_px + 64.0), screen.x - 16.0)
 
 
 func _plate(rect: Rect2) -> void:

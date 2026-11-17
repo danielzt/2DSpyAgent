@@ -1,8 +1,8 @@
-# 2DGTA
+# Agente ZERO B
 
 Jogo 2D de mundo aberto, visão de cima, no estilo dos GTAs clássicos com a pegada
 humorística/RPG de *Retro City Rampage*, mas você é um **agente secreto que combate o
-crime**. Feito em **Godot 4.7** com **GDScript**. Design completo: [docs/gdd.md](docs/gdd.md).
+crime**: o **Agente ZERO B**, o agente secreto de 0 bits. Feito em **Godot 4.7** com **GDScript**. Design completo: [docs/gdd.md](docs/gdd.md).
 
 ## Objetivos
 

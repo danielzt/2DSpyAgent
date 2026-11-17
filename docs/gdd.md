@@ -1,7 +1,8 @@
 # GDD — Game Design Document (v0.1)
 
 > Documento vivo. Toda decisão de design nova entra aqui; o que já está implementado
-> aponta para o doc técnico correspondente. Título provisório: **2DGTA**.
+> aponta para o doc técnico correspondente. Título: **Agente ZERO B**, o agente secreto de 0 bits
+> (a piada do nome está no subtítulo da tela de título: "O AGENTE DE 0 BITS").
 
 ## 1. Visão geral
 

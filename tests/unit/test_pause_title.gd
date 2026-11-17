@@ -340,3 +340,27 @@ func test_title_draws_in_odd_screen_sizes() -> void:
 	title.queue_redraw()
 	await wait_frames(1)
 	assert_true(title.is_inside_tree())
+
+
+# --- nome do jogo ---
+
+func test_game_is_called_agente_zero_b() -> void:
+	assert_eq(TitleScreen.GAME_NAME, "AGENTE ZERO B")
+	assert_eq(ProjectSettings.get_setting("application/config/name"), "Agente ZERO B", "nome da janela e do export")
+	var PixelFont := preload("res://scripts/art/pixel_font.gd")
+	for text in [TitleScreen.GAME_NAME, TitleScreen.SUBTITLE, TitleScreen.TAGLINE]:
+		for letter in PixelFont.normalize(text):
+			assert_true(PixelFont.has_glyph(letter), "'%s' em '%s'" % [letter, text])
+
+
+func test_title_name_fits_any_window() -> void:
+	var PixelFont := preload("res://scripts/art/pixel_font.gd")
+	var name_px := float(PixelFont.measure(TitleScreen.GAME_NAME).x + 2)   # + contorno
+	for screen in [Vector2(640, 360), Vector2(1280, 720), Vector2(1920, 1080), Vector2(3840, 2160)]:
+		var s := TitleScreen.title_scale(screen, name_px)
+		var plate := TitleScreen.plate_width(screen, name_px * s)
+		assert_true(s >= 2.0, "%s: escala %s pequena demais" % [screen, s])
+		assert_true(name_px * s + 32.0 <= plate, "%s: nome (%s px) não cabe na placa (%s px)" % [screen, name_px * s, plate])
+		assert_true(plate <= screen.x, "%s: placa maior que a tela" % screen)
+	# na janela padrão o nome continua grande
+	assert_eq(TitleScreen.title_scale(Vector2(1280, 720), name_px), 8.0)
