@@ -18,10 +18,10 @@ crime**: o **Agente ZERO B**, o agente secreto de 0 bits. Feito em **Godot 4.7**
 2. Abra o Godot, clique em **Import** e selecione `project.godot` desta pasta.
 3. Pressione **F5**.
 
-Ou pela linha de comando:
+Ou pela linha de comando, de dentro da pasta do projeto:
 
 ```bash
-Godot_v4.7.2-stable_win64.exe --path "E:\Dev\Repos GIT\2DGTA"
+Godot_v4.7.2-stable_win64.exe --path .
 ```
 
 ## Controles (protótipo)
